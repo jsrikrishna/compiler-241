@@ -22,14 +22,14 @@ public class Reader {
     private char currentSymbol;
     private int currentSymbolIndex;
     private int lineLength;
-    private int lineNumber;
+    private int lineNumber; // -1 denotes, file is not read yet
     private boolean isEOF;
 
     Reader(String fileName){
         try {
             reader = new BufferedReader(new FileReader(fileName));
             currentSymbolIndex = 0;
-            lineLength = 0;
+            lineLength = -1;
             lineNumber = 0;
             isEOF = false;
         } catch (FileNotFoundException e){
@@ -37,9 +37,13 @@ public class Reader {
         }
     }
 
+    /*
+    Return the currentSymbol and increment the current symbol index
+    returns 255 if EOF is reached
+     */
     public char getCurrentSymbol() throws IOException {
         if(isEOF) return 255;
-        if(lineNumber == 0 || currentSymbolIndex >= lineLength){
+        if(lineNumber == -1 || currentSymbolIndex >= lineLength){
             line = reader.readLine();
             while (line != null && line.trim().isEmpty() ) line = reader.readLine();
             if(line == null){
@@ -58,7 +62,7 @@ public class Reader {
 
     public char peekSymbol(){
         if(isEOF) return 255;
-        if(lineNumber == 0 || currentSymbol >= lineLength) return '$';
+        if(lineNumber == -1 || currentSymbolIndex >= lineLength) return '$';
         return line.charAt(currentSymbolIndex);
     }
 
