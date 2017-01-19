@@ -59,7 +59,6 @@ public class Scanner {
         isEOF = false;
         currentSymbol = reader.getCurrentSymbol();
         if(currentSymbol == 255) isEOF = true;
-        System.out.println("First symbol is ");
     }
 
     public boolean isEOF() {
@@ -68,57 +67,71 @@ public class Scanner {
 
     public Token getToken() throws IOException {
         this.setToken();
-        gotoNextSymbolAndPeak();
         return this.currentToken;
     }
 
     public void gotoNextSymbolAndPeak() throws IOException {
-        if(currentSymbol == 255) {
-            isEOF = true;
-            currentSymbol = 255;
-        } else {
+        if(currentSymbol == 255) isEOF = true;
+        else {
             currentSymbol = reader.getCurrentSymbol();
             peekSymbol = reader.peekSymbol();
         }
     }
 
-    public void setToken() throws IOException {
-        String symbolInString = new StringBuffer(currentSymbol).toString();
+    public void skipNextAndMove() throws  IOException {
+        gotoNextSymbolAndPeak();
+        gotoNextSymbolAndPeak();
+    }
+
+    public void consumeWhiteSpaces() throws IOException {
+        while (currentSymbol == ' ') currentSymbol = reader.getCurrentSymbol();
         peekSymbol = reader.peekSymbol();
+    }
+
+    public void setToken() throws IOException {
+        consumeWhiteSpaces();
+        StringBuffer symbolInString = new StringBuffer();
+        symbolInString.append(currentSymbol);
         if(currentSymbol == 255) {
             isEOF = true;
             currentToken = Token.EOF;
             return;
         }
-        if(singleTokenMap.containsKey(symbolInString)){
-            currentToken = singleTokenMap.get(symbolInString);
+        if(singleTokenMap.containsKey(symbolInString.toString())){
+            currentToken = singleTokenMap.get(symbolInString.toString());
+            gotoNextSymbolAndPeak();
             return;
         }
         // Single Map don't deal with ==, !=, >, >=, <-, <=, <
         if(currentSymbol == '<'){
             if(peekSymbol == '=') {
-                gotoNextSymbolAndPeak();
                 currentToken = Token.LEQ;
+                skipNextAndMove();
+                return;
             }
             else if(peekSymbol == '-') {
-                gotoNextSymbolAndPeak();
                 currentToken = Token.BECOMES;
+                skipNextAndMove();
+                return;
             }
-            else currentToken = Token.LSS;
-            return;
+            else {
+                currentToken = Token.LSS;
+                gotoNextSymbolAndPeak();
+                return;
+            }
         }
         if(currentSymbol == '>' && peekSymbol == '='){
-            gotoNextSymbolAndPeak();
+            skipNextAndMove();
             currentToken = Token.GEQ;
             return;
         }
         if(currentSymbol == '=' && peekSymbol == '='){
-            gotoNextSymbolAndPeak();
+            skipNextAndMove();
             currentToken = Token.EQL;
             return;
         }
         if(currentSymbol == '!' && peekSymbol == '='){
-            gotoNextSymbolAndPeak();
+            skipNextAndMove();
             currentToken = Token.NEQ;
             return;
         }
@@ -127,27 +140,29 @@ public class Scanner {
             StringBuffer token = new StringBuffer();
             while (isAlphabet(currentSymbol) || isDigit(currentSymbol)){
                 token.append(currentSymbol);
-                gotoNextSymbolAndPeak();
                 if(peekSymbol == '$') {
-                    token.append(currentSymbol);
+                    gotoNextSymbolAndPeak();
                     break;
                 }
+                gotoNextSymbolAndPeak();
             }
             if(keywordTokenMap.containsKey(token.toString())) currentToken = keywordTokenMap.get(token.toString());
             else currentToken = Token.IDEN; // else it is an identifier
-//            System.out.println("Token is " + token.toString());
+
             return;
         }
         if(isDigit(currentSymbol)){
             StringBuffer token = new StringBuffer();
             while (isDigit(currentSymbol)){
                 token.append(currentSymbol);
-                gotoNextSymbolAndPeak();
                 if(peekSymbol == '$') break;
+                gotoNextSymbolAndPeak();
             }
             System.out.println("Token is " + token.toString());
             currentToken = Token.NUMBER;
+            return;
         }
+        System.out.println("error token found is " + currentSymbol);
         currentToken = Token.ERROR;
         return;
     }

@@ -62,6 +62,7 @@ public class Reader {
 
     public char peekSymbol(){
         if(isEOF) return 255;
+        // End of line or no line is read
         if(lineNumber == -1 || currentSymbolIndex >= lineLength) return '$';
         return line.charAt(currentSymbolIndex);
     }

@@ -11,6 +11,7 @@ public class Main {
             Scanner s = new Scanner("test001.txt");
             while (!s.isEOF()){
                 System.out.println(s.getToken());
+
             }
         } catch (IOException e){
             System.out.println("IO Exception has happened " + e);
