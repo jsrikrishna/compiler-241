@@ -71,7 +71,7 @@ public class Scanner {
         return this.currentToken;
     }
 
-    public void gotoNextSymbol() throws IOException {
+    private void gotoNextSymbol() throws IOException {
         if(currentSymbol == 255) isEOF = true;
         else {
             currentSymbol = reader.getCurrentSymbol();
@@ -79,45 +79,58 @@ public class Scanner {
         }
     }
 
-    public void skipNextAndMove() throws  IOException {
+    private void skipNextAndMove() throws  IOException {
         gotoNextSymbol();
         gotoNextSymbol();
     }
 
-    public void gotoNextLine() throws IOException {
+    private void gotoNextLine() throws IOException {
         reader.gotoNextLine();
         gotoNextSymbol();
     }
 
-    public void consumeWhiteSpaceAndComments() throws IOException {
-        while (Character.isWhitespace(currentSymbol) || Character.isSpaceChar(currentSymbol)
-                || currentSymbol == '\t' || currentSymbol == '#') {
+    private void consumeWhiteSpaces() throws IOException {
+        while (isWhiteSpace(currentSymbol) || currentSymbol == '\t' || currentSymbol == '#') {
+            /*
+            If there are spaces or tabs after going to next line once we encounter #,
+            then we need to keep this in loop
+             */
             if(currentSymbol == '#') gotoNextLine();
             else {
                 currentSymbol = reader.getCurrentSymbol();
                 peekSymbol = reader.peekSymbol();
             }
         }
-        while (currentSymbol == '/'){
-            if(peekSymbol == '/'){
-                gotoNextLine();
-            } else break;
-        }
-//        if(currentSymbol == '#'){
-//            gotoNextLine();
-//            consumeWhiteSpaceAndComments(); // This done because, after going to next line
-//        }
     }
 
-    public void setToken() throws IOException {
+    private void consumeComments() throws IOException {
+        while (currentSymbol == '/' && peekSymbol == '/') gotoNextLine();
+    }
+
+    private void consumeWhiteSpaceAndComments() throws IOException {
+        while (true){
+            if(isWhiteSpace(currentSymbol) || currentSymbol == '\t' || currentSymbol == '#') consumeWhiteSpaces();
+            else if (currentSymbol == '/' && peekSymbol == '/') consumeComments();
+            else break;
+        }
+    }
+
+    private void endOfFile(){
+        isEOF = true;
+        currentToken = Token.EOF;
+        return;
+    }
+
+    private void setToken() throws IOException {
         consumeWhiteSpaceAndComments();
         StringBuffer symbolInString = new StringBuffer();
         symbolInString.append(currentSymbol);
+
         if(currentSymbol == 255) {
-            isEOF = true;
-            currentToken = Token.EOF;
+            endOfFile();
             return;
         }
+
         if(singleTokenMap.containsKey(symbolInString.toString())){
             currentToken = singleTokenMap.get(symbolInString.toString());
             gotoNextSymbol();
@@ -141,10 +154,18 @@ public class Scanner {
                 return;
             }
         }
-        if(currentSymbol == '>' && peekSymbol == '='){
-            skipNextAndMove();
-            currentToken = Token.GEQ;
-            return;
+        if(currentSymbol == '>'){
+            if(peekSymbol == '='){
+                skipNextAndMove();
+                currentToken = Token.GEQ;
+                return;
+            }
+            else{
+                gotoNextSymbol();
+                currentToken = Token.GTR;
+                return;
+            }
+
         }
         if(currentSymbol == '=' && peekSymbol == '='){
             skipNextAndMove();
@@ -158,36 +179,45 @@ public class Scanner {
         }
         // Now the token could be an number, identifier, keyword
         if(Character.isAlphabetic(currentSymbol)){
-            StringBuffer token = new StringBuffer();
-            while (Character.isAlphabetic(currentSymbol) || Character.isDigit(currentSymbol)){
-                token.append(currentSymbol);
-                if(peekSymbol == '$') {
-                    gotoNextSymbol();
-                    break;
-                }
-                gotoNextSymbol();
-            }
-            if(keywordTokenMap.containsKey(token.toString())) currentToken = keywordTokenMap.get(token.toString());
-            else currentToken = Token.IDEN; // else it is an identifier
-
+            handleIdentifierOrKeyWord();
             return;
         }
         if(Character.isDigit(currentSymbol)){
-            StringBuffer token = new StringBuffer();
-            while (Character.isDigit(currentSymbol)){
-                token.append(currentSymbol);
-                if(peekSymbol == '$') {
-                    gotoNextSymbol();
-                    break;
-                }
-                gotoNextSymbol();
-            }
-            System.out.println("Token is " + token.toString());
-            currentToken = Token.NUMBER;
+            handleNumbers();
             return;
         }
         System.out.println("error symbol found is " + currentSymbol);
         currentToken = Token.ERROR;
+        return;
+    }
+
+    private void handleIdentifierOrKeyWord() throws IOException {
+        StringBuffer token = new StringBuffer();
+        while (Character.isAlphabetic(currentSymbol) || Character.isDigit(currentSymbol)){
+            token.append(currentSymbol);
+            if(peekSymbol == '$') {
+                gotoNextSymbol();
+                break;
+            }
+            gotoNextSymbol();
+        }
+        if(keywordTokenMap.containsKey(token.toString())) currentToken = keywordTokenMap.get(token.toString());
+        else currentToken = Token.IDEN; // else it is an identifier
+        return;
+    }
+
+    private void handleNumbers() throws IOException {
+        StringBuffer token = new StringBuffer();
+        while (Character.isDigit(currentSymbol)){
+            token.append(currentSymbol);
+            if(peekSymbol == '$') {
+                gotoNextSymbol();
+                break;
+            }
+            gotoNextSymbol();
+        }
+        System.out.println("Token is " + token.toString());
+        currentToken = Token.NUMBER;
         return;
     }
 
@@ -197,5 +227,9 @@ public class Scanner {
 
     private boolean isDigit(char currentSymbol){
         return (currentSymbol >= '0' && currentSymbol <= '9');
+    }
+
+    public boolean isWhiteSpace(char currentSymbol){
+        return Character.isWhitespace(currentSymbol) || Character.isSpaceChar(currentSymbol);
     }
 }
