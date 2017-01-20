@@ -84,17 +84,29 @@ public class Scanner {
         gotoNextSymbol();
     }
 
+    public void gotoNextLine() throws IOException {
+        reader.gotoNextLine();
+        gotoNextSymbol();
+    }
+
     public void consumeWhiteSpaceAndComments() throws IOException {
-        while (currentSymbol == ' ' || currentSymbol == '\t') {
-            currentSymbol = reader.getCurrentSymbol();
-            peekSymbol = reader.peekSymbol();
+        while (Character.isWhitespace(currentSymbol) || Character.isSpaceChar(currentSymbol)
+                || currentSymbol == '\t' || currentSymbol == '#') {
+            if(currentSymbol == '#') gotoNextLine();
+            else {
+                currentSymbol = reader.getCurrentSymbol();
+                peekSymbol = reader.peekSymbol();
+            }
         }
         while (currentSymbol == '/'){
             if(peekSymbol == '/'){
-                reader.gotoNextLine();
-                gotoNextSymbol();
+                gotoNextLine();
             } else break;
         }
+//        if(currentSymbol == '#'){
+//            gotoNextLine();
+//            consumeWhiteSpaceAndComments(); // This done because, after going to next line
+//        }
     }
 
     public void setToken() throws IOException {
@@ -145,9 +157,9 @@ public class Scanner {
             return;
         }
         // Now the token could be an number, identifier, keyword
-        if(isAlphabet(currentSymbol)){
+        if(Character.isAlphabetic(currentSymbol)){
             StringBuffer token = new StringBuffer();
-            while (isAlphabet(currentSymbol) || isDigit(currentSymbol)){
+            while (Character.isAlphabetic(currentSymbol) || Character.isDigit(currentSymbol)){
                 token.append(currentSymbol);
                 if(peekSymbol == '$') {
                     gotoNextSymbol();
@@ -160,11 +172,14 @@ public class Scanner {
 
             return;
         }
-        if(isDigit(currentSymbol)){
+        if(Character.isDigit(currentSymbol)){
             StringBuffer token = new StringBuffer();
-            while (isDigit(currentSymbol)){
+            while (Character.isDigit(currentSymbol)){
                 token.append(currentSymbol);
-                if(peekSymbol == '$') break;
+                if(peekSymbol == '$') {
+                    gotoNextSymbol();
+                    break;
+                }
                 gotoNextSymbol();
             }
             System.out.println("Token is " + token.toString());
