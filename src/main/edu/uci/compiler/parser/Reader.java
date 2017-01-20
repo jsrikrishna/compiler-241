@@ -66,6 +66,16 @@ public class Reader {
         if(lineNumber == -1 || currentSymbolIndex >= lineLength) return '$';
         return line.charAt(currentSymbolIndex);
     }
+    public void gotoNextLine() throws IOException {
+        line = reader.readLine();
+        if(line == null){
+            isEOF = true;
+            closeFile();
+        }
+        lineLength = line.length();
+        currentSymbolIndex = 0;
+        lineNumber++;
+    }
 
     public void closeFile() throws IOException{
         reader.close();

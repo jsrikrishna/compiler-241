@@ -58,6 +58,7 @@ public class Scanner {
         reader = new Reader(fileName);
         isEOF = false;
         currentSymbol = reader.getCurrentSymbol();
+        peekSymbol = reader.peekSymbol();
         if(currentSymbol == 255) isEOF = true;
     }
 
@@ -70,7 +71,7 @@ public class Scanner {
         return this.currentToken;
     }
 
-    public void gotoNextSymbolAndPeak() throws IOException {
+    public void gotoNextSymbol() throws IOException {
         if(currentSymbol == 255) isEOF = true;
         else {
             currentSymbol = reader.getCurrentSymbol();
@@ -79,17 +80,23 @@ public class Scanner {
     }
 
     public void skipNextAndMove() throws  IOException {
-        gotoNextSymbolAndPeak();
-        gotoNextSymbolAndPeak();
+        gotoNextSymbol();
+        gotoNextSymbol();
     }
 
-    public void consumeWhiteSpaces() throws IOException {
-        while (currentSymbol == ' ') currentSymbol = reader.getCurrentSymbol();
+    public void consumeWhiteSpaceAndComments() throws IOException {
+        while (currentSymbol == ' ' || currentSymbol == '\t') currentSymbol = reader.getCurrentSymbol();
+        while (currentSymbol == '/'){
+            if(peekSymbol == '/'){
+                reader.gotoNextLine();
+                gotoNextSymbol();
+            } else break;
+        }
         peekSymbol = reader.peekSymbol();
     }
 
     public void setToken() throws IOException {
-        consumeWhiteSpaces();
+        consumeWhiteSpaceAndComments();
         StringBuffer symbolInString = new StringBuffer();
         symbolInString.append(currentSymbol);
         if(currentSymbol == 255) {
@@ -99,7 +106,7 @@ public class Scanner {
         }
         if(singleTokenMap.containsKey(symbolInString.toString())){
             currentToken = singleTokenMap.get(symbolInString.toString());
-            gotoNextSymbolAndPeak();
+            gotoNextSymbol();
             return;
         }
         // Single Map don't deal with ==, !=, >, >=, <-, <=, <
@@ -116,7 +123,7 @@ public class Scanner {
             }
             else {
                 currentToken = Token.LSS;
-                gotoNextSymbolAndPeak();
+                gotoNextSymbol();
                 return;
             }
         }
@@ -141,10 +148,10 @@ public class Scanner {
             while (isAlphabet(currentSymbol) || isDigit(currentSymbol)){
                 token.append(currentSymbol);
                 if(peekSymbol == '$') {
-                    gotoNextSymbolAndPeak();
+                    gotoNextSymbol();
                     break;
                 }
-                gotoNextSymbolAndPeak();
+                gotoNextSymbol();
             }
             if(keywordTokenMap.containsKey(token.toString())) currentToken = keywordTokenMap.get(token.toString());
             else currentToken = Token.IDEN; // else it is an identifier
@@ -156,13 +163,13 @@ public class Scanner {
             while (isDigit(currentSymbol)){
                 token.append(currentSymbol);
                 if(peekSymbol == '$') break;
-                gotoNextSymbolAndPeak();
+                gotoNextSymbol();
             }
             System.out.println("Token is " + token.toString());
             currentToken = Token.NUMBER;
             return;
         }
-        System.out.println("error token found is " + currentSymbol);
+        System.out.println("error symbol found is " + currentSymbol);
         currentToken = Token.ERROR;
         return;
     }
