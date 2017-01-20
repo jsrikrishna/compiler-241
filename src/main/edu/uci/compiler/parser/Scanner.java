@@ -85,14 +85,16 @@ public class Scanner {
     }
 
     public void consumeWhiteSpaceAndComments() throws IOException {
-        while (currentSymbol == ' ' || currentSymbol == '\t') currentSymbol = reader.getCurrentSymbol();
+        while (currentSymbol == ' ' || currentSymbol == '\t') {
+            currentSymbol = reader.getCurrentSymbol();
+            peekSymbol = reader.peekSymbol();
+        }
         while (currentSymbol == '/'){
             if(peekSymbol == '/'){
                 reader.gotoNextLine();
                 gotoNextSymbol();
             } else break;
         }
-        peekSymbol = reader.peekSymbol();
     }
 
     public void setToken() throws IOException {
