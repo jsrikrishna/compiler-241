@@ -63,6 +63,9 @@ public class Scanner {
         reader = new Reader(fileName);
         isEOF = false;
         listOfIdentifiers = new ArrayList<>();
+        identifierId = -1;
+        currentIdentifier = null;
+        //Todo : current number, cannot set to null
         currentSymbol = reader.getCurrentSymbol();
         peekSymbol = reader.peekSymbol();
         if(currentSymbol == 255) isEOF = true;
