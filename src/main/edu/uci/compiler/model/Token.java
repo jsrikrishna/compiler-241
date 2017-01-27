@@ -40,7 +40,7 @@ public enum Token {
     Declaration
      */
     VAR(110, "var"), ARRAY(111, "array"), FUNCTION(112, "function"), PROCEDURE(113, "procedure"),
-    NUMBER(60, "number"), IDEN(61, "identifier"), BECOMES(40, "<-"),
+    NUMBER(60, "number"), IDENTIFIER(61, "identifier"), BECOMES(40, "<-"),
 
     /*
     KeyWords -
