@@ -14,25 +14,26 @@ public enum Token {
      */
     TIMES(1, "*"), DIV(2, "/"), PLUS(11, "+"), MINUS(12, "-"),
     EQL(20, "=="), NEQ(21, "!="),
-    GTR(25, ">"), LSS(22, "<"), GEQ(23, ">="), LEQ(24, "<="),
+    GTR(25, ">"), LSS(22, "<"),
+    GEQ(23, ">="), LEQ(24, "<="),
 
 
     /*
     Parenthesis, Brackets, SEMICOLON, PERIOD
      */
-    OPENPAREN(40, "("), CLOSEPAREN(41, ")"),
-    OPENBRACKET(42, "["), CLOSEBRACKET(43, "]"),
-    BEGIN(44, "{"), END(45, "}"),
-    SEMICOLON(46, ";"), PERIOD(47, "."), COMMA(48, ","),
+    OPENPAREN(50, "("), CLOSEPAREN(35, ")"),
+    OPENBRACKET(32, "["), CLOSEBRACKET(34, "]"),
+    BEGIN(150, "{"), END(80, "}"),
+    SEMICOLON(70, ";"), PERIOD(30, "."), COMMA(31, ","),
 
     /*
     KeyWords -
     Assignment, funcCall, ifStatement, whileStatement, returnStatement
      */
     LET(100, "let"), CALL(101, "call"),
-    IF(102, "if"), THEN(103, "then"), ELSE(104, "else"), FI(105, "fi"),
-    WHILE(104, "while"), DO(107, "do"), OD(108, "od"),
-    RETURN(109, "return"),
+    IF(102, "if"), THEN(41, "then"), ELSE(90, "else"), FI(82, "fi"),
+    WHILE(103, "while"), DO(42, "do"), OD(81, "od"),
+    RETURN(104, "return"),
 
     /*
     KeyWords -

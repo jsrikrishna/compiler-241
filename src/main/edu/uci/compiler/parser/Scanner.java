@@ -20,6 +20,11 @@ public class Scanner {
     private char peekSymbol;
     private Token currentToken;
     private boolean isEOF;
+    private int currentNumber; // last number encountered
+    private int identifierId; // the last identifier encountered and it is 0-based value
+    private String currentIdentifier;
+    // Need to maintain a table of unique identifiers
+    private ArrayList<String> listOfIdentifiers;
     private Map<String, Token> singleTokenMap = new HashMap<String, Token>(){{
         put("*", Token.TIMES);
         put("/", Token.DIV);
@@ -57,6 +62,7 @@ public class Scanner {
     public Scanner(String fileName) throws IOException {
         reader = new Reader(fileName);
         isEOF = false;
+        listOfIdentifiers = new ArrayList<>();
         currentSymbol = reader.getCurrentSymbol();
         peekSymbol = reader.peekSymbol();
         if(currentSymbol == 255) isEOF = true;
@@ -69,6 +75,32 @@ public class Scanner {
     public Token getToken() throws IOException {
         this.setToken();
         return this.currentToken;
+    }
+
+    public String getCurrentIdentifier(){
+        // May need to do null check
+        return currentIdentifier;
+    }
+
+    public int getIdentifierId(){
+        return identifierId;
+    }
+
+    public int getCurrentNumber(){
+        return currentNumber;
+    }
+
+    /*
+    Identifier Table Methods
+     */
+    public String IdToString(int id){
+        // if(id < 0 || id > identifierId) return null; // May be throw an exception, Not needed because .get method does it already
+        return listOfIdentifiers.get(id);
+    }
+
+    public int StringToId(String identifier){
+        if(identifier.isEmpty()) return -1; // May be throw an exception
+        return listOfIdentifiers.indexOf(identifier);
     }
 
     private void gotoNextSymbol() throws IOException {
@@ -202,7 +234,16 @@ public class Scanner {
             gotoNextSymbol();
         }
         if(keywordTokenMap.containsKey(token.toString())) currentToken = keywordTokenMap.get(token.toString());
-        else currentToken = Token.IDEN; // else it is an identifier
+        else {
+            currentToken = Token.IDEN; // else it is an identifier
+            currentIdentifier = token.toString();
+            if(listOfIdentifiers.indexOf(token.toString()) != -1){
+                identifierId = listOfIdentifiers.indexOf(token.toString());
+            } else {
+                listOfIdentifiers.add(token.toString());
+                identifierId = listOfIdentifiers.size() - 1;
+            }
+        }
         return;
     }
 
@@ -218,6 +259,7 @@ public class Scanner {
         }
         System.out.println("Token is " + token.toString());
         currentToken = Token.NUMBER;
+        currentNumber = Integer.parseInt(token.toString());
         return;
     }
 
