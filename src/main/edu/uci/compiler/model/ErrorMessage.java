@@ -23,7 +23,10 @@ public enum ErrorMessage {
     CLOSE_BRACKET_NOT_FOUND("Expected ] to be present"),
     CLOSE_PAREN_NOT_FOUND("Expected ) to be present"),
     FACTOR_ERROR("Factor error"),
-    BECOMES_NOT_FOUND("Expected <- to be present");
+    BECOMES_NOT_FOUND("Expected <- to be present"),
+    CALL_NOT_FOUND("Call not found in function call statment"),
+    IF_STATEMENT_ERROR("Keyword missing in if-then-else statement"),
+    RELATION_OP_NOT_FOUND("Expected Relation Operation to be present");
 
     private String errorMessage;
     private ErrorMessage(String errorMessage){

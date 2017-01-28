@@ -257,12 +257,72 @@ public class Parser {
         } else generateError(FACTOR_ERROR);
     }
 
-    public void funcCall() {
+    public void funcCall() throws IOException {
+        if(currentToken == CALL){
+            moveToNextToken();
+            if(currentToken == IDENTIFIER){
+                moveToNextToken();
+                //TODO: Handle identifier here, figure out how to do it
+                if(currentToken == OPENPAREN){
+                    moveToNextToken();
+                    // Go from expression -> term -> factor -> designator -> identifier
+                    if(currentToken == IDENTIFIER){
+                        expression();
+                        while(currentToken == COMMA){
+                            moveToNextToken();
+                            expression();
+                        }
+                    }
+                    if(currentToken == CLOSEPAREN){
+                        moveToNextToken();
+                    } else generateError(CLOSE_PAREN_NOT_FOUND);
+                }
+            }
+        } else {
+            /*
+            TODO: this code may be never be reached, as we already checked for let in statement, need to identify a
+            TODO: pattern to handle these kind of duplicate code
+             */
+            generateError(CALL_NOT_FOUND);
+        }
+    }
+
+    public void ifStatement() throws IOException {
+        if(currentToken == IF){
+            moveToNextToken();
+            relation(); //TODO Need to handle with result of relation() while generating instruction sets
+            if(currentToken == THEN){
+                moveToNextToken();
+                statSequence();
+                if(currentToken == ELSE){
+                    moveToNextToken();
+                    statSequence();
+                }
+                if(currentToken == FI){
+                    moveToNextToken();
+                } else generateError(IF_STATEMENT_ERROR);
+            } else {
+                generateError(IF_STATEMENT_ERROR);
+            }
+        }
+        else {
+            /*
+            TODO: this code may be never be reached, as we already checked for let in statement, need to identify a
+            TODO: pattern to handle these kind of duplicate code
+             */
+            generateError(IF_STATEMENT_ERROR);
+        }
 
     }
 
-    public void ifStatement() {
-
+    public void relation() throws IOException {
+        expression();
+        if (isTokenRelOp(currentToken)){
+            moveToNextToken();
+            expression();
+        } else {
+            generateError(RELATION_OP_NOT_FOUND);
+        }
     }
 
     public void whileStatement() {
@@ -271,6 +331,12 @@ public class Parser {
 
     public void returnStatement() {
 
+    }
+
+    public boolean isTokenRelOp(Token currentToken){
+        if(currentToken == EQL || currentToken == NEQ ||
+                currentToken == LSS || currentToken == LEQ || currentToken == GTR || currentToken == GEQ) return true;
+        return false;
     }
 
     public void generateError(ErrorMessage message) {
