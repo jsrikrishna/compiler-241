@@ -30,10 +30,11 @@ public class Parser {
             moveToNextToken();
             while (currentToken == VAR || currentToken == ARRAY) {
                 //TODO: Deal with array's later
+                // Need not move to next token, it is handled by varDecl
                 varDecl();
             }
             while (currentToken == FUNCTION || currentToken == PROCEDURE) {
-                moveToNextToken();
+                // Need not move to next token, it is handled by funcDecl
                 funcDecl();
             }
             if (currentToken == BEGIN) {
@@ -57,14 +58,14 @@ public class Parser {
             //TODO: need to store the variable, it could be an array variable or normal variable
             while (currentToken == COMMA) {
                 moveToNextToken();
-                if(currentToken == IDENTIFIER){
+                if (currentToken == IDENTIFIER) {
                     moveToNextToken();
                     //TODO: need to store the variable, it could be an array variable or normal variable
                 } else {
                     generateError(VARIABLE_DECL_ERROR);
                 }
             }
-            if(currentToken == SEMICOLON){
+            if (currentToken == SEMICOLON) {
                 moveToNextToken();
                 // done with variable declaration
             } else generateError(SEMICOLON_NOT_FOUND);
@@ -106,7 +107,55 @@ public class Parser {
         return -1;
     }
 
-    public void funcDecl() {
+    public void funcDecl() throws IOException {
+        if (currentToken == FUNCTION || currentToken == PROCEDURE) {
+            moveToNextToken();
+            if (currentToken == IDENTIFIER) {
+                moveToNextToken();
+                if (currentToken == OPENPAREN) {
+                    formalParam(); // formalParam, handles of moving to next token
+                }
+                if (currentToken == SEMICOLON) {
+                    moveToNextToken();
+
+
+
+                } else generateError(SEMICOLON_NOT_FOUND);
+            } else generateError(IDENTIFIER_NOT_FOUND);
+
+
+        } else generateError(FUNCTION_PROCEDURE_NOT_FOUND);
+    }
+
+    public void formalParam() throws IOException {
+        if(currentToken == OPENPAREN){
+            moveToNextToken();
+            if(currentToken == IDENTIFIER){
+                //TODO: need to store the variable at common place
+                moveToNextToken();
+                while (currentToken == COMMA) {
+                    moveToNextToken();
+                    if (currentToken == IDENTIFIER) {
+                        //TODO: need to store the variable at common place
+                        moveToNextToken();
+                    } else generateError(FORMAL_PARAM_DECL_ERROR);
+                }
+            }
+            if(currentToken == CLOSEPAREN) {
+                moveToNextToken();
+            } else generateError(FORMAL_PARAM_DECL_ERROR);
+        }
+    }
+
+    public void funcBody() throws IOException {
+        varDecl();
+        if(currentToken == BEGIN){
+            moveToNextToken();
+            statSequence();
+            if(currentToken == END) {
+                moveToNextToken();
+            } else generateError(FUNC_BODY_ERROR);
+        } else generateError(FUNC_BODY_ERROR);
     }
 
     public void statSequence() {
