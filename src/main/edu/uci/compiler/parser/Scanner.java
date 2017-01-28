@@ -63,6 +63,9 @@ public class Scanner {
         reader = new Reader(fileName);
         isEOF = false;
         listOfIdentifiers = new ArrayList<>();
+        identifierId = -1;
+        currentIdentifier = null;
+        //Todo : current number, cannot set to null
         currentSymbol = reader.getCurrentSymbol();
         peekSymbol = reader.peekSymbol();
         if(currentSymbol == 255) isEOF = true;
@@ -235,7 +238,7 @@ public class Scanner {
         }
         if(keywordTokenMap.containsKey(token.toString())) currentToken = keywordTokenMap.get(token.toString());
         else {
-            currentToken = Token.IDEN; // else it is an identifier
+            currentToken = Token.IDENTIFIER; // else it is an identifier
             currentIdentifier = token.toString();
             if(listOfIdentifiers.indexOf(token.toString()) != -1){
                 identifierId = listOfIdentifiers.indexOf(token.toString());

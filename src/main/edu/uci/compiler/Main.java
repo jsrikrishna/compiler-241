@@ -13,6 +13,13 @@ public class Main {
             Token str;
             while (!s.isEOF()){
                 str = s.getToken();
+                if(str == Token.IDENTIFER){
+                    System.out.println("Identifier is " + s.getCurrentIdentifier());
+                    System.out.println("Identifier id is " + s.getIdentifierId());
+                }
+                else if(str == Token.NUMBER){
+                    System.out.println("Number is " + s.getCurrentNumber());
+                }
                 System.out.println(str);
                 if(str == Token.ERROR) break;
             }
