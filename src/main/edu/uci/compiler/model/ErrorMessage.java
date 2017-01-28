@@ -26,6 +26,10 @@ public enum ErrorMessage {
     BECOMES_NOT_FOUND("Expected <- to be present"),
     CALL_NOT_FOUND("Call not found in function call statment"),
     IF_STATEMENT_ERROR("Keyword missing in if-then-else statement"),
+    WHILE_STATEMENT_ERROR("Keyword missing in while statement"),
+    DO_EXPECTED("Expected do keyword to be present"),
+    OD_EXPECTED("Expected od keyword to be present"),
+    RETURN_EXPECTED("Expected return keyword to be present"),
     RELATION_OP_NOT_FOUND("Expected Relation Operation to be present");
 
     private String errorMessage;

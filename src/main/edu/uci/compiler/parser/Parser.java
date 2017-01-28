@@ -184,7 +184,7 @@ public class Parser {
         if (currentToken == LET) {
             moveToNextToken();
             designator();
-            if(currentToken == BECOMES){
+            if (currentToken == BECOMES) {
                 moveToNextToken();
                 expression();
 
@@ -221,22 +221,22 @@ public class Parser {
         }
     }
 
-    public void expression() throws IOException  {
+    public void expression() throws IOException {
         term();
-        while (currentToken == PLUS || currentToken == MINUS){
+        while (currentToken == PLUS || currentToken == MINUS) {
             term();
         }
     }
 
-    public void term() throws IOException  {
+    public void term() throws IOException {
         factor();
-        while( currentToken == TIMES || currentToken == DIV){
+        while (currentToken == TIMES || currentToken == DIV) {
             factor();
         }
     }
 
     public void factor() throws IOException {
-        if(currentToken == IDENTIFIER){
+        if (currentToken == IDENTIFIER) {
             //TODO: Need to deal with identifiers
             designator();
         } else if (currentToken == NUMBER) {
@@ -247,7 +247,7 @@ public class Parser {
             funcCall();
         } else if (currentToken == OPENPAREN) {
             expression();
-            if( currentToken == CLOSEPAREN) {
+            if (currentToken == CLOSEPAREN) {
                 moveToNextToken();
             } else {
                 //TODO: Can be CLOSE_PAREN_NOT_FOUND, again needs to design the error message
@@ -258,22 +258,22 @@ public class Parser {
     }
 
     public void funcCall() throws IOException {
-        if(currentToken == CALL){
+        if (currentToken == CALL) {
             moveToNextToken();
-            if(currentToken == IDENTIFIER){
+            if (currentToken == IDENTIFIER) {
                 moveToNextToken();
                 //TODO: Handle identifier here, figure out how to do it
-                if(currentToken == OPENPAREN){
+                if (currentToken == OPENPAREN) {
                     moveToNextToken();
                     // Go from expression -> term -> factor -> designator -> identifier
-                    if(currentToken == IDENTIFIER){
+                    if (currentToken == IDENTIFIER) {
                         expression();
-                        while(currentToken == COMMA){
+                        while (currentToken == COMMA) {
                             moveToNextToken();
                             expression();
                         }
                     }
-                    if(currentToken == CLOSEPAREN){
+                    if (currentToken == CLOSEPAREN) {
                         moveToNextToken();
                     } else generateError(CLOSE_PAREN_NOT_FOUND);
                 }
@@ -288,24 +288,23 @@ public class Parser {
     }
 
     public void ifStatement() throws IOException {
-        if(currentToken == IF){
+        if (currentToken == IF) {
             moveToNextToken();
             relation(); //TODO Need to handle with result of relation() while generating instruction sets
-            if(currentToken == THEN){
+            if (currentToken == THEN) {
                 moveToNextToken();
                 statSequence();
-                if(currentToken == ELSE){
+                if (currentToken == ELSE) {
                     moveToNextToken();
                     statSequence();
                 }
-                if(currentToken == FI){
+                if (currentToken == FI) {
                     moveToNextToken();
                 } else generateError(IF_STATEMENT_ERROR);
             } else {
                 generateError(IF_STATEMENT_ERROR);
             }
-        }
-        else {
+        } else {
             /*
             TODO: this code may be never be reached, as we already checked for let in statement, need to identify a
             TODO: pattern to handle these kind of duplicate code
@@ -317,7 +316,7 @@ public class Parser {
 
     public void relation() throws IOException {
         expression();
-        if (isTokenRelOp(currentToken)){
+        if (isTokenRelOp(currentToken)) {
             moveToNextToken();
             expression();
         } else {
@@ -325,16 +324,36 @@ public class Parser {
         }
     }
 
-    public void whileStatement() {
+    public void whileStatement() throws IOException {
+        if (currentToken == WHILE) {
+            moveToNextToken();
+            relation();
+            if (currentToken == DO) {
+                moveToNextToken();
+                statSequence();
+                if (currentToken == OD) {
+                    moveToNextToken();
+                } else generateError(OD_EXPECTED);
+            } else generateError(DO_EXPECTED);
+        } else {
+            generateError(WHILE_STATEMENT_ERROR);
+        }
 
     }
 
-    public void returnStatement() {
+    public void returnStatement() throws IOException {
+        if(currentToken == RETURN){
+            moveToNextToken();
+            // expression -> term -> factor -> designator -> identifier
+            if(currentToken == IDENTIFIER){
+                expression();
+            }
+        } else generateError(RETURN_EXPECTED);
 
     }
 
-    public boolean isTokenRelOp(Token currentToken){
-        if(currentToken == EQL || currentToken == NEQ ||
+    public boolean isTokenRelOp(Token currentToken) {
+        if (currentToken == EQL || currentToken == NEQ ||
                 currentToken == LSS || currentToken == LEQ || currentToken == GTR || currentToken == GEQ) return true;
         return false;
     }
