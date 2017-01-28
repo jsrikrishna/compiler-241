@@ -16,7 +16,14 @@ public enum ErrorMessage {
     SEMICOLON_NOT_FOUND("Semicolon(;) not found"),
     FUNCTION_PROCEDURE_NOT_FOUND("function or procedure expected"),
     IDENTIFIER_NOT_FOUND("Expected Identifier to be present"),
-    NUMBER_EXPECTED("Number expected in type declaration");
+    NUMBER_EXPECTED("Number expected in type declaration"),
+    KEYWORD_EXPECTED("Keyword exepcted"),
+    ASSIGNMENT_ERROR("Assignment error"),
+    DESIGNATOR_ERROR("Expected identifier in designator declaration"),
+    CLOSE_BRACKET_NOT_FOUND("Expected ] to be present"),
+    CLOSE_PAREN_NOT_FOUND("Expected ) to be present"),
+    FACTOR_ERROR("Factor error"),
+    BECOMES_NOT_FOUND("Expected <- to be present");
 
     private String errorMessage;
     private ErrorMessage(String errorMessage){

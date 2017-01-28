@@ -103,7 +103,7 @@ public class Parser {
             moveToNextToken();
             return scanner.getCurrentNumber();
         } else generateError(NUMBER_EXPECTED);
-        //TODO: // Code never reach here though if we exit in generateError(), need to decide what to do
+        //TODO: Code never reach here though if we exit in generateError(), need to decide what to do
         return -1;
     }
 
@@ -112,25 +112,21 @@ public class Parser {
             moveToNextToken();
             if (currentToken == IDENTIFIER) {
                 moveToNextToken();
-                if (currentToken == OPENPAREN) {
-                    formalParam(); // formalParam, handles of moving to next token
-                }
+                formalParam(); // formalParam, handles of moving to next token
                 if (currentToken == SEMICOLON) {
                     moveToNextToken();
-
-
-
+                    funcBody();
+                    if (currentToken == SEMICOLON) moveToNextToken();
+                    else generateError(SEMICOLON_NOT_FOUND);
                 } else generateError(SEMICOLON_NOT_FOUND);
             } else generateError(IDENTIFIER_NOT_FOUND);
-
-
         } else generateError(FUNCTION_PROCEDURE_NOT_FOUND);
     }
 
     public void formalParam() throws IOException {
-        if(currentToken == OPENPAREN){
+        if (currentToken == OPENPAREN) {
             moveToNextToken();
-            if(currentToken == IDENTIFIER){
+            if (currentToken == IDENTIFIER) {
                 //TODO: need to store the variable at common place
                 moveToNextToken();
                 while (currentToken == COMMA) {
@@ -141,24 +137,140 @@ public class Parser {
                     } else generateError(FORMAL_PARAM_DECL_ERROR);
                 }
             }
-            if(currentToken == CLOSEPAREN) {
+            if (currentToken == CLOSEPAREN) {
                 moveToNextToken();
             } else generateError(FORMAL_PARAM_DECL_ERROR);
         }
     }
 
     public void funcBody() throws IOException {
-        varDecl();
-        if(currentToken == BEGIN){
+        while (currentToken == VAR || currentToken == ARRAY) varDecl();
+        if (currentToken == BEGIN) {
             moveToNextToken();
             statSequence();
-            if(currentToken == END) {
+            if (currentToken == END) {
                 moveToNextToken();
-            } else generateError(FUNC_BODY_ERROR);
-        } else generateError(FUNC_BODY_ERROR);
+            } else generateError(END_NOT_FOUND);
+        } else generateError(BEGIN_NOT_FOUND);
     }
 
-    public void statSequence() {
+    public void statSequence() throws IOException {
+        statement();
+        while (currentToken == SEMICOLON) {
+            moveToNextToken();
+            statement();
+        }
+
+    }
+
+    public void statement() throws IOException {
+        if (currentToken == LET) {
+            assignment();
+        } else if (currentToken == CALL) {
+            funcCall();
+        } else if (currentToken == IF) {
+            ifStatement();
+        } else if (currentToken == WHILE) {
+            whileStatement();
+        } else if (currentToken == RETURN) {
+            returnStatement();
+        } else {
+            generateError(KEYWORD_EXPECTED);
+        }
+
+    }
+
+    public void assignment() throws IOException {
+        if (currentToken == LET) {
+            moveToNextToken();
+            designator();
+            if(currentToken == BECOMES){
+                moveToNextToken();
+                expression();
+
+            } else {
+                generateError(BECOMES_NOT_FOUND);
+            }
+
+
+        } else {
+            /*
+            TODO: this code may be never be reached, as we already checked for let in statement, need to identify a
+            pattern to handle these kind of duplicate code
+             */
+            generateError(ASSIGNMENT_ERROR);
+        }
+    }
+
+    public void designator() throws IOException {
+        if (currentToken == IDENTIFIER) {
+            moveToNextToken();
+            while (currentToken == OPENBRACKET) ;
+            {
+                moveToNextToken();
+                expression();
+                if (currentToken == CLOSEBRACKET) {
+                    moveToNextToken();
+                } else {
+                    //TODO: it could be CLOSE_BRACKET_NOT_FOUND, need to design error messages
+                    generateError(DESIGNATOR_ERROR);
+                }
+            }
+        } else {
+            generateError(DESIGNATOR_ERROR);
+        }
+    }
+
+    public void expression() throws IOException  {
+        term();
+        while (currentToken == PLUS || currentToken == MINUS){
+            term();
+        }
+    }
+
+    public void term() throws IOException  {
+        factor();
+        while( currentToken == TIMES || currentToken == DIV){
+            factor();
+        }
+    }
+
+    public void factor() throws IOException {
+        if(currentToken == IDENTIFIER){
+            //TODO: Need to deal with identifiers
+            designator();
+        } else if (currentToken == NUMBER) {
+            //TODO: Need to deal with number
+            number();
+        } else if (currentToken == CALL) {
+            //TODO: Need to deal with function calls
+            funcCall();
+        } else if (currentToken == OPENPAREN) {
+            expression();
+            if( currentToken == CLOSEPAREN) {
+                moveToNextToken();
+            } else {
+                //TODO: Can be CLOSE_PAREN_NOT_FOUND, again needs to design the error message
+                //TODO: Done i guess, but still keeping to clarify
+                generateError(CLOSE_PAREN_NOT_FOUND);
+            }
+        } else generateError(FACTOR_ERROR);
+    }
+
+    public void funcCall() {
+
+    }
+
+    public void ifStatement() {
+
+    }
+
+    public void whileStatement() {
+
+    }
+
+    public void returnStatement() {
+
     }
 
     public void generateError(ErrorMessage message) {
