@@ -1,7 +1,7 @@
 package main.edu.uci.compiler;
 
 import main.edu.uci.compiler.parser.Scanner;
-
+import main.edu.uci.compiler.model.Token;
 import java.io.IOException;
 import main.edu.uci.compiler.model.*;
 
@@ -13,7 +13,7 @@ public class Main {
             Token str;
             while (!s.isEOF()){
                 str = s.getToken();
-                if(str == Token.IDENTIFER){
+                if(str == Token.IDENTIFIER){
                     System.out.println("Identifier is " + s.getCurrentIdentifier());
                     System.out.println("Identifier id is " + s.getIdentifierId());
                 }
