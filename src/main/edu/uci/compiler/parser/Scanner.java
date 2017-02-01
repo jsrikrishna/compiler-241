@@ -221,7 +221,7 @@ public class Scanner {
             handleNumbers();
             return;
         }
-        System.out.println("error symbol found is " + currentSymbol);
+//        System.out.println("error symbol found is " + currentSymbol);
         currentToken = Token.ERROR;
         return;
     }
@@ -260,7 +260,7 @@ public class Scanner {
             }
             gotoNextSymbol();
         }
-        System.out.println("Token is " + token.toString());
+//        System.out.println("Token is " + token.toString());
         currentToken = Token.NUMBER;
         currentNumber = Integer.parseInt(token.toString());
         return;
