@@ -30,6 +30,7 @@ public class Parser {
     public void computation() throws IOException {
         if (currentToken == MAIN) {
             moveToNextToken();
+//            System.out.println("Token is " + currentToken);
             while (currentToken == VAR || currentToken == ARRAY) {
                 //TODO: Deal with array's later
                 // Need not move to next token, it is handled by varDecl
@@ -41,6 +42,7 @@ public class Parser {
             }
             if (currentToken == BEGIN) {
                 moveToNextToken();
+//                System.out.println("Back to computation - in BEGIN Block " + currentToken);
                 statSequence();
                 if (currentToken == END) {
                     moveToNextToken();
@@ -55,13 +57,18 @@ public class Parser {
 
     public void varDecl() throws IOException {
         ArrayList<Integer> arrayDimensions = typeDecl();
+//        System.out.println("Current in varDecl is " + currentToken);
         if (currentToken == IDENTIFIER) {
+//            System.out.println("current identifier is " + scanner.getCurrentIdentifier());
             moveToNextToken();
+//            System.out.println("Current in varDecl is " + currentToken);
             //TODO: need to store the variable, it could be an array variable or normal variable
             while (currentToken == COMMA) {
                 moveToNextToken();
+//                System.out.println("Current in varDecl while is " + currentToken);
                 if (currentToken == IDENTIFIER) {
                     moveToNextToken();
+//                    System.out.println("current identifier is " + scanner.getCurrentIdentifier());
                     //TODO: need to store the variable, it could be an array variable or normal variable
                 } else {
                     generateError(VARIABLE_DECL_ERROR);
@@ -69,6 +76,7 @@ public class Parser {
             }
             if (currentToken == SEMICOLON) {
                 moveToNextToken();
+//                System.out.println("SEMICOLON block " + currentToken);
                 // done with variable declaration
             } else generateError(SEMICOLON_NOT_FOUND);
         } else generateError(VARIABLE_DECL_ERROR);
@@ -82,27 +90,28 @@ public class Parser {
             moveToNextToken();
         } else if (currentToken == ARRAY) {
             moveToNextToken();
+//            System.out.println("typeDecl current token is " + currentToken);
             arrayDimensions = new ArrayList<Integer>();
-            if (currentToken == OPENBRACKET) {
-                moveToNextToken();
-                arrayDimensions.add(number());
-                if (currentToken == CLOSEBRACKET) {
+            if(currentToken == OPENBRACKET){
+                while (currentToken == OPENBRACKET){
+//                    System.out.println("open bracket " + currentToken);
                     moveToNextToken();
-                    while (currentToken == OPENBRACKET) {
+                    arrayDimensions.add(number());
+                    if (currentToken == CLOSEBRACKET) {
+//                        System.out.println("close bracket " + currentToken);
                         moveToNextToken();
-                        arrayDimensions.add(number());
-                        if (currentToken == CLOSEBRACKET) moveToNextToken();
-                        else generateError(TYPE_DECL_ERROR);
-                    }
-                } else generateError(TYPE_DECL_ERROR);
+                    } else generateError(TYPE_DECL_ERROR);
+                }
             } else generateError(OPEN_BRACKET_NOT_FOUND);
         } else generateError(TYPE_DECL_ERROR);
+//        System.out.println("coming here and returning array dimensions and next token is " + currentToken);
         return arrayDimensions;
     }
 
     public int number() throws IOException {
         if (currentToken == NUMBER) {
             moveToNextToken();
+//            System.out.println("current number is " + scanner.getCurrentNumber());
             return scanner.getCurrentNumber();
         } else generateError(NUMBER_EXPECTED);
         //TODO: Code never reach here though if we exit in generateError(), need to decide what to do
@@ -112,17 +121,20 @@ public class Parser {
     public void funcDecl() throws IOException {
         if (currentToken == FUNCTION || currentToken == PROCEDURE) {
             moveToNextToken();
+//            System.out.println("funcDecl - " + currentToken);
             if (currentToken == IDENTIFIER) {
                 moveToNextToken();
                 formalParam(); // formalParam, handles of moving to next token
                 if (currentToken == SEMICOLON) {
                     moveToNextToken();
+//                    System.out.println("came to semicolon " + currentToken);
                     funcBody();
                     if (currentToken == SEMICOLON) moveToNextToken();
                     else generateError(SEMICOLON_NOT_FOUND);
                 } else generateError(SEMICOLON_NOT_FOUND);
             } else generateError(IDENTIFIER_NOT_FOUND);
         } else generateError(FUNCTION_PROCEDURE_NOT_FOUND);
+//        System.out.println("end - funcDecl - " + currentToken);
     }
 
     public void formalParam() throws IOException {
@@ -143,12 +155,14 @@ public class Parser {
                 moveToNextToken();
             } else generateError(FORMAL_PARAM_DECL_ERROR);
         }
+//        System.out.println("end - formalParam - " + currentToken);
     }
 
     public void funcBody() throws IOException {
         while (currentToken == VAR || currentToken == ARRAY) varDecl();
         if (currentToken == BEGIN) {
             moveToNextToken();
+//            System.out.println("start - funcBody - " + currentToken);
             statSequence();
             if (currentToken == END) {
                 moveToNextToken();
@@ -157,7 +171,9 @@ public class Parser {
     }
 
     public void statSequence() throws IOException {
+//        System.out.println("statSequence 1" + currentToken);
         statement();
+//        System.out.println("statSequence 2" + currentToken);
         while (currentToken == SEMICOLON) {
             moveToNextToken();
             statement();
@@ -183,12 +199,15 @@ public class Parser {
     }
 
     public void assignment() throws IOException {
+//        System.out.println("came to assignment with token " + currentToken);
         Result lhs = null, rhs = null;
         if (currentToken == LET) {
             moveToNextToken();
+//            System.out.println("came to assignment, next token is " + currentToken);
             lhs = designator();
             if (currentToken == BECOMES) {
                 moveToNextToken();
+//                System.out.println("came into become block of assignment, token now is " + currentToken);
                 rhs = expression();
 
             } else {
@@ -208,18 +227,23 @@ public class Parser {
     public Result designator() throws IOException {
         Result res = null;
         if (currentToken == IDENTIFIER) {
+
             res = new Result();
             res.setKind(VARIABLE);
             res.setIdentifierName(scanner.getCurrentIdentifier());
+//            System.out.println("in Designator, current token is " + currentToken + " with name is " + scanner.getCurrentIdentifier());
             moveToNextToken();
-            while (currentToken == OPENBRACKET) ;
+//            System.out.println("in Designator, " + currentToken);
+            while (currentToken == OPENBRACKET)
             {
+//                System.out.println("came here, with token " + currentToken);
                 //TODO: Need to deal with arrays
                 moveToNextToken();
                 expression();
                 if (currentToken == CLOSEBRACKET) {
                     moveToNextToken();
                 } else {
+//                    System.out.println("why i am coming here");
                     //TODO: it could be CLOSE_BRACKET_NOT_FOUND, need to design error messages
                     generateError(DESIGNATOR_ERROR);
                 }
@@ -227,20 +251,25 @@ public class Parser {
         } else {
             generateError(DESIGNATOR_ERROR);
         }
+//        System.out.println("current token is " + currentToken + " came here");
         return res;
     }
 
     public Result expression() throws IOException {
+//        System.out.println("expression - " + currentToken);
         Result res = term();
         while (currentToken == PLUS || currentToken == MINUS) {
+            moveToNextToken();
             term();
         }
         return res;
     }
 
     public Result term() throws IOException {
+//        System.out.println("term - " + currentToken);
         Result lhs = factor();
         while (currentToken == TIMES || currentToken == DIV) {
+            moveToNextToken();
             factor();
         }
         return lhs;
@@ -248,6 +277,7 @@ public class Parser {
 
     public Result factor() throws IOException {
         Result result = null;
+//        System.out.println("factor - current token is " + currentToken);
         if (currentToken == IDENTIFIER) {
             //TODO: Need to deal with identifiers
             result = designator();
@@ -260,6 +290,7 @@ public class Parser {
             //TODO: Need to deal with function calls
             funcCall();
         } else if (currentToken == OPENPAREN) {
+            moveToNextToken();
             expression();
             if (currentToken == CLOSEPAREN) {
                 moveToNextToken();
@@ -269,6 +300,7 @@ public class Parser {
                 generateError(CLOSE_PAREN_NOT_FOUND);
             }
         } else generateError(FACTOR_ERROR);
+//        System.out.println("going out of number now with token as " +currentToken);
         return result;
     }
 
@@ -280,8 +312,9 @@ public class Parser {
                 //TODO: Handle identifier here, figure out how to do it
                 if (currentToken == OPENPAREN) {
                     moveToNextToken();
+//                    System.out.println("funcCall - openparen - " + currentToken);
                     // Go from expression -> term -> factor -> designator -> identifier
-                    if (currentToken == IDENTIFIER) {
+                    if(currentToken != CLOSEPAREN){
                         expression();
                         while (currentToken == COMMA) {
                             moveToNextToken();
@@ -360,9 +393,9 @@ public class Parser {
         if(currentToken == RETURN){
             moveToNextToken();
             // expression -> term -> factor -> designator -> identifier
-            if(currentToken == IDENTIFIER){
-                expression();
-            }
+//            System.out.println("returnStatement - identifier - " + currentToken);
+            expression();
+//            System.out.println("Returing from returnStatement");
         } else generateError(RETURN_EXPECTED);
 
     }
@@ -375,5 +408,6 @@ public class Parser {
 
     public void generateError(ErrorMessage message) {
         System.out.println("Syntax Error occurred - " + message);
+        System.exit(1);
     }
 }
