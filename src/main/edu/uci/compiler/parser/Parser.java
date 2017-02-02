@@ -1,10 +1,12 @@
 package main.edu.uci.compiler.parser;
 
 import main.edu.uci.compiler.model.ErrorMessage;
+import main.edu.uci.compiler.model.Result;
 import main.edu.uci.compiler.model.Token;
 
 import static main.edu.uci.compiler.model.Token.*;
 import static main.edu.uci.compiler.model.ErrorMessage.*;
+import static main.edu.uci.compiler.model.Result.KIND.*;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -181,12 +183,13 @@ public class Parser {
     }
 
     public void assignment() throws IOException {
+        Result lhs = null, rhs = null;
         if (currentToken == LET) {
             moveToNextToken();
-            designator();
+            lhs = designator();
             if (currentToken == BECOMES) {
                 moveToNextToken();
-                expression();
+                rhs = expression();
 
             } else {
                 generateError(BECOMES_NOT_FOUND);
@@ -202,11 +205,16 @@ public class Parser {
         }
     }
 
-    public void designator() throws IOException {
+    public Result designator() throws IOException {
+        Result res = null;
         if (currentToken == IDENTIFIER) {
+            res = new Result();
+            res.setKind(VARIABLE);
+            res.setIdentifierName(scanner.getCurrentIdentifier());
             moveToNextToken();
             while (currentToken == OPENBRACKET) ;
             {
+                //TODO: Need to deal with arrays
                 moveToNextToken();
                 expression();
                 if (currentToken == CLOSEBRACKET) {
@@ -219,29 +227,35 @@ public class Parser {
         } else {
             generateError(DESIGNATOR_ERROR);
         }
+        return res;
     }
 
-    public void expression() throws IOException {
-        term();
+    public Result expression() throws IOException {
+        Result res = term();
         while (currentToken == PLUS || currentToken == MINUS) {
             term();
         }
+        return res;
     }
 
-    public void term() throws IOException {
-        factor();
+    public Result term() throws IOException {
+        Result lhs = factor();
         while (currentToken == TIMES || currentToken == DIV) {
             factor();
         }
+        return lhs;
     }
 
-    public void factor() throws IOException {
+    public Result factor() throws IOException {
+        Result result = null;
         if (currentToken == IDENTIFIER) {
             //TODO: Need to deal with identifiers
-            designator();
+            result = designator();
         } else if (currentToken == NUMBER) {
             //TODO: Need to deal with number
-            number();
+            result = new Result();
+            result.setKind(CONSTANT);
+            result.setValue(number());
         } else if (currentToken == CALL) {
             //TODO: Need to deal with function calls
             funcCall();
@@ -255,6 +269,7 @@ public class Parser {
                 generateError(CLOSE_PAREN_NOT_FOUND);
             }
         } else generateError(FACTOR_ERROR);
+        return result;
     }
 
     public void funcCall() throws IOException {
