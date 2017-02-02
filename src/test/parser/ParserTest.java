@@ -2,7 +2,6 @@ package test.parser;
 
 import main.edu.uci.compiler.model.Token;
 import main.edu.uci.compiler.parser.Parser;
-import main.edu.uci.compiler.parser.Scanner;
 import org.junit.Test;
 import test.parser.model.TokenizeException;
 
@@ -11,26 +10,24 @@ import java.io.IOException;
 import static org.junit.Assert.assertTrue;
 
 /**
- * Created by srikrishna on 1/25/17.
+ * Created by srikrishna on 2/1/17.
  */
-public class ScannerTest {
+public class ParserTest {
     static int index = 1;
     @Test
-    public void testScanner() {
+    public void testParser() {
         String resourcePath = "resources/programs";
         boolean noExceptionOccurred = true;
+
 //        try {
-//            //Test only one code at a time
+//            //To Test one code at a time
 //            String fileName = resourcePath + "/test0" + generateProgramName() + ".txt";
-//            Scanner s = new Scanner(fileName);
-//            Token str;
-//            while (!s.isEOF()) {
-//                    str = s.getToken();
-//                System.out.println(str);
-//                    if (str == Token.ERROR)
-//                        throw new TokenizeException("in file " + fileName);
-//                }
-//        } catch (IOException  | TokenizeException ex){
+////             String fileName = resourcePath + "/big.txt";
+////             String fileName = resourcePath + "/cell.txt";
+//            System.out.println("File name is " + fileName);
+//            Parser parser = new Parser(fileName);
+//            parser.computation();
+//        } catch (IOException ex){
 //            System.out.println("Exception is " + ex.getMessage());
 //            noExceptionOccurred = false;
 //        }
@@ -40,15 +37,10 @@ public class ScannerTest {
             try {
                 String fileName = resourcePath + "/test0" + generateProgramName() + ".txt";
                 System.out.println("fileName - " + fileName);
-                Scanner s = new Scanner(fileName);
-                Token str;
-                while (!s.isEOF()) {
-                    str = s.getToken();
-                    if (str == Token.ERROR)
-                        throw new TokenizeException("in file " + fileName);
-                }
+                Parser parser = new Parser(fileName);
+                parser.computation();
                 noExceptionOccurred = true;
-            } catch (IOException | TokenizeException ex) {
+            } catch (IOException  ex) {
                 System.out.println("Exception is " + ex.getMessage());
                 noExceptionOccurred = false;
             }
@@ -64,6 +56,7 @@ public class ScannerTest {
         } else {
             s.append(index);
         }
+//        System.out.println(s.toString());
         ++index;
         return s.toString();
     }
