@@ -36,7 +36,7 @@ public class ScannerTest {
 //        }
 //        assertTrue(noExceptionOccurred);
 
-        for (int i = 1; i <= 30; i++) {
+        for (int i = 1; i <= 31; i++) {
             try {
                 String fileName = resourcePath + "/test0" + generateProgramName() + ".txt";
                 System.out.println("fileName - " + fileName);
