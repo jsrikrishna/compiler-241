@@ -5,19 +5,22 @@ package main.edu.uci.compiler.model;
  */
 public class Result {
     public enum KIND {
-        CONSTANT, VARIABLE, REGISTER, CONDITION, INSTRUCTION;
+        CONSTANT, VARIABLE, REGISTER, CONDITION, INSTRUCTION, BRANCH_INSTRUCTION, FIX_UP;
     }
 
     private KIND kind;
-    int value; // If it is constant
-    int address; // address, if it is a variable
-    int regNo; // register Number, if it is a register or a condition
-    int fixUpLocation; // if it is a condition, it will be jump instruction id
-    Token condition;  // if it is a condition
-    String identifierName;
-    int instructionId;
+    private int value; // If it is constant
+    private int address; // address, if it is a variable
+    private int regNo; // register Number, if it is a register or a condition
+    private int fixUpInstructionId; // if it is a condition, it will be jump instruction id
+    private Token condition;  // if it is a condition, it contains relational operators like ==, !=, <, <=, >, >=
+    private String identifierName;
+    private Integer instructionId;
+    private Integer basicBlockId; // for branch instructions, BRA
 
-    public int getInstruction(){
+
+
+    public int getInstructionId(){
         return instructionId;
     }
     public void setInstructionId(int instructionId){
@@ -47,11 +50,11 @@ public class Result {
     public void setRegNo(int regNo){
         this.regNo = regNo;
     }
-    public int getFixUpLocation(){
-        return fixUpLocation;
+    public int getFixUpInstructionId(){
+        return fixUpInstructionId;
     }
-    public void setFixUpLocation(int fixUpLocation){
-        this.fixUpLocation = fixUpLocation;
+    public void setFixUpInstructionId(int fixUpInstructionId){
+        this.fixUpInstructionId = fixUpInstructionId;
     }
     public Token getCondition(){
         return this.condition;
@@ -64,6 +67,12 @@ public class Result {
     }
     public void setIdentifierName(String identifierName){
         this.identifierName = identifierName;
+    }
+    public void setBasicBlockId(Integer basicBlockId){
+        this.basicBlockId = basicBlockId;
+    }
+    public Integer getBasicBlockId(){
+        return this.basicBlockId;
     }
 
 
