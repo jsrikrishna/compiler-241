@@ -13,8 +13,15 @@ import java.util.HashMap;
  * Created by srikrishna on 2/2/17.
  */
 public class InstructionGenerator {
-    private HashMap<Integer, Instruction> instructions;
+    private static HashMap<Integer, Instruction> instructions;
     private HashMap<Token, Operation> operations;
+    class RelationResult {
+        Result compareResult;
+        Result branchResult;
+        Result fixUpResult;
+        Instruction compareInstruction;
+        Instruction negCompareInstruction;
+    }
     public InstructionGenerator(){
         operations = new HashMap<Token, Operation>();
         operations.put(PLUS, ADD);
@@ -28,14 +35,6 @@ public class InstructionGenerator {
         operations.put(GEQ, BLT);
         operations.put(Token.DIV, Operation.DIV);
         instructions = new HashMap<Integer, Instruction>();
-
-    }
-    class RelationResult {
-        Result compareResult;
-        Result branchResult;
-        Result fixUpResult;
-        Instruction compareInstruction;
-        Instruction negCompareInstruction;
     }
 
     public Instruction getInstruction(Integer instructionId){

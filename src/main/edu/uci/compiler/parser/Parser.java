@@ -23,27 +23,29 @@ public class Parser {
     private Token currentToken;
     private ControlFlowGraph cfg;
     private InstructionGenerator ig;
-    ArrayList<Token> relOpList = new ArrayList<Token>() {{
-        add(EQL);
-        add(NEQ);
-        add(LSS);
-        add(LEQ);
-        add(GTR);
-        add(GEQ);
-    }};
-    ArrayList<Token> statSeqList = new ArrayList<Token>(){{
-        add(LET);
-        add(CALL);
-        add(IF);
-        add(WHILE);
-        add(RETURN);
-    }};
+    ArrayList<Token> relOpList;
+    ArrayList<Token> statSeqList;
 
     public Parser(String fileName) throws IOException {
         scanner = new Scanner(fileName);
         currentToken = scanner.getToken();
         cfg = new ControlFlowGraph();
         ig = new InstructionGenerator();
+        relOpList = new ArrayList<Token>() {{
+            add(EQL);
+            add(NEQ);
+            add(LSS);
+            add(LEQ);
+            add(GTR);
+            add(GEQ);
+        }};
+        statSeqList = new ArrayList<Token>(){{
+            add(LET);
+            add(CALL);
+            add(IF);
+            add(WHILE);
+            add(RETURN);
+        }};
     }
 
     private void moveToNextToken() throws IOException {
@@ -51,30 +53,28 @@ public class Parser {
     }
 
     public void computation() throws IOException {
-        if (currentToken == MAIN) {
-            moveToNextToken();
-            BasicBlock basicBlock = cfg.getBasicBlock();
-            while (currentToken == VAR || currentToken == ARRAY) {
-                //TODO: Deal with array's later
-                // Need not move to next token, it is handled by varDecl
-                varDecl();
-            }
-            while (currentToken == FUNCTION || currentToken == PROCEDURE) {
-                // Need not move to next token, it is handled by funcDecl
-                funcDecl(basicBlock);
-            }
-            if (currentToken == BEGIN) {
-                moveToNextToken();
-                basicBlock = statSequence(basicBlock);
-                if (currentToken == END) {
-                    moveToNextToken();
-                    if (currentToken == PERIOD) {
-                        moveToNextToken();
-                        basicBlock.addInstruction(ig.generateEndInstruction());
-                    } else generateError(PERIOD_NOT_FOUND);
-                } else generateError(END_NOT_FOUND);
-            } else generateError(BEGIN_NOT_FOUND);
-        } else generateError(MAIN_NOT_FOUND);
+        if(currentToken != MAIN) generateError(MAIN_NOT_FOUND);
+        moveToNextToken();
+        BasicBlock basicBlock = cfg.getBasicBlock();
+        while (currentToken == VAR || currentToken == ARRAY) {
+            //TODO: Deal with array's later
+            // Need not move to next token, it is handled by varDecl
+            varDecl();
+        }
+        while (currentToken == FUNCTION || currentToken == PROCEDURE) {
+            // Need not move to next token, it is handled by funcDecl
+            funcDecl(basicBlock);
+        }
+        if(currentToken != BEGIN) generateError(BEGIN_NOT_FOUND);
+        moveToNextToken();
+        basicBlock = statSequence(basicBlock);
+
+        if(currentToken != END) generateError(END_NOT_FOUND);
+        moveToNextToken();
+
+        if(currentToken != PERIOD) generateError(PERIOD_NOT_FOUND);
+        moveToNextToken();
+        basicBlock.addInstruction(ig.generateEndInstruction());
     }
 
 
@@ -122,12 +122,9 @@ public class Parser {
     }
 
     public int number() throws IOException {
-        if (currentToken == NUMBER) {
-            moveToNextToken();
-            return scanner.getCurrentNumber();
-        } else generateError(NUMBER_EXPECTED);
-        //TODO: Code never reach here though if we exit in generateError(), need to decide what to do
-        return -1;
+        if(currentToken != NUMBER) generateError(NUMBER_EXPECTED);
+        moveToNextToken();
+        return scanner.getCurrentNumber();
     }
 
     public void funcDecl(BasicBlock basicBlock) throws IOException {
@@ -207,49 +204,30 @@ public class Parser {
     }
 
     public Result assignment(BasicBlock basicBlock) throws IOException {
-
-        Result lhs = null, rhs = null;
-        if (currentToken == LET) {
-            moveToNextToken();
-            lhs = designator(basicBlock);
-            if (currentToken == BECOMES) {
-                moveToNextToken();
-                rhs = expression(basicBlock);
-                Instruction instruction = ig.generateInstructionForAssignment(lhs, rhs);
-                basicBlock.addInstruction(instruction);
-            } else {
-                generateError(BECOMES_NOT_FOUND);
-            }
-        } else {
-            /*
-            TODO: this code may be never be reached, as we already checked for let in statement, need to identify a
-            pattern to handle these kind of duplicate code
-             */
-            generateError(ASSIGNMENT_ERROR);
-        }
+        if(currentToken != LET) generateError(ASSIGNMENT_ERROR);
+        moveToNextToken();
+        Result lhs = designator(basicBlock);
+        if(currentToken != BECOMES) generateError(BECOMES_NOT_FOUND);
+        moveToNextToken();
+        Result rhs = expression(basicBlock);
+        Instruction instruction = ig.generateInstructionForAssignment(lhs, rhs);
+        basicBlock.addInstruction(instruction);
         return lhs;
     }
 
     public Result designator(BasicBlock basicBlock) throws IOException {
-        Result res = null;
-        if (currentToken == IDENTIFIER) {
-            res = new Result();
-            res.setKind(VARIABLE);
-            res.setIdentifierName(scanner.getCurrentIdentifier());
+        if(currentToken != IDENTIFIER) generateError(DESIGNATOR_ERROR);
+        Result res = new Result();
+        res.setKind(VARIABLE);
+        res.setIdentifierName(scanner.getCurrentIdentifier());
+        moveToNextToken();
+        while (currentToken == OPENBRACKET) {
+            //TODO: Need to deal with arrays
             moveToNextToken();
-            while (currentToken == OPENBRACKET) {
-                //TODO: Need to deal with arrays
-                moveToNextToken();
-                expression(basicBlock);
-                if (currentToken == CLOSEBRACKET) {
-                    moveToNextToken();
-                } else {
-                    //TODO: it could be CLOSE_BRACKET_NOT_FOUND, need to design error messages
-                    generateError(DESIGNATOR_ERROR);
-                }
-            }
-        } else {
-            generateError(DESIGNATOR_ERROR);
+            expression(basicBlock);
+            //TODO: it could be CLOSE_BRACKET_NOT_FOUND, need to design error messages
+            if(currentToken != CLOSEBRACKET) generateError(DESIGNATOR_ERROR);
+            moveToNextToken();
         }
         return res;
     }
@@ -447,11 +425,9 @@ public class Parser {
     }
 
     public void returnStatement(BasicBlock basicBlock) throws IOException {
-        if (currentToken == RETURN) {
-            moveToNextToken();
-            expression(basicBlock);
-        } else generateError(RETURN_EXPECTED);
-
+        if( currentToken != RETURN) generateError(RETURN_EXPECTED);
+        moveToNextToken();
+        expression(basicBlock);
     }
 
     public Result relOp() throws IOException {
