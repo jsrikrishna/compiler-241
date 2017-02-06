@@ -60,5 +60,10 @@ public class BasicBlock {
     public Type getType(Type type){
         return this.type;
     }
+    @Override
+    public String toString(){
+        return "Block -> (" + this.id + ", " + this.type + ")";
+
+    }
 
 }

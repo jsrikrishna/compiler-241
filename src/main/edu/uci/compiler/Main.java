@@ -1,5 +1,6 @@
 package main.edu.uci.compiler;
 
+import main.edu.uci.compiler.parser.Parser;
 import main.edu.uci.compiler.parser.Scanner;
 import main.edu.uci.compiler.model.Token;
 import java.io.IOException;
@@ -9,24 +10,14 @@ public class Main {
 
     public static void main(String[] args) {
         try {
-            Scanner s = new Scanner("test001.txt");
-            Token str;
-            while (!s.isEOF()){
-                str = s.getToken();
-                if(str == Token.IDENTIFIER){
-                    System.out.println("Identifier is " + s.getCurrentIdentifier());
-                    System.out.println("Identifier id is " + s.getIdentifierId());
-                }
-                else if(str == Token.NUMBER){
-                    System.out.println("Number is " + s.getCurrentNumber());
-                }
-                System.out.println(str);
-                if(str == Token.ERROR) break;
-            }
+            String resourcePath = "resources/programs";
+            String fileName = resourcePath + "/test002.txt";
+            Parser p = new Parser(fileName);
+            p.computation();
         } catch (IOException e){
             System.out.println("IO Exception has happened " + e);
         } catch (Exception e){
-            System.out.println("something weired has happened " + e);
+            System.out.println("hey, something weird has happened " + e);
         }
     }
 }
