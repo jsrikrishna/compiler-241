@@ -5,7 +5,8 @@ package main.edu.uci.compiler.model;
  */
 public class Result {
     public enum KIND {
-        CONSTANT, VARIABLE, REGISTER, CONDITION, INSTRUCTION, BRANCH_INSTRUCTION, FIX_UP;
+        CONSTANT, VARIABLE, REGISTER, CONDITION, INSTRUCTION, BRANCH_INSTRUCTION, FIX_UP,
+        ARRAY_VARIABLE, BASE_ADDRESS, FRAME_POINTER;
     }
 
     private KIND kind;
@@ -14,8 +15,8 @@ public class Result {
     private int regNo; // register Number, if it is a register or a condition
     private int fixUpInstructionId; // if it is a condition, it will be jump instruction id
     private Token condition;  // if it is a condition, it contains relational operators like ==, !=, <, <=, >, >=
-    private String identifierName;
-    private Integer instructionId;
+    private String identifierName; // used for calculating the array base address
+    private Integer instructionId; // if it is a instruction,to hold the result of instruction like MUL, ADD
     private Integer basicBlockId; // for branch instructions, BRA
 
 

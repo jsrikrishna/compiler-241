@@ -13,7 +13,7 @@ import static main.edu.uci.compiler.model.BasicBlock.Type.*;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.HashMap;
 
 /**
  * Created by srikrishna on 1/27/17.
@@ -25,6 +25,7 @@ public class Parser {
     private InstructionGenerator ig;
     ArrayList<Token> relOpList;
     ArrayList<Token> statSeqList;
+    private HashMap<String, ArrayList<Integer>> arrayVariables;
 
     public Parser(String fileName) throws IOException {
         scanner = new Scanner(fileName);
@@ -39,13 +40,14 @@ public class Parser {
             add(GTR);
             add(GEQ);
         }};
-        statSeqList = new ArrayList<Token>(){{
+        statSeqList = new ArrayList<Token>() {{
             add(LET);
             add(CALL);
             add(IF);
             add(WHILE);
             add(RETURN);
         }};
+        arrayVariables = new HashMap<>();
     }
 
     private void moveToNextToken() throws IOException {
@@ -53,7 +55,7 @@ public class Parser {
     }
 
     public void computation() throws IOException {
-        if(currentToken != MAIN) generateError(MAIN_NOT_FOUND);
+        if (currentToken != MAIN) generateError(MAIN_NOT_FOUND);
         moveToNextToken();
         BasicBlock basicBlock = cfg.getBasicBlock();
         while (currentToken == VAR || currentToken == ARRAY) {
@@ -65,14 +67,14 @@ public class Parser {
             // Need not move to next token, it is handled by funcDecl
             funcDecl(basicBlock);
         }
-        if(currentToken != BEGIN) generateError(BEGIN_NOT_FOUND);
+        if (currentToken != BEGIN) generateError(BEGIN_NOT_FOUND);
         moveToNextToken();
         basicBlock = statSequence(basicBlock);
 
-        if(currentToken != END) generateError(END_NOT_FOUND);
+        if (currentToken != END) generateError(END_NOT_FOUND);
         moveToNextToken();
 
-        if(currentToken != PERIOD) generateError(PERIOD_NOT_FOUND);
+        if (currentToken != PERIOD) generateError(PERIOD_NOT_FOUND);
         moveToNextToken();
         basicBlock.addInstruction(ig.generateEndInstruction());
     }
@@ -80,49 +82,47 @@ public class Parser {
 
     public void varDecl() throws IOException {
         ArrayList<Integer> arrayDimensions = typeDecl();
-        if (currentToken == IDENTIFIER) {
+        if (currentToken != IDENTIFIER) generateError(VARIABLE_DECL_ERROR);
+        storeVariables(arrayDimensions);
+        moveToNextToken();
+        while (currentToken == COMMA) {
             moveToNextToken();
-            //TODO: need to store the variable, it could be an array variable or normal variable
-            while (currentToken == COMMA) {
-                moveToNextToken();
-                if (currentToken == IDENTIFIER) {
-                    moveToNextToken();
-                    //TODO: need to store the variable, it could be an array variable or normal variable
-                } else {
-                    generateError(VARIABLE_DECL_ERROR);
-                }
-            }
-            if (currentToken == SEMICOLON) {
-                moveToNextToken();
-                // done with variable declaration
-            } else generateError(SEMICOLON_NOT_FOUND);
-        } else generateError(VARIABLE_DECL_ERROR);
+            if (currentToken != IDENTIFIER) generateError(VARIABLE_DECL_ERROR);
+            storeVariables(arrayDimensions);
+            moveToNextToken();
+        }
+        if (currentToken != SEMICOLON) generateError(SEMICOLON_NOT_FOUND);
+        moveToNextToken();
+    }
 
-
+    public void storeVariables(ArrayList<Integer> arrayDimensions) {
+        if (arrayDimensions != null) {
+            arrayVariables.put(scanner.getCurrentIdentifier(), arrayDimensions);
+        } else {
+            // Add to SSA data structure
+        }
     }
 
     public ArrayList<Integer> typeDecl() throws IOException {
-        ArrayList<Integer> arrayDimensions = null;
+        if (currentToken != VAR && currentToken != ARRAY) generateError(TYPE_DECL_ERROR);
         if (currentToken == VAR) {
             moveToNextToken();
-        } else if (currentToken == ARRAY) {
+            return null;
+        }
+        moveToNextToken();
+        ArrayList<Integer> arrayDimensions = new ArrayList<>();
+        if (currentToken != OPENBRACKET) generateError(OPEN_BRACKET_NOT_FOUND);
+        while (currentToken == OPENBRACKET) {
             moveToNextToken();
-            arrayDimensions = new ArrayList<Integer>();
-            if (currentToken == OPENBRACKET) {
-                while (currentToken == OPENBRACKET) {
-                    moveToNextToken();
-                    arrayDimensions.add(number());
-                    if (currentToken == CLOSEBRACKET) {
-                        moveToNextToken();
-                    } else generateError(TYPE_DECL_ERROR);
-                }
-            } else generateError(OPEN_BRACKET_NOT_FOUND);
-        } else generateError(TYPE_DECL_ERROR);
+            arrayDimensions.add(number());
+            if (currentToken != CLOSEBRACKET) generateError(TYPE_DECL_ERROR);
+            moveToNextToken();
+        }
         return arrayDimensions;
     }
 
     public int number() throws IOException {
-        if(currentToken != NUMBER) generateError(NUMBER_EXPECTED);
+        if (currentToken != NUMBER) generateError(NUMBER_EXPECTED);
         moveToNextToken();
         return scanner.getCurrentNumber();
     }
@@ -184,12 +184,12 @@ public class Parser {
     }
 
     public BasicBlock statement(BasicBlock basicBlock) throws IOException {
-        if(!(statSeqList.contains(currentToken))) generateError(KEYWORD_EXPECTED);
+        if (!(statSeqList.contains(currentToken))) generateError(KEYWORD_EXPECTED);
 
-        if(currentToken == IF){
+        if (currentToken == IF) {
             return ifStatement(basicBlock);
         }
-        if(currentToken == WHILE){
+        if (currentToken == WHILE) {
             return whileStatement(basicBlock);
         }
         if (currentToken == LET) {
@@ -204,10 +204,10 @@ public class Parser {
     }
 
     public Result assignment(BasicBlock basicBlock) throws IOException {
-        if(currentToken != LET) generateError(ASSIGNMENT_ERROR);
+        if (currentToken != LET) generateError(ASSIGNMENT_ERROR);
         moveToNextToken();
         Result lhs = designator(basicBlock);
-        if(currentToken != BECOMES) generateError(BECOMES_NOT_FOUND);
+        if (currentToken != BECOMES) generateError(BECOMES_NOT_FOUND);
         moveToNextToken();
         Result rhs = expression(basicBlock);
         Instruction instruction = ig.generateInstructionForAssignment(lhs, rhs);
@@ -216,20 +216,45 @@ public class Parser {
     }
 
     public Result designator(BasicBlock basicBlock) throws IOException {
-        if(currentToken != IDENTIFIER) generateError(DESIGNATOR_ERROR);
+        if (currentToken != IDENTIFIER) generateError(DESIGNATOR_ERROR);
+        // Could be array variable or a normal variable
         Result res = new Result();
+        if (arrayVariables.containsKey(scanner.getCurrentIdentifier())) {
+            String arrayIdentifier = scanner.getCurrentIdentifier();
+            ArrayList<Integer> dimensions = arrayVariables.get(scanner.getCurrentIdentifier());
+            ArrayList<Result> dimensionExp = new ArrayList<>();
+            moveToNextToken();
+            while (currentToken == OPENBRACKET) {
+                moveToNextToken();
+                Result dimensionResult = expression(basicBlock);
+                dimensionExp.add(dimensionResult);
+                //TODO: it could be CLOSE_BRACKET_NOT_FOUND, need to design error messages
+                if (currentToken != CLOSEBRACKET) generateError(DESIGNATOR_ERROR);
+                moveToNextToken();
+            }
+            // Need to generate instructions and return the final Result that contains the instruction id
+            if (dimensionExp.size() != dimensions.size()) generateError(ARRAY_DIMENSION_MISMATCH);
+            Result arrayDimensionResult = handleArrayDimInstructions(dimensionExp, dimensions, basicBlock);
+            Result indexInArray = handleArrayDesignator(arrayDimensionResult, arrayIdentifier, basicBlock);
+            return indexInArray;
+        }
+        moveToNextToken();
         res.setKind(VARIABLE);
         res.setIdentifierName(scanner.getCurrentIdentifier());
-        moveToNextToken();
-        while (currentToken == OPENBRACKET) {
-            //TODO: Need to deal with arrays
-            moveToNextToken();
-            expression(basicBlock);
-            //TODO: it could be CLOSE_BRACKET_NOT_FOUND, need to design error messages
-            if(currentToken != CLOSEBRACKET) generateError(DESIGNATOR_ERROR);
-            moveToNextToken();
-        }
+        // Need to add ssa-version to result from the instruction number or figure out
         return res;
+    }
+
+    private Result handleArrayDimInstructions(ArrayList<Result> dimExp, ArrayList<Integer> dims, BasicBlock basicBlock) {
+        ArrayBase res = ig.generateInstructionsForArrDim(dimExp, dims);
+        for (Integer instrId : res.instructionIds) basicBlock.addInstruction(ig.getInstruction(instrId));
+        return res.finalResult;
+    }
+
+    private Result handleArrayDesignator(Result dimResult, String identifier, BasicBlock basicBlock) {
+        ArrayBase res = ig.computeArrayDesignator(dimResult, identifier);
+        for (Integer instrId : res.instructionIds) basicBlock.addInstruction(ig.getInstruction(instrId));
+        return res.finalResult;
     }
 
     public Result expression(BasicBlock basicBlock) throws IOException {
@@ -321,7 +346,7 @@ public class Parser {
     }
 
     public BasicBlock ifStatement(BasicBlock basicBlock) throws IOException {
-        if(currentToken != IF) generateError(IF_STATEMENT_ERROR);
+        if (currentToken != IF) generateError(IF_STATEMENT_ERROR);
         moveToNextToken();
 
         BasicBlock ifConditionBlock = new BasicBlock();
@@ -341,12 +366,12 @@ public class Parser {
 
         BasicBlock elseBlock = null;
         Result fixUpResult = relation(ifConditionBlock);
-        if(currentToken != THEN) generateError(THEN_STATEMENT_ERROR);
+        if (currentToken != THEN) generateError(THEN_STATEMENT_ERROR);
         moveToNextToken();
 
         ifThenBlock = statSequence(ifThenBlock);
 
-        if(currentToken == ELSE) {
+        if (currentToken == ELSE) {
             moveToNextToken();
             elseBlock = new BasicBlock();
             elseBlock.setType(BB_ELSE);
@@ -361,14 +386,14 @@ public class Parser {
             elseBlock = statSequence(elseBlock);
         }
 
-        if(currentToken == FI){
+        if (currentToken == FI) {
             moveToNextToken();
             // BRA instruction from IF Block to JOIN Block
             addBranchInstruction(ifThenBlock, joinBlock);
 
         } else generateError(FI_STATEMENT_ERROR);
 
-        if(elseBlock != null){
+        if (elseBlock != null) {
             fixUpNegCompareInstruction(fixUpResult, elseBlock);
             return elseBlock;
         }
@@ -389,7 +414,7 @@ public class Parser {
     }
 
     public BasicBlock whileStatement(BasicBlock basicBlock) throws IOException {
-        if(currentToken != WHILE) generateError(WHILE_STATEMENT_ERROR);
+        if (currentToken != WHILE) generateError(WHILE_STATEMENT_ERROR);
         moveToNextToken();
 
         BasicBlock whileConditionBlock = new BasicBlock();
@@ -406,7 +431,7 @@ public class Parser {
         Result fixUpResult = relation(whileConditionBlock);
         fixUpNegCompareInstruction(fixUpResult, whileJoinBlock);
 
-        if(currentToken != DO) generateError(DO_EXPECTED);
+        if (currentToken != DO) generateError(DO_EXPECTED);
 
         moveToNextToken();
         BasicBlock whileBodyBlock = new BasicBlock();
@@ -425,13 +450,13 @@ public class Parser {
     }
 
     public void returnStatement(BasicBlock basicBlock) throws IOException {
-        if( currentToken != RETURN) generateError(RETURN_EXPECTED);
+        if (currentToken != RETURN) generateError(RETURN_EXPECTED);
         moveToNextToken();
         expression(basicBlock);
     }
 
     public Result relOp() throws IOException {
-        if((!relOpList.contains(currentToken))) generateError(RELATION_OP_NOT_FOUND);
+        if ((!relOpList.contains(currentToken))) generateError(RELATION_OP_NOT_FOUND);
         Result relOpResult = new Result();
         relOpResult.setKind(CONDITION);
         relOpResult.setCondition(currentToken);
@@ -439,11 +464,11 @@ public class Parser {
         return relOpResult;
     }
 
-    private void fixUpNegCompareInstruction(Result fixUpResult, BasicBlock joinBlock){
+    private void fixUpNegCompareInstruction(Result fixUpResult, BasicBlock joinBlock) {
         ig.getInstruction(fixUpResult.getFixUpInstructionId()).getOperand2().setBasicBlockId(joinBlock.getId());
     }
 
-    private void addBranchInstruction(BasicBlock fromBlock, BasicBlock gotoBlock){
+    private void addBranchInstruction(BasicBlock fromBlock, BasicBlock gotoBlock) {
         Instruction branchInstruction = ig.generateBranchInstruction();
         branchInstruction.getOperand1().setBasicBlockId(gotoBlock.getId());
         fromBlock.addInstruction(branchInstruction);

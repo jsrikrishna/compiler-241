@@ -32,7 +32,8 @@ public enum ErrorMessage {
     DO_EXPECTED("Expected do keyword to be present"),
     OD_EXPECTED("Expected od keyword to be present"),
     RETURN_EXPECTED("Expected return keyword to be present"),
-    RELATION_OP_NOT_FOUND("Expected Relation Operation to be present");
+    RELATION_OP_NOT_FOUND("Expected Relation Operation to be present"),
+    ARRAY_DIMENSION_MISMATCH("Error in specifying array dimensions");
 
     private String errorMessage;
     private ErrorMessage(String errorMessage){

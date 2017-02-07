@@ -8,6 +8,7 @@ public enum Operation {
     ADD("add"),
     SUB("sub"),
     MUL("mul"),
+    MULI("muli"),
     DIV("div"),
     CMP("cmp"),
     ADDA("adda"),
