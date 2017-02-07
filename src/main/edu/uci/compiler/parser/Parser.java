@@ -258,10 +258,13 @@ public class Parser {
             Result indexInArray = handleArrayDesignator(arrayDimensionResult, arrayIdentifier, basicBlock);
             return indexInArray;
         }
-        moveToNextToken();
+        String identifier = scanner.getCurrentIdentifier();
         res.setKind(VARIABLE);
-        res.setIdentifierName(scanner.getCurrentIdentifier());
+        res.setIdentifierName(identifier);
+        // ToDo: Q - Need to check, may be null as well, for assignment - its a different process, this will be used for terms or factors
+        res.setSsaVersion(basicBlock.getSSAVersion(identifier));
         // Need to add ssa-version to result from the instruction number or figure out
+        moveToNextToken();
         return res;
     }
 
