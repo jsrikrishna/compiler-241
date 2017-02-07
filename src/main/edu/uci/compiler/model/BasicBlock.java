@@ -1,6 +1,7 @@
 package main.edu.uci.compiler.model;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 /**
@@ -17,6 +18,7 @@ public class BasicBlock {
     List<Instruction> instructions;
     List<BasicBlock> parent;
     List<BasicBlock> children;
+    HashMap<String, Integer> localSSATracker;
 
     public BasicBlock(){
         id = numBasicBlocks;
@@ -24,6 +26,7 @@ public class BasicBlock {
         instructions = new ArrayList<Instruction>();
         parent = new ArrayList<BasicBlock>();
         children = new ArrayList<BasicBlock>();
+        localSSATracker = new HashMap<>();
         ++numBasicBlocks;
     }
 
@@ -59,6 +62,12 @@ public class BasicBlock {
     }
     public Type getType(Type type){
         return this.type;
+    }
+    public Integer getSSAVersion(String identifier){
+        return localSSATracker.get(identifier);
+    }
+    public void updateLocalSSAVersion(String identifier, Integer instructionId){
+        localSSATracker.put(identifier, instructionId);
     }
     @Override
     public String toString(){

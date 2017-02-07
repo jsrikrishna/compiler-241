@@ -25,6 +25,7 @@ public class Parser {
     private InstructionGenerator ig;
     ArrayList<Token> relOpList;
     ArrayList<Token> statSeqList;
+    private SSA ssaTracker;
     private HashMap<String, ArrayList<Integer>> arrayVariables;
 
     public Parser(String fileName) throws IOException {
@@ -48,6 +49,7 @@ public class Parser {
             add(RETURN);
         }};
         arrayVariables = new HashMap<>();
+        ssaTracker = SSA.getInstance();
     }
 
     private void moveToNextToken() throws IOException {
@@ -211,7 +213,25 @@ public class Parser {
         moveToNextToken();
         Result rhs = expression(basicBlock);
         Instruction instruction = ig.generateInstructionForAssignment(lhs, rhs);
+        /*
+        Update lhs result with SSA
+        Update SSA for local result, both basic block level and global level
+        TODO: Q - do we need to update lhs globally as well ?
+        TODO: Q - Does array as well have SSA ?
+         */
+        ssaTracker.updateSSAForVariable(lhs.getIdentifierName(), instruction.getInstructionId());
+        lhs.setSsaVersion(instruction.getInstructionId());
+        basicBlock.updateLocalSSAVersion(lhs.getIdentifierName(), instruction.getInstructionId());
+        /*
+        Update rhs result with SSA
+         */
+        Integer localSSAVersion = basicBlock.getSSAVersion(rhs.getIdentifierName());
+        if(localSSAVersion == null){
+            rhs.setSsaVersion(ssaTracker.getSSAVersion(rhs.getIdentifierName()));
+        } else rhs.setSsaVersion(localSSAVersion);
+
         basicBlock.addInstruction(instruction);
+
         return lhs;
     }
 

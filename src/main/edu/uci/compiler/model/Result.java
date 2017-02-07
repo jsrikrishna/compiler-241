@@ -18,62 +18,87 @@ public class Result {
     private String identifierName; // used for calculating the array base address
     private Integer instructionId; // if it is a instruction,to hold the result of instruction like MUL, ADD
     private Integer basicBlockId; // for branch instructions, BRA
+    private Integer ssaVersion; // SSA Version for a variable
 
 
-
-    public int getInstructionId(){
+    public int getInstructionId() {
         return instructionId;
     }
-    public void setInstructionId(int instructionId){
+
+    public void setInstructionId(int instructionId) {
         this.instructionId = instructionId;
     }
-    public KIND getKind(){
+
+    public KIND getKind() {
         return kind;
     }
-    public void setKind(KIND kind){
+
+    public void setKind(KIND kind) {
         this.kind = kind;
     }
-    public int getValue(){
+
+    public int getValue() {
         return value;
     }
-    public void setValue(int value){
+
+    public void setValue(int value) {
         this.value = value;
     }
-    public int getAddress(){
+
+    public int getAddress() {
         return address;
     }
-    public void setAddress(int address){
+
+    public void setAddress(int address) {
         this.address = address;
     }
-    public int getRegNo(){
+
+    public int getRegNo() {
         return regNo;
     }
-    public void setRegNo(int regNo){
+
+    public void setRegNo(int regNo) {
         this.regNo = regNo;
     }
-    public int getFixUpInstructionId(){
+
+    public int getFixUpInstructionId() {
         return fixUpInstructionId;
     }
-    public void setFixUpInstructionId(int fixUpInstructionId){
+
+    public void setFixUpInstructionId(int fixUpInstructionId) {
         this.fixUpInstructionId = fixUpInstructionId;
     }
-    public Token getCondition(){
+
+    public Token getCondition() {
         return this.condition;
     }
-    public void setCondition(Token condition){
+
+    public void setCondition(Token condition) {
         this.condition = condition;
     }
-    public String getIdentifierName(){
+
+    public String getIdentifierName() {
         return identifierName;
     }
-    public void setIdentifierName(String identifierName){
+
+    public void setIdentifierName(String identifierName) {
         this.identifierName = identifierName;
     }
-    public void setBasicBlockId(Integer basicBlockId){
+
+    public void setBasicBlockId(Integer basicBlockId) {
         this.basicBlockId = basicBlockId;
     }
-    public Integer getBasicBlockId(){
+
+    public Integer getBasicBlockId() {
         return this.basicBlockId;
+    }
+
+    public void setSsaVersion(Integer ssaVersion) {
+        this.ssaVersion = ssaVersion;
+    }
+
+    public Integer getSsaVersion() {
+        return this.ssaVersion;
     }
 
 

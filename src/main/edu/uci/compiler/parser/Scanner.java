@@ -25,7 +25,7 @@ public class Scanner {
     private String currentIdentifier;
     // Need to maintain a table of unique identifiers
     private ArrayList<String> listOfIdentifiers;
-    private Map<String, Token> singleTokenMap = new HashMap<String, Token>(){{
+    private Map<String, Token> singleTokenMap = new HashMap<String, Token>() {{
         put("*", Token.TIMES);
         put("/", Token.DIV);
         put("+", Token.PLUS);
@@ -40,7 +40,7 @@ public class Scanner {
         put(",", Token.COMMA);
         put(".", Token.PERIOD);
     }};
-    private Map<String, Token> keywordTokenMap = new HashMap<String, Token>(){{
+    private Map<String, Token> keywordTokenMap = new HashMap<String, Token>() {{
         put("let", Token.LET);
         put("call", Token.CALL);
         put("if", Token.IF);
@@ -68,7 +68,7 @@ public class Scanner {
         //Todo : current number, cannot set to null
         currentSymbol = reader.getCurrentSymbol();
         peekSymbol = reader.peekSymbol();
-        if(currentSymbol == 255) isEOF = true;
+        if (currentSymbol == 255) isEOF = true;
     }
 
     public boolean isEOF() {
@@ -80,41 +80,41 @@ public class Scanner {
         return this.currentToken;
     }
 
-    public String getCurrentIdentifier(){
+    public String getCurrentIdentifier() {
         // May need to do null check
         return currentIdentifier;
     }
 
-    public int getIdentifierId(){
+    public int getIdentifierId() {
         return identifierId;
     }
 
-    public int getCurrentNumber(){
+    public int getCurrentNumber() {
         return currentNumber;
     }
 
     /*
     Identifier Table Methods
      */
-    public String IdToString(int id){
+    public String IdToString(int id) {
         // if(id < 0 || id > identifierId) return null; // May be throw an exception, Not needed because .get method does it already
         return listOfIdentifiers.get(id);
     }
 
-    public int StringToId(String identifier){
-        if(identifier.isEmpty()) return -1; // May be throw an exception
+    public int StringToId(String identifier) {
+        if (identifier.isEmpty()) return -1; // May be throw an exception
         return listOfIdentifiers.indexOf(identifier);
     }
 
     private void gotoNextSymbol() throws IOException {
-        if(currentSymbol == 255) isEOF = true;
+        if (currentSymbol == 255) isEOF = true;
         else {
             currentSymbol = reader.getCurrentSymbol();
             peekSymbol = reader.peekSymbol();
         }
     }
 
-    private void skipNextAndMove() throws  IOException {
+    private void skipNextAndMove() throws IOException {
         gotoNextSymbol();
         gotoNextSymbol();
     }
@@ -130,7 +130,7 @@ public class Scanner {
             If there are spaces or tabs after going to next line once we encounter #,
             then we need to keep this in loop
              */
-            if(currentSymbol == '#') gotoNextLine();
+            if (currentSymbol == '#') gotoNextLine();
             else {
                 currentSymbol = reader.getCurrentSymbol();
                 peekSymbol = reader.peekSymbol();
@@ -143,14 +143,14 @@ public class Scanner {
     }
 
     private void consumeWhiteSpaceAndComments() throws IOException {
-        while (true){
-            if(isWhiteSpace(currentSymbol) || currentSymbol == '\t' || currentSymbol == '#') consumeWhiteSpaces();
+        while (true) {
+            if (isWhiteSpace(currentSymbol) || currentSymbol == '\t' || currentSymbol == '#') consumeWhiteSpaces();
             else if (currentSymbol == '/' && peekSymbol == '/') consumeComments();
             else break;
         }
     }
 
-    private void endOfFile(){
+    private void endOfFile() {
         isEOF = true;
         currentToken = Token.EOF;
         return;
@@ -161,63 +161,60 @@ public class Scanner {
         StringBuffer symbolInString = new StringBuffer();
         symbolInString.append(currentSymbol);
 
-        if(currentSymbol == 255) {
+        if (currentSymbol == 255) {
             endOfFile();
             return;
         }
 
-        if(singleTokenMap.containsKey(symbolInString.toString())){
+        if (singleTokenMap.containsKey(symbolInString.toString())) {
             currentToken = singleTokenMap.get(symbolInString.toString());
             gotoNextSymbol();
             return;
         }
         // Single Map don't deal with ==, !=, >, >=, <-, <=, <
-        if(currentSymbol == '<'){
-            if(peekSymbol == '=') {
+        if (currentSymbol == '<') {
+            if (peekSymbol == '=') {
                 currentToken = Token.LEQ;
                 skipNextAndMove();
                 return;
-            }
-            else if(peekSymbol == '-') {
+            } else if (peekSymbol == '-') {
                 currentToken = Token.BECOMES;
                 skipNextAndMove();
                 return;
-            }
-            else {
+            } else {
                 currentToken = Token.LSS;
                 gotoNextSymbol();
                 return;
             }
         }
-        if(currentSymbol == '>'){
-            if(peekSymbol == '='){
+        if (currentSymbol == '>') {
+            if (peekSymbol == '=') {
                 skipNextAndMove();
                 currentToken = Token.GEQ;
                 return;
-            }
-            else{
+            } else {
                 gotoNextSymbol();
                 currentToken = Token.GTR;
                 return;
             }
 
         }
-        if(currentSymbol == '=' && peekSymbol == '='){
+        if (currentSymbol == '=' && peekSymbol == '=') {
             skipNextAndMove();
             currentToken = Token.EQL;
             return;
         }
-        if(currentSymbol == '!' && peekSymbol == '='){
+        if (currentSymbol == '!' && peekSymbol == '=') {
             skipNextAndMove();
             currentToken = Token.NEQ;
             return;
         }
         // Now the token could be an number, identifier, keyword
-        if(Character.isAlphabetic(currentSymbol)){
+        if (Character.isAlphabetic(currentSymbol)) {
             handleIdentifierOrKeyWord();
             return;
         }
-        if(Character.isDigit(currentSymbol)){
+        if (Character.isDigit(currentSymbol)) {
             handleNumbers();
             return;
         }
@@ -228,19 +225,19 @@ public class Scanner {
 
     private void handleIdentifierOrKeyWord() throws IOException {
         StringBuffer token = new StringBuffer();
-        while (Character.isAlphabetic(currentSymbol) || Character.isDigit(currentSymbol)){
+        while (Character.isAlphabetic(currentSymbol) || Character.isDigit(currentSymbol)) {
             token.append(currentSymbol);
-            if(peekSymbol == '$') {
+            if (peekSymbol == '$') {
                 gotoNextSymbol();
                 break;
             }
             gotoNextSymbol();
         }
-        if(keywordTokenMap.containsKey(token.toString())) currentToken = keywordTokenMap.get(token.toString());
+        if (keywordTokenMap.containsKey(token.toString())) currentToken = keywordTokenMap.get(token.toString());
         else {
             currentToken = Token.IDENTIFIER; // else it is an identifier
             currentIdentifier = token.toString();
-            if(listOfIdentifiers.indexOf(token.toString()) != -1){
+            if (listOfIdentifiers.indexOf(token.toString()) != -1) {
                 identifierId = listOfIdentifiers.indexOf(token.toString());
             } else {
                 listOfIdentifiers.add(token.toString());
@@ -252,9 +249,9 @@ public class Scanner {
 
     private void handleNumbers() throws IOException {
         StringBuffer token = new StringBuffer();
-        while (Character.isDigit(currentSymbol)){
+        while (Character.isDigit(currentSymbol)) {
             token.append(currentSymbol);
-            if(peekSymbol == '$') {
+            if (peekSymbol == '$') {
                 gotoNextSymbol();
                 break;
             }
@@ -266,15 +263,15 @@ public class Scanner {
         return;
     }
 
-    private boolean isAlphabet(char currentSymbol){
+    private boolean isAlphabet(char currentSymbol) {
         return (currentSymbol >= 'a' && currentSymbol <= 'z') || (currentSymbol >= 'A' && currentSymbol <= 'Z');
     }
 
-    private boolean isDigit(char currentSymbol){
+    private boolean isDigit(char currentSymbol) {
         return (currentSymbol >= '0' && currentSymbol <= '9');
     }
 
-    public boolean isWhiteSpace(char currentSymbol){
+    public boolean isWhiteSpace(char currentSymbol) {
         return Character.isWhitespace(currentSymbol) || Character.isSpaceChar(currentSymbol);
     }
 }

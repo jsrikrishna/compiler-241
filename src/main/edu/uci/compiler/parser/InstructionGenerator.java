@@ -16,6 +16,7 @@ import java.util.HashMap;
 public class InstructionGenerator {
     private static HashMap<Integer, Instruction> instructions;
     private HashMap<Token, Operation> operations;
+    private SSA ssaTracker;
 
     class RelationResult {
         Result compareResult;
@@ -28,7 +29,6 @@ public class InstructionGenerator {
     class ArrayBase {
         ArrayList<Integer> instructionIds;
         Result finalResult; // i.e. after summing up all dimensions -> k.mn + i.n + j for indices [k][i][j] and [l][m][n]
-
         ArrayBase() {
             instructionIds = new ArrayList<>();
         }
@@ -100,6 +100,7 @@ public class InstructionGenerator {
             // Here it is MOVE, so move y x => assign x:= y
             return generateInstruction(MOVE, r2, r1);
         }
+        // Else it is a array variable
         return generateInstruction(STORE, r2, r1);
 
     }
@@ -240,5 +241,10 @@ public class InstructionGenerator {
         result.setKind(INSTRUCTION);
         result.setInstructionId(instruction.getInstructionId());
         return result;
+    }
+
+    public void generateError(String message) {
+        System.out.println("Syntax Error occurred in Instruction generator - " + message);
+        System.exit(1);
     }
 }
