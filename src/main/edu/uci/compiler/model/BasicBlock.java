@@ -72,7 +72,6 @@ public class BasicBlock {
     @Override
     public String toString(){
         return "Block -> (" + this.id + ", " + this.type + ")";
-
     }
 
 }

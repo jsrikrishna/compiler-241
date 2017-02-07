@@ -31,7 +31,7 @@ public class Parser {
     public Parser(String fileName) throws IOException {
         scanner = new Scanner(fileName);
         currentToken = scanner.getToken();
-        cfg = new ControlFlowGraph();
+        cfg = ControlFlowGraph.getInstance();
         ig = new InstructionGenerator();
         relOpList = new ArrayList<Token>() {{
             add(EQL);
@@ -59,7 +59,7 @@ public class Parser {
     public void computation() throws IOException {
         if (currentToken != MAIN) generateError(MAIN_NOT_FOUND);
         moveToNextToken();
-        BasicBlock basicBlock = cfg.getBasicBlock();
+        BasicBlock startBasicBlock = cfg.getBasicBlock();
         while (currentToken == VAR || currentToken == ARRAY) {
             //TODO: Deal with array's later
             // Need not move to next token, it is handled by varDecl
@@ -67,18 +67,18 @@ public class Parser {
         }
         while (currentToken == FUNCTION || currentToken == PROCEDURE) {
             // Need not move to next token, it is handled by funcDecl
-            funcDecl(basicBlock);
+            funcDecl(startBasicBlock);
         }
         if (currentToken != BEGIN) generateError(BEGIN_NOT_FOUND);
         moveToNextToken();
-        basicBlock = statSequence(basicBlock);
+        startBasicBlock = statSequence(startBasicBlock);
 
         if (currentToken != END) generateError(END_NOT_FOUND);
         moveToNextToken();
 
         if (currentToken != PERIOD) generateError(PERIOD_NOT_FOUND);
         moveToNextToken();
-        basicBlock.addInstruction(ig.generateEndInstruction());
+        startBasicBlock.addInstruction(ig.generateEndInstruction());
     }
 
 
@@ -261,7 +261,8 @@ public class Parser {
         String identifier = scanner.getCurrentIdentifier();
         res.setKind(VARIABLE);
         res.setIdentifierName(identifier);
-        // ToDo: Q - Need to check, may be null as well, for assignment - its a different process, this will be used for terms or factors
+        // ToDo: Q - Need to check, may be null as well,
+        // for assignment - its a different process, this will be used for terms or factors
         res.setSsaVersion(basicBlock.getSSAVersion(identifier));
         // Need to add ssa-version to result from the instruction number or figure out
         moveToNextToken();
