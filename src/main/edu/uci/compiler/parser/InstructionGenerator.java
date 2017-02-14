@@ -3,6 +3,7 @@ package main.edu.uci.compiler.parser;
 import main.edu.uci.compiler.model.*;
 
 import static main.edu.uci.compiler.model.Operation.END;
+import static main.edu.uci.compiler.model.Result.KIND.FUNCTION;
 import static main.edu.uci.compiler.model.Token.*;
 import static main.edu.uci.compiler.model.Operation.*;
 import static main.edu.uci.compiler.model.Result.KIND.*;
@@ -16,7 +17,6 @@ import java.util.HashMap;
 public class InstructionGenerator {
     private static HashMap<Integer, Instruction> instructions;
     private HashMap<Token, Operation> operations;
-    private SSA ssaTracker;
 
     class RelationResult {
         Result compareResult;
@@ -29,6 +29,7 @@ public class InstructionGenerator {
     class ArrayBase {
         ArrayList<Integer> instructionIds;
         Result finalResult; // i.e. after summing up all dimensions -> k.mn + i.n + j for indices [k][i][j] and [l][m][n]
+
         ArrayBase() {
             instructionIds = new ArrayList<>();
         }
@@ -96,7 +97,7 @@ public class InstructionGenerator {
     }
 
     public Instruction generateInstructionForAssignment(Result r1, Result r2) {
-        if(r1.getKind() == VARIABLE){
+        if (r1.getKind() == VARIABLE) {
             // Here it is MOVE, so move y x => assign x:= y
             return generateInstruction(MOVE, r2, r1);
         }
@@ -213,13 +214,18 @@ public class InstructionGenerator {
 
     public ArrayBase computeArrayDesignator(Result arrDimResult, String arrayIdentifier) {
         //TODO: Need to understand frame pointer
+
         ArrayBase arrayBase = new ArrayBase();
         Result baseAddress = new Result();
         baseAddress.setKind(BASE_ADDRESS);
         baseAddress.setIdentifierName(arrayIdentifier);
 
+        //TODO: Fix up base Address
+
         Result framePointer = new Result();
         framePointer.setKind(FRAME_POINTER);
+        //TODO: Deal with frame pointer
+
 
         Instruction arrayBaseAddrInstr = generateInstruction(ADD, framePointer, baseAddress);
         arrayBase.instructionIds.add(arrayBaseAddrInstr.getInstructionId());
@@ -236,11 +242,65 @@ public class InstructionGenerator {
 
     }
 
-    private Result resultForInstruction(Instruction instruction){
+    public Instruction generateInstructionForReturn(Result result) {
+        return generateInstruction(RET, result, null);
+    }
+
+    private Result resultForInstruction(Instruction instruction) {
         Result result = new Result();
         result.setKind(INSTRUCTION);
         result.setInstructionId(instruction.getInstructionId());
         return result;
+    }
+
+    public ArrayList<Instruction> generateInstructionForParams(ArrayList<Result> parameters) {
+        ArrayList<Instruction> instructions = new ArrayList<>();
+        for (Result paramResult : parameters) {
+            instructions.add(generateInstruction(PARAM, paramResult, null));
+        }
+        return instructions;
+    }
+
+    public Result generateInstructionForFunctionCall(Integer parameterCount, Integer funcBasicBlockId) {
+        Result funcResult = new Result();
+        funcResult.setKind(FUNCTION);
+        funcResult.setFuncBasicBlockId(funcBasicBlockId);
+
+        Result paramResult = new Result();
+        paramResult.setKind(PARAMETER_COUNT);
+        paramResult.setParameterCount(parameterCount);
+
+        Instruction instruction = generateInstruction(Operation.CALL, funcResult, paramResult);
+        return resultForInstruction(instruction);
+    }
+
+    public Result generateInstructionForPreDefinedFunctions(String funcName, Result paramResult) {
+        if (funcName.equals("InputNum")) {
+            if (paramResult != null) generateError("Parameter to InputNum is not expected");
+            Instruction instruction = generateInstruction(READ, null, null);
+            return resultForInstruction(instruction);
+        }
+        if (funcName.equals("OutputNum")) {
+            if (paramResult == null) generateError("Parameter to OutputNum is expected");
+            Instruction instruction = generateInstruction(WRITE, paramResult, null);
+            return resultForInstruction(instruction);
+        }
+        if (funcName.equals("OutputNewLine")) {
+            if (paramResult != null) generateError("Parameter to OutputNewLine is not expected");
+            Instruction instruction = generateInstruction(WRITENL, null, null);
+            return resultForInstruction(instruction);
+        }
+        return null;
+    }
+
+    public Instruction generateInstructionToInitVar(String identifier){
+        Result zero = new Result();
+        zero.setKind(CONSTANT);
+        zero.setValue(0);
+        Result varResult = new Result();
+        varResult.setKind(VARIABLE);
+        varResult.setIdentifierName(identifier);
+        return generateInstruction(MOVE, zero, varResult);
     }
 
     public void generateError(String message) {

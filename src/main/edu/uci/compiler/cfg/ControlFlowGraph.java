@@ -10,6 +10,7 @@ import java.util.List;
 public class ControlFlowGraph {
     private static ControlFlowGraph instance;
     BasicBlock startBasicBlock;
+    
 
     private ControlFlowGraph(){
         startBasicBlock = new BasicBlock();

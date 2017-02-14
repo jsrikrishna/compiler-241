@@ -26,7 +26,13 @@ public enum Operation {
     BGT("bgt"),
     READ("read"),
     WRITE("write"),
-    WRITENL("writeNL");
+    WRITENL("writeNL"),
+
+    RET("ret"),
+
+    // Function Calls
+    PARAM("param"),
+    CALL("call");
 
 
     private String operationName;

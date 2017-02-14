@@ -1,10 +1,8 @@
 package main.edu.uci.compiler.parser;
 
-import com.sun.org.apache.regexp.internal.RE;
 import main.edu.uci.compiler.cfg.ControlFlowGraph;
 import main.edu.uci.compiler.model.*;
 import main.edu.uci.compiler.parser.InstructionGenerator.*;
-import sun.jvm.hotspot.debugger.bsd.amd64.BsdAMD64CFrame;
 
 import static main.edu.uci.compiler.model.Token.*;
 import static main.edu.uci.compiler.model.ErrorMessage.*;
@@ -13,7 +11,6 @@ import static main.edu.uci.compiler.model.BasicBlock.Type.*;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 
 /**
  * Created by srikrishna on 1/27/17.
@@ -25,13 +22,14 @@ public class Parser {
     private InstructionGenerator ig;
     ArrayList<Token> relOpList;
     ArrayList<Token> statSeqList;
-    private SSA ssaTracker;
-    private HashMap<String, ArrayList<Integer>> arrayVariables;
+    private Tracker tracker;
+
 
     public Parser(String fileName) throws IOException {
         scanner = new Scanner(fileName);
         currentToken = scanner.getToken();
         cfg = ControlFlowGraph.getInstance();
+        tracker = new Tracker();
         ig = new InstructionGenerator();
         relOpList = new ArrayList<Token>() {{
             add(EQL);
@@ -48,8 +46,6 @@ public class Parser {
             add(WHILE);
             add(RETURN);
         }};
-        arrayVariables = new HashMap<>();
-        ssaTracker = SSA.getInstance();
     }
 
     private void moveToNextToken() throws IOException {
@@ -63,15 +59,15 @@ public class Parser {
         while (currentToken == VAR || currentToken == ARRAY) {
             //TODO: Deal with array's later
             // Need not move to next token, it is handled by varDecl
-            varDecl();
+            varDecl(null, startBasicBlock);
         }
-        while (currentToken == FUNCTION || currentToken == PROCEDURE) {
+        while (currentToken == Token.FUNCTION || currentToken == PROCEDURE) {
             // Need not move to next token, it is handled by funcDecl
             funcDecl(startBasicBlock);
         }
         if (currentToken != BEGIN) generateError(BEGIN_NOT_FOUND);
         moveToNextToken();
-        startBasicBlock = statSequence(startBasicBlock);
+        startBasicBlock = statSequence(startBasicBlock, null);
 
         if (currentToken != END) generateError(END_NOT_FOUND);
         moveToNextToken();
@@ -82,27 +78,45 @@ public class Parser {
     }
 
 
-    public void varDecl() throws IOException {
+    public void varDecl(Function function, BasicBlock basicBlock) throws IOException {
         ArrayList<Integer> arrayDimensions = typeDecl();
         if (currentToken != IDENTIFIER) generateError(VARIABLE_DECL_ERROR);
-        storeVariables(arrayDimensions);
+        storeVariables(arrayDimensions, function, basicBlock);
         moveToNextToken();
         while (currentToken == COMMA) {
             moveToNextToken();
             if (currentToken != IDENTIFIER) generateError(VARIABLE_DECL_ERROR);
-            storeVariables(arrayDimensions);
+            storeVariables(arrayDimensions, function, basicBlock);
             moveToNextToken();
         }
         if (currentToken != SEMICOLON) generateError(SEMICOLON_NOT_FOUND);
         moveToNextToken();
     }
 
-    public void storeVariables(ArrayList<Integer> arrayDimensions) {
-        if (arrayDimensions != null) {
-            arrayVariables.put(scanner.getCurrentIdentifier(), arrayDimensions);
+    public void storeVariables(ArrayList<Integer> arrayDimensions, Function function, BasicBlock basicBlock) {
+        String identifier = scanner.getCurrentIdentifier();
+        if (function != null) {
+            if (arrayDimensions != null) {
+                function.addLocalArrayVariable(identifier, arrayDimensions);
+            } else {
+                Instruction instruction = ig.generateInstructionToInitVar(identifier);
+                instruction.getOperand2().setSsaVersion(function.getLocalSSAForVariable(identifier));
+                function.addLocalVariable(identifier, instruction.getInstructionId());
+                // May be normal block as well, need to check -> checked, need not do, it will be either func or non-func
+                basicBlock.addInstruction(instruction);
+            }
+
         } else {
-            // Add to SSA data structure
+            if (arrayDimensions != null) {
+                tracker.addArrayVariable(identifier, arrayDimensions);
+            } else {
+                tracker.updateSSAForVariable(scanner.getCurrentIdentifier(), tracker.getDefaultSSAVersion());
+                Instruction instruction = ig.generateInstructionToInitVar(identifier);
+                instruction.getOperand2().setSsaVersion(tracker.getSSAVersion(identifier));
+                basicBlock.addInstruction(instruction);
+            }
         }
+
     }
 
     public ArrayList<Integer> typeDecl() throws IOException {
@@ -130,14 +144,16 @@ public class Parser {
     }
 
     public void funcDecl(BasicBlock basicBlock) throws IOException {
-        if (currentToken == FUNCTION || currentToken == PROCEDURE) {
+        if (currentToken == Token.FUNCTION || currentToken == PROCEDURE) {
             moveToNextToken();
             if (currentToken == IDENTIFIER) {
+                String identifier = scanner.getCurrentIdentifier();
+                Function function = new Function(identifier);
                 moveToNextToken();
-                formalParam(); // formalParam, handles of moving to next token
+                formalParam(function); // formalParam, handles of moving to next token
                 if (currentToken == SEMICOLON) {
                     moveToNextToken();
-                    funcBody(basicBlock);
+                    funcBody(function);
                     if (currentToken == SEMICOLON) moveToNextToken();
                     else generateError(SEMICOLON_NOT_FOUND);
                 } else generateError(SEMICOLON_NOT_FOUND);
@@ -145,16 +161,18 @@ public class Parser {
         } else generateError(FUNCTION_PROCEDURE_NOT_FOUND);
     }
 
-    public void formalParam() throws IOException {
+    public void formalParam(Function function) throws IOException {
         if (currentToken == OPENPAREN) {
             moveToNextToken();
             if (currentToken == IDENTIFIER) {
                 //TODO: need to store the variable at common place
+                addFunctionParameters(function);
                 moveToNextToken();
                 while (currentToken == COMMA) {
                     moveToNextToken();
                     if (currentToken == IDENTIFIER) {
                         //TODO: need to store the variable at common place
+                        addFunctionParameters(function);
                         moveToNextToken();
                     } else generateError(FORMAL_PARAM_DECL_ERROR);
                 }
@@ -165,88 +183,105 @@ public class Parser {
         }
     }
 
-    public void funcBody(BasicBlock basicBlock) throws IOException {
-        while (currentToken == VAR || currentToken == ARRAY) varDecl();
+    private void addFunctionParameters(Function function) {
+        function.addLocalVariable(scanner.getCurrentIdentifier(), function.getDefaultSSAVersion());
+        function.setFuncParameter(scanner.getCurrentIdentifier());
+    }
+
+    public void funcBody(Function function) throws IOException {
+        while (currentToken == VAR || currentToken == ARRAY) varDecl(function, function.getFuncBasicBlock());
         if (currentToken == BEGIN) {
             moveToNextToken();
-            statSequence(basicBlock);
+            BasicBlock finalBlock = statSequence(function.getFuncBasicBlock(), function);
             if (currentToken == END) {
                 moveToNextToken();
             } else generateError(END_NOT_FOUND);
         } else generateError(BEGIN_NOT_FOUND);
     }
 
-    public BasicBlock statSequence(BasicBlock basicBlock) throws IOException {
-        basicBlock = statement(basicBlock);
+    public BasicBlock statSequence(BasicBlock basicBlock, Function function) throws IOException {
+        basicBlock = statement(basicBlock, function);
         while (currentToken == SEMICOLON) {
             moveToNextToken();
-            basicBlock = statement(basicBlock);
+            basicBlock = statement(basicBlock, function);
         }
         return basicBlock;
     }
 
-    public BasicBlock statement(BasicBlock basicBlock) throws IOException {
+    public BasicBlock statement(BasicBlock basicBlock, Function function) throws IOException {
         if (!(statSeqList.contains(currentToken))) generateError(KEYWORD_EXPECTED);
 
         if (currentToken == IF) {
-            return ifStatement(basicBlock);
+            return ifStatement(basicBlock, function);
         }
         if (currentToken == WHILE) {
-            return whileStatement(basicBlock);
+            return whileStatement(basicBlock, function);
         }
         if (currentToken == LET) {
-            assignment(basicBlock);
+            assignment(basicBlock, function);
         } else if (currentToken == CALL) {
             funcCall(basicBlock);
         } else if (currentToken == RETURN) {
-            returnStatement(basicBlock);
+            returnStatement(basicBlock, function);
         }
         return basicBlock;
 
     }
 
-    public Result assignment(BasicBlock basicBlock) throws IOException {
+    public Result assignment(BasicBlock basicBlock, Function function) throws IOException {
         if (currentToken != LET) generateError(ASSIGNMENT_ERROR);
         moveToNextToken();
-        Result lhs = designator(basicBlock);
+        Result lhs = designator(basicBlock, function);
         if (currentToken != BECOMES) generateError(BECOMES_NOT_FOUND);
         moveToNextToken();
-        Result rhs = expression(basicBlock);
+        Result rhs = expression(basicBlock, function);
         Instruction instruction = ig.generateInstructionForAssignment(lhs, rhs);
         /*
-        Update lhs result with SSA
-        Update SSA for local result, both basic block level and global level
+        Update lhs result with Tracker
+        Update Tracker for local result, both basic block level and global level
         TODO: Q - do we need to update lhs globally as well ?
-        TODO: Q - Does array as well have SSA ?
+        TODO: Q - Does array as well have Tracker ?
          */
-        ssaTracker.updateSSAForVariable(lhs.getIdentifierName(), instruction.getInstructionId());
+        tracker.updateSSAForVariable(lhs.getIdentifierName(), instruction.getInstructionId());
         lhs.setSsaVersion(instruction.getInstructionId());
         basicBlock.updateLocalSSAVersion(lhs.getIdentifierName(), instruction.getInstructionId());
         /*
-        Update rhs result with SSA
+        Update rhs result with Tracker
          */
-        Integer localSSAVersion = basicBlock.getSSAVersion(rhs.getIdentifierName());
-        if(localSSAVersion == null){
-            rhs.setSsaVersion(ssaTracker.getSSAVersion(rhs.getIdentifierName()));
-        } else rhs.setSsaVersion(localSSAVersion);
+        if (rhs.getKind() == VARIABLE) {
+            Integer localSSAVersion = basicBlock.getSSAVersion(rhs.getIdentifierName());
+            if (localSSAVersion == null) {
+                rhs.setSsaVersion(tracker.getSSAVersion(rhs.getIdentifierName()));
+            } else rhs.setSsaVersion(localSSAVersion);
+        }
+
 
         basicBlock.addInstruction(instruction);
 
         return lhs;
     }
 
-    public Result designator(BasicBlock basicBlock) throws IOException {
+    public Result designator(BasicBlock basicBlock, Function function) throws IOException {
         if (currentToken != IDENTIFIER) generateError(DESIGNATOR_ERROR);
         // Could be array variable or a normal variable
         Result res = new Result();
-        if (arrayVariables.containsKey(scanner.getCurrentIdentifier())) {
-            String arrayIdentifier = scanner.getCurrentIdentifier();
-            ArrayList<Integer> dimensions = arrayVariables.get(scanner.getCurrentIdentifier());
+        String identifier = scanner.getCurrentIdentifier();
+
+        boolean isArrayInFunction = function != null && function.getLocalArrayVariable(identifier) != null;
+        boolean isArrayInMain = tracker.containsArrayVariable(identifier);
+        if (isArrayInFunction || isArrayInMain) {
+            ArrayList<Integer> dimensions = null;
+            if (function != null) {
+                dimensions = function.getLocalArrayVariable(identifier);
+            }
+            if (dimensions == null) {
+                dimensions = tracker.getArrayVariableDimensions(identifier);
+            }
             ArrayList<Result> dimensionExp = new ArrayList<>();
             moveToNextToken();
             while (currentToken == OPENBRACKET) {
                 moveToNextToken();
-                Result dimensionResult = expression(basicBlock);
+                Result dimensionResult = expression(basicBlock, function);
                 dimensionExp.add(dimensionResult);
                 //TODO: it could be CLOSE_BRACKET_NOT_FOUND, need to design error messages
                 if (currentToken != CLOSEBRACKET) generateError(DESIGNATOR_ERROR);
@@ -255,16 +290,26 @@ public class Parser {
             // Need to generate instructions and return the final Result that contains the instruction id
             if (dimensionExp.size() != dimensions.size()) generateError(ARRAY_DIMENSION_MISMATCH);
             Result arrayDimensionResult = handleArrayDimInstructions(dimensionExp, dimensions, basicBlock);
-            Result indexInArray = handleArrayDesignator(arrayDimensionResult, arrayIdentifier, basicBlock);
+            Result indexInArray = handleArrayDesignator(arrayDimensionResult, identifier, basicBlock);
             return indexInArray;
+        } else {
+            // ToDo: Q - Need to check, may be null as well,
+            // for assignment - its a different process, this will be used for terms or factors
+            // Need to add ssa-version to result from the instruction number or figure out
+            res.setKind(VARIABLE);
+            res.setIdentifierName(identifier);
+            if (function != null) {
+                Integer ssaVersion = function.getLocalSSAForVariable(identifier);//Need to perform a check here, compared with old code
+                if (ssaVersion == null) {
+                    ssaVersion = tracker.getSSAVersion(identifier);
+                    if (ssaVersion == null) generateError(VARIABLE_NOT_DECLARED);
+                }
+                res.setSsaVersion(ssaVersion);
+            } else {
+                res.setSsaVersion(basicBlock.getSSAVersion(identifier));
+            }
         }
-        String identifier = scanner.getCurrentIdentifier();
-        res.setKind(VARIABLE);
-        res.setIdentifierName(identifier);
-        // ToDo: Q - Need to check, may be null as well,
-        // for assignment - its a different process, this will be used for terms or factors
-        res.setSsaVersion(basicBlock.getSSAVersion(identifier));
-        // Need to add ssa-version to result from the instruction number or figure out
+
         moveToNextToken();
         return res;
     }
@@ -281,12 +326,12 @@ public class Parser {
         return res.finalResult;
     }
 
-    public Result expression(BasicBlock basicBlock) throws IOException {
-        Result lhs = term(basicBlock);
+    public Result expression(BasicBlock basicBlock, Function function) throws IOException {
+        Result lhs = term(basicBlock, function);
         while (currentToken == PLUS || currentToken == MINUS) {
             Token prevToken = currentToken;
             moveToNextToken();
-            Result rhs = term(basicBlock);
+            Result rhs = term(basicBlock, function);
             lhs = ig.computeExpression(prevToken, lhs, rhs);
             if (lhs.getKind() == INSTRUCTION) {
                 basicBlock.addInstruction(ig.getInstruction(lhs.getInstructionId()));
@@ -296,12 +341,12 @@ public class Parser {
         return lhs;
     }
 
-    public Result term(BasicBlock basicBlock) throws IOException {
-        Result lhs = factor(basicBlock);
+    public Result term(BasicBlock basicBlock, Function function) throws IOException {
+        Result lhs = factor(basicBlock, function);
         while (currentToken == TIMES || currentToken == DIV) {
             Token prevToken = currentToken;
             moveToNextToken();
-            Result rhs = factor(basicBlock);
+            Result rhs = factor(basicBlock, function);
             lhs = ig.computeExpression(prevToken, lhs, rhs);
             if (lhs.getKind() == INSTRUCTION) {
                 basicBlock.addInstruction(ig.getInstruction(lhs.getInstructionId()));
@@ -311,11 +356,11 @@ public class Parser {
         return lhs;
     }
 
-    public Result factor(BasicBlock basicBlock) throws IOException {
+    public Result factor(BasicBlock basicBlock, Function function) throws IOException {
         Result result = null;
         if (currentToken == IDENTIFIER) {
             //TODO: Need to deal with identifiers
-            result = designator(basicBlock);
+            result = designator(basicBlock, function);
         } else if (currentToken == NUMBER) {
             //TODO: Need to deal with number
             result = new Result();
@@ -326,7 +371,7 @@ public class Parser {
             result = funcCall(basicBlock);
         } else if (currentToken == OPENPAREN) {
             moveToNextToken();
-            result = expression(basicBlock);
+            result = expression(basicBlock, function);
             if (currentToken == CLOSEPAREN) {
                 moveToNextToken();
             } else {
@@ -343,20 +388,37 @@ public class Parser {
         if (currentToken == CALL) {
             moveToNextToken();
             if (currentToken == IDENTIFIER) {
-                moveToNextToken();
-                if (currentToken == OPENPAREN) {
+                String identifier = scanner.getCurrentIdentifier();
+                if (isPreDefinedFunction(identifier)) {
                     moveToNextToken();
-                    // Go from expression -> term -> factor -> designator -> identifier
-                    if (currentToken != CLOSEPAREN) {
-                        expression(basicBlock);
-                        while (currentToken == COMMA) {
-                            moveToNextToken();
-                            expression(basicBlock);
-                        }
-                    }
-                    if (currentToken == CLOSEPAREN) {
+                    Result paramResult = getParametersForSpecialFunctions(basicBlock);
+                    res = ig.generateInstructionForPreDefinedFunctions(identifier, paramResult);
+                    basicBlock.addInstruction(ig.getInstruction(res.getInstructionId()));
+                } else {
+                    Function function = tracker.getFunction(identifier);
+                    basicBlock.addFunctionCalled(function);
+                    moveToNextToken();
+                    ArrayList<Result> parameters = new ArrayList<>();
+                    if (currentToken == OPENPAREN) {
                         moveToNextToken();
-                    } else generateError(CLOSE_PAREN_NOT_FOUND);
+                        // Go from expression -> term -> factor -> designator -> identifier
+                        if (currentToken != CLOSEPAREN) {
+                            Result param = expression(basicBlock, function);
+                            parameters.add(param);
+                            while (currentToken == COMMA) {
+                                moveToNextToken();
+                                param = expression(basicBlock, function);
+                                parameters.add(param);
+                            }
+                            ArrayList<Instruction> instructions = ig.generateInstructionForParams(parameters);
+                            for (Instruction instruction : instructions) basicBlock.addInstruction(instruction);
+                        }
+                        if (currentToken == CLOSEPAREN) {
+                            moveToNextToken();
+                        } else generateError(CLOSE_PAREN_NOT_FOUND);
+                    }
+                    res = ig.generateInstructionForFunctionCall(parameters.size(), basicBlock.getId());
+                    basicBlock.addInstruction(ig.getInstruction(res.getInstructionId()));
                 }
             }
         } else {
@@ -369,7 +431,33 @@ public class Parser {
         return res;
     }
 
-    public BasicBlock ifStatement(BasicBlock basicBlock) throws IOException {
+    private boolean isPreDefinedFunction(String identifier) {
+        return identifier.equals("InputNum") || identifier.equals("OutputNum") || identifier.equals("OutputNewLine");
+    }
+
+    private Result getParametersForSpecialFunctions(BasicBlock basicBlock) throws IOException {
+        Result result = null;
+        if (currentToken == OPENPAREN) {
+            moveToNextToken();
+            if (currentToken == IDENTIFIER) {
+                String identifier = scanner.getCurrentIdentifier();
+                moveToNextToken();
+                result = new Result();
+                result.setKind(VARIABLE);
+                result.setIdentifierName(identifier);
+                result.setSsaVersion(basicBlock.getSSAVersion(identifier));
+            } else if (currentToken == NUMBER) {
+                result = new Result();
+                result.setKind(CONSTANT);
+                result.setValue(number());
+            }
+            if (currentToken == CLOSEPAREN) moveToNextToken();
+            else generateError(CLOSE_PAREN_NOT_FOUND);
+        }
+        return result;
+    }
+
+    public BasicBlock ifStatement(BasicBlock basicBlock, Function function) throws IOException {
         if (currentToken != IF) generateError(IF_STATEMENT_ERROR);
         moveToNextToken();
 
@@ -389,11 +477,11 @@ public class Parser {
         ifThenBlock.addChildren(joinBlock);
 
         BasicBlock elseBlock = null;
-        Result fixUpResult = relation(ifConditionBlock);
+        Result fixUpResult = relation(ifConditionBlock, function);
         if (currentToken != THEN) generateError(THEN_STATEMENT_ERROR);
         moveToNextToken();
 
-        ifThenBlock = statSequence(ifThenBlock);
+        ifThenBlock = statSequence(ifThenBlock, function);
 
         if (currentToken == ELSE) {
             moveToNextToken();
@@ -407,7 +495,7 @@ public class Parser {
             joinBlock.addParent(elseBlock);
             joinBlock.setType(BB_IF_ELSE_JOIN);
 
-            elseBlock = statSequence(elseBlock);
+            elseBlock = statSequence(elseBlock, function);
         }
 
         if (currentToken == FI) {
@@ -427,17 +515,17 @@ public class Parser {
         return joinBlock;
     }
 
-    public Result relation(BasicBlock basicBlock) throws IOException {
-        Result lhs = expression(basicBlock);
+    public Result relation(BasicBlock basicBlock, Function function) throws IOException {
+        Result lhs = expression(basicBlock, function);
         Result condition = relOp();
-        Result rhs = expression(basicBlock);
+        Result rhs = expression(basicBlock, function);
         RelationResult res = ig.computeRelation(condition, lhs, rhs);
         basicBlock.addInstruction(res.compareInstruction);
         basicBlock.addInstruction(res.negCompareInstruction);
         return res.fixUpResult;
     }
 
-    public BasicBlock whileStatement(BasicBlock basicBlock) throws IOException {
+    public BasicBlock whileStatement(BasicBlock basicBlock, Function function) throws IOException {
         if (currentToken != WHILE) generateError(WHILE_STATEMENT_ERROR);
         moveToNextToken();
 
@@ -452,7 +540,7 @@ public class Parser {
 
         whileConditionBlock.addChildren(whileJoinBlock);
 
-        Result fixUpResult = relation(whileConditionBlock);
+        Result fixUpResult = relation(whileConditionBlock, function);
         fixUpNegCompareInstruction(fixUpResult, whileJoinBlock);
 
         if (currentToken != DO) generateError(DO_EXPECTED);
@@ -465,7 +553,7 @@ public class Parser {
 
         whileConditionBlock.addChildren(whileBodyBlock);
 
-        whileBodyBlock = statSequence(whileBodyBlock);
+        whileBodyBlock = statSequence(whileBodyBlock, function);
         //Go Back to while condition -> adding instruction for that
         addBranchInstruction(whileBodyBlock, whileConditionBlock);
         if (currentToken != OD) generateError(OD_EXPECTED);
@@ -473,10 +561,14 @@ public class Parser {
         return whileJoinBlock;
     }
 
-    public void returnStatement(BasicBlock basicBlock) throws IOException {
+    public void returnStatement(BasicBlock basicBlock, Function function) throws IOException {
         if (currentToken != RETURN) generateError(RETURN_EXPECTED);
         moveToNextToken();
-        expression(basicBlock);
+        if (currentToken != END) {
+            Result expResult = expression(basicBlock, function);
+            Instruction instruction = ig.generateInstructionForReturn(expResult);
+            basicBlock.addInstruction(instruction);
+        }
     }
 
     public Result relOp() throws IOException {

@@ -6,19 +6,22 @@ package main.edu.uci.compiler.model;
 public class Result {
     public enum KIND {
         CONSTANT, VARIABLE, REGISTER, CONDITION, INSTRUCTION, BRANCH_INSTRUCTION, FIX_UP,
-        ARRAY_VARIABLE, BASE_ADDRESS, FRAME_POINTER;
+        ARRAY_VARIABLE, BASE_ADDRESS, FRAME_POINTER,
+        FUNCTION, PARAMETER_COUNT;
     }
 
     private KIND kind;
     private int value; // If it is constant
     private int address; // address, if it is a variable
     private int regNo; // register Number, if it is a register or a condition
-    private int fixUpInstructionId; // if it is a condition, it will be jump instruction id
+    private int fixUpInstructionId; // if it is a condition, it will be jump instruction id // TODO: Take for while
     private Token condition;  // if it is a condition, it contains relational operators like ==, !=, <, <=, >, >=
-    private String identifierName; // used for calculating the array base address
+    private String identifierName; // used for calculating the array base address //TODO: what
     private Integer instructionId; // if it is a instruction,to hold the result of instruction like MUL, ADD
     private Integer basicBlockId; // for branch instructions, BRA
-    private Integer ssaVersion; // SSA Version for a variable
+    private Integer ssaVersion; // Tracker Version for a variable
+    private Integer funcBasicBlockId;
+    private Integer parameterCount;
 
 
     public int getInstructionId() {
@@ -99,6 +102,20 @@ public class Result {
 
     public Integer getSsaVersion() {
         return this.ssaVersion;
+    }
+
+    public void setFuncBasicBlockId(Integer funcBasicBlockId){
+        this.funcBasicBlockId = funcBasicBlockId;
+    }
+    public Integer getFuncBasicBlockId(){
+        return this.funcBasicBlockId;
+    }
+
+    public void setParameterCount(Integer parameterCount){
+        this.parameterCount = parameterCount;
+    }
+    public Integer getParameterCount(){
+        return this.parameterCount;
     }
 
 

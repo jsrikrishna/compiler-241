@@ -19,6 +19,7 @@ public class BasicBlock {
     List<BasicBlock> parent;
     List<BasicBlock> children;
     HashMap<String, Integer> localSSATracker;
+    ArrayList<Function> functionsCalled;
 
     public BasicBlock(){
         id = numBasicBlocks;
@@ -27,6 +28,7 @@ public class BasicBlock {
         parent = new ArrayList<BasicBlock>();
         children = new ArrayList<BasicBlock>();
         localSSATracker = new HashMap<>();
+        functionsCalled = new ArrayList<>();
         ++numBasicBlocks;
     }
 
@@ -68,6 +70,9 @@ public class BasicBlock {
     }
     public void updateLocalSSAVersion(String identifier, Integer instructionId){
         localSSATracker.put(identifier, instructionId);
+    }
+    public void addFunctionCalled(Function function){
+        this.functionsCalled.add(function);
     }
     @Override
     public String toString(){

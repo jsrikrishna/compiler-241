@@ -11,6 +11,7 @@ public enum ErrorMessage {
     OPEN_BRACKET_NOT_FOUND("Expected [ to be present"),
     TYPE_DECL_ERROR("Error in type declaration"),
     VARIABLE_DECL_ERROR("Error in Variable declaration"),
+    VARIABLE_NOT_DECLARED("Variable must be declared"),
     FORMAL_PARAM_DECL_ERROR("Erorr in formalParam declaration"),
     FUNC_BODY_ERROR("Error in defining function body"),
     SEMICOLON_NOT_FOUND("Semicolon(;) not found"),
