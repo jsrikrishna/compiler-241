@@ -19,41 +19,41 @@ public class ScannerTest {
     public void testScanner() {
         String resourcePath = "resources/programs";
         boolean noExceptionOccurred = true;
-//        try {
-//            //Test only one code at a time
-//            String fileName = resourcePath + "/test0" + generateProgramName() + ".txt";
-//            Scanner s = new Scanner(fileName);
-//            Token str;
-//            while (!s.isEOF()) {
-//                    str = s.getToken();
-//                System.out.println(str);
-//                    if (str == Token.ERROR)
-//                        throw new TokenizeException("in file " + fileName);
-//                }
-//        } catch (IOException  | TokenizeException ex){
-//            System.out.println("Exception is " + ex.getMessage());
-//            noExceptionOccurred = false;
-//        }
-//        assertTrue(noExceptionOccurred);
-
-        for (int i = 1; i <= 31; i++) {
-            try {
-                String fileName = resourcePath + "/test0" + generateProgramName() + ".txt";
-                System.out.println("fileName - " + fileName);
-                Scanner s = new Scanner(fileName);
-                Token str;
-                while (!s.isEOF()) {
+        try {
+            //Test only one code at a time
+            String fileName = resourcePath + "/test004.txt";
+            Scanner s = new Scanner(fileName);
+            Token str;
+            while (!s.isEOF()) {
                     str = s.getToken();
+                System.out.println(str);
                     if (str == Token.ERROR)
                         throw new TokenizeException("in file " + fileName);
                 }
-                noExceptionOccurred = true;
-            } catch (IOException | TokenizeException ex) {
-                System.out.println("Exception is " + ex.getMessage());
-                noExceptionOccurred = false;
-            }
-            assertTrue(noExceptionOccurred);
+        } catch (IOException  | TokenizeException ex){
+            System.out.println("Exception is " + ex.getMessage());
+            noExceptionOccurred = false;
         }
+        assertTrue(noExceptionOccurred);
+
+//        for (int i = 1; i <= 31; i++) {
+//            try {
+//                String fileName = resourcePath + "/test0" + generateProgramName() + ".txt";
+//                System.out.println("fileName - " + fileName);
+//                Scanner s = new Scanner(fileName);
+//                Token str;
+//                while (!s.isEOF()) {
+//                    str = s.getToken();
+//                    if (str == Token.ERROR)
+//                        throw new TokenizeException("in file " + fileName);
+//                }
+//                noExceptionOccurred = true;
+//            } catch (IOException | TokenizeException ex) {
+//                System.out.println("Exception is " + ex.getMessage());
+//                noExceptionOccurred = false;
+//            }
+//            assertTrue(noExceptionOccurred);
+//        }
     }
 
     public String generateProgramName(){

@@ -18,34 +18,34 @@ public class ParserTest {
     public void testParser() {
         String resourcePath = "resources/programs";
         boolean noExceptionOccurred = true;
-
-//        try {
-//            //To Test one code at a time
-//            String fileName = resourcePath + "/test0" + generateProgramName() + ".txt";
-////             String fileName = resourcePath + "/big.txt";
-////             String fileName = resourcePath + "/cell.txt";
-//            System.out.println("File name is " + fileName);
-//            Parser parser = new Parser(fileName);
-//            parser.computation();
-//        } catch (IOException ex){
-//            System.out.println("Exception is " + ex.getMessage());
-//            noExceptionOccurred = false;
-//        }
-//        assertTrue(noExceptionOccurred);
-
-        for (int i = 1; i <= 31; i++) {
-            try {
-                String fileName = resourcePath + "/test0" + generateProgramName() + ".txt";
-                System.out.println("fileName - " + fileName);
-                Parser parser = new Parser(fileName);
-                parser.computation();
-                noExceptionOccurred = true;
-            } catch (IOException  ex) {
-                System.out.println("Exception is " + ex.getMessage());
-                noExceptionOccurred = false;
-            }
-            assertTrue(noExceptionOccurred);
+//
+        try {
+            //To Test one code at a time
+            String fileName = resourcePath + "/test002.txt";
+//             String fileName = resourcePath + "/big.txt";
+//             String fileName = resourcePath + "/cell.txt";
+            System.out.println("File name is " + fileName);
+            Parser parser = new Parser(fileName);
+            parser.computation();
+        } catch (IOException ex){
+            System.out.println("Exception is " + ex.getMessage());
+            noExceptionOccurred = false;
         }
+        assertTrue(noExceptionOccurred);
+
+//        for (int i = 1; i <= 31; i++) {
+//            try {
+//                String fileName = resourcePath + "/test0" + generateProgramName() + ".txt";
+//                System.out.println("fileName - " + fileName);
+//                Parser parser = new Parser(fileName);
+//                parser.computation();
+//                noExceptionOccurred = true;
+//            } catch (IOException  ex) {
+//                System.out.println("Exception is " + ex.getMessage());
+//                noExceptionOccurred = false;
+//            }
+//            assertTrue(noExceptionOccurred);
+//        }
     }
 
     public String generateProgramName(){

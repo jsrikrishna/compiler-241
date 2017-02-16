@@ -8,21 +8,30 @@ import java.util.HashMap;
  */
 public class Function {
     private String funcName;
-    private static Integer defaultSSAVersion = -1;
+    private static Integer numFunctions = 0;
+    private Integer functionId;
     private HashMap<String, Integer> localSSATrackerForVariables;
     private HashMap<String, ArrayList<Integer>> localArrayVariables;
     private ArrayList<String> funcParameters;
     private BasicBlock funcBasicBlock;
+    private boolean isVisited; // This member is for printing the basic blocks and functions
 
     public Function(String funcName){
         this.funcName = funcName;
+        this.functionId = numFunctions;
         this.localSSATrackerForVariables = new HashMap<>();
         this.localArrayVariables = new HashMap<>();
         this.funcParameters = new ArrayList<>();
-        this.funcBasicBlock = new BasicBlock();
+        this.funcBasicBlock = new BasicBlock(BasicBlock.Type.BB_FUNCTION);
+        this.isVisited = false;
+        ++numFunctions;
     }
 
-    public void addLocalVariable(String identifier, Integer instructionId){
+    public Integer getFunctionId(){
+        return this.functionId;
+    }
+
+    public void addLocalSSAVariable(String identifier, Integer instructionId){
         this.localSSATrackerForVariables.put(identifier, instructionId);
     }
     public Integer getLocalSSAForVariable(String identifier){
@@ -47,13 +56,16 @@ public class Function {
     public ArrayList<String> getFuncParameters(){
         return this.funcParameters;
     }
-    public Integer getDefaultSSAVersion(){
-        return this.defaultSSAVersion;
-    }
     public BasicBlock getFuncBasicBlock(){
         return this.funcBasicBlock;
     }
     public String getFuncName(){
         return this.funcName;
+    }
+    public boolean isVisited(){
+        return this.isVisited;
+    }
+    public void setIsVisited(){
+        this.isVisited = true;
     }
 }

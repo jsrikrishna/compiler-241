@@ -13,6 +13,7 @@ public enum ErrorMessage {
     VARIABLE_DECL_ERROR("Error in Variable declaration"),
     VARIABLE_NOT_DECLARED("Variable must be declared"),
     FORMAL_PARAM_DECL_ERROR("Erorr in formalParam declaration"),
+    FUNC_PARAM_NOT_DECLARED("Func Parameter not declared"),
     FUNC_BODY_ERROR("Error in defining function body"),
     SEMICOLON_NOT_FOUND("Semicolon(;) not found"),
     FUNCTION_PROCEDURE_NOT_FOUND("function or procedure expected"),

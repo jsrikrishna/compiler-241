@@ -104,19 +104,37 @@ public class Result {
         return this.ssaVersion;
     }
 
-    public void setFuncBasicBlockId(Integer funcBasicBlockId){
+    public void setFuncBasicBlockId(Integer funcBasicBlockId) {
         this.funcBasicBlockId = funcBasicBlockId;
     }
-    public Integer getFuncBasicBlockId(){
+
+    public Integer getFuncBasicBlockId() {
         return this.funcBasicBlockId;
     }
 
-    public void setParameterCount(Integer parameterCount){
+    public void setParameterCount(Integer parameterCount) {
         this.parameterCount = parameterCount;
     }
-    public Integer getParameterCount(){
+
+    public Integer getParameterCount() {
         return this.parameterCount;
     }
 
 
+    @Override
+    public String toString() {
+
+        if (kind == KIND.VARIABLE) return identifierName + "_" + ssaVersion;
+        if (kind == KIND.CONSTANT) return Integer.toString(value);
+        if (kind == KIND.CONDITION) return condition.toString();
+        if (kind == KIND.INSTRUCTION) return "(" + instructionId + ")";
+        if (kind == KIND.BRANCH_INSTRUCTION) return "[" + basicBlockId + "]";
+        if (kind == KIND.FIX_UP) return "fix_up instruction_id (" + fixUpInstructionId + ")";
+        if (kind == KIND.ARRAY_VARIABLE) return identifierName;
+        if (kind == KIND.BASE_ADDRESS) return identifierName + "_baseAddress";
+        if (kind == KIND.FRAME_POINTER) return "FRAME_POINTER";
+        if (kind == KIND.FUNCTION) return "[" + funcBasicBlockId + "]";
+        if (kind == KIND.PARAMETER_COUNT) return "parameter_count " + parameterCount;
+        return super.toString();
+    }
 }

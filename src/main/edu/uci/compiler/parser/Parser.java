@@ -28,7 +28,7 @@ public class Parser {
     public Parser(String fileName) throws IOException {
         scanner = new Scanner(fileName);
         currentToken = scanner.getToken();
-        cfg = ControlFlowGraph.getInstance();
+        cfg = new ControlFlowGraph();
         tracker = new Tracker();
         ig = new InstructionGenerator();
         relOpList = new ArrayList<Token>() {{
@@ -75,6 +75,7 @@ public class Parser {
         if (currentToken != PERIOD) generateError(PERIOD_NOT_FOUND);
         moveToNextToken();
         startBasicBlock.addInstruction(ig.generateEndInstruction());
+        cfg.printBasicBlocks(startBasicBlock);
     }
 
 
@@ -100,8 +101,8 @@ public class Parser {
                 function.addLocalArrayVariable(identifier, arrayDimensions);
             } else {
                 Instruction instruction = ig.generateInstructionToInitVar(identifier);
-                instruction.getOperand2().setSsaVersion(function.getLocalSSAForVariable(identifier));
-                function.addLocalVariable(identifier, instruction.getInstructionId());
+                instruction.getOperand2().setSsaVersion(instruction.getInstructionId());
+                function.addLocalSSAVariable(identifier, instruction.getInstructionId());
                 // May be normal block as well, need to check -> checked, need not do, it will be either func or non-func
                 basicBlock.addInstruction(instruction);
             }
@@ -149,6 +150,7 @@ public class Parser {
             if (currentToken == IDENTIFIER) {
                 String identifier = scanner.getCurrentIdentifier();
                 Function function = new Function(identifier);
+                tracker.addFunction(identifier, function);
                 moveToNextToken();
                 formalParam(function); // formalParam, handles of moving to next token
                 if (currentToken == SEMICOLON) {
@@ -184,8 +186,16 @@ public class Parser {
     }
 
     private void addFunctionParameters(Function function) {
-        function.addLocalVariable(scanner.getCurrentIdentifier(), function.getDefaultSSAVersion());
-        function.setFuncParameter(scanner.getCurrentIdentifier());
+        String identifier = scanner.getCurrentIdentifier();
+        Integer ssaVersion = function.getLocalSSAForVariable(identifier);
+        if(ssaVersion == null){
+            ssaVersion = tracker.getSSAVersion(identifier);
+            if(ssaVersion == null){
+                generateError(FUNC_PARAM_NOT_DECLARED);
+            }
+        }
+        function.addLocalSSAVariable(identifier, ssaVersion);
+        function.setFuncParameter(identifier);
     }
 
     public void funcBody(Function function) throws IOException {
@@ -245,6 +255,9 @@ public class Parser {
         tracker.updateSSAForVariable(lhs.getIdentifierName(), instruction.getInstructionId());
         lhs.setSsaVersion(instruction.getInstructionId());
         basicBlock.updateLocalSSAVersion(lhs.getIdentifierName(), instruction.getInstructionId());
+        if(function != null){
+            function.addLocalSSAVariable(lhs.getIdentifierName(), instruction.getInstructionId());
+        }
         /*
         Update rhs result with Tracker
          */
@@ -385,48 +398,45 @@ public class Parser {
 
     public Result funcCall(BasicBlock basicBlock) throws IOException {
         Result res = null;
-        if (currentToken == CALL) {
-            moveToNextToken();
-            if (currentToken == IDENTIFIER) {
-                String identifier = scanner.getCurrentIdentifier();
-                if (isPreDefinedFunction(identifier)) {
-                    moveToNextToken();
-                    Result paramResult = getParametersForSpecialFunctions(basicBlock);
-                    res = ig.generateInstructionForPreDefinedFunctions(identifier, paramResult);
-                    basicBlock.addInstruction(ig.getInstruction(res.getInstructionId()));
-                } else {
-                    Function function = tracker.getFunction(identifier);
-                    basicBlock.addFunctionCalled(function);
-                    moveToNextToken();
-                    ArrayList<Result> parameters = new ArrayList<>();
-                    if (currentToken == OPENPAREN) {
-                        moveToNextToken();
-                        // Go from expression -> term -> factor -> designator -> identifier
-                        if (currentToken != CLOSEPAREN) {
-                            Result param = expression(basicBlock, function);
-                            parameters.add(param);
-                            while (currentToken == COMMA) {
-                                moveToNextToken();
-                                param = expression(basicBlock, function);
-                                parameters.add(param);
-                            }
-                            ArrayList<Instruction> instructions = ig.generateInstructionForParams(parameters);
-                            for (Instruction instruction : instructions) basicBlock.addInstruction(instruction);
-                        }
-                        if (currentToken == CLOSEPAREN) {
-                            moveToNextToken();
-                        } else generateError(CLOSE_PAREN_NOT_FOUND);
-                    }
-                    res = ig.generateInstructionForFunctionCall(parameters.size(), basicBlock.getId());
-                    basicBlock.addInstruction(ig.getInstruction(res.getInstructionId()));
-                }
-            }
-        } else {
-            /*
+        /*
             TODO: this code may be never be reached, as we already checked for let in statement, need to identify a
             TODO: pattern to handle these kind of duplicate code
              */
-            generateError(CALL_NOT_FOUND);
+        if (currentToken != CALL) generateError(CALL_NOT_FOUND);
+            moveToNextToken();
+        if (currentToken == IDENTIFIER) {
+            String identifier = scanner.getCurrentIdentifier();
+            if (isPreDefinedFunction(identifier)) {
+                moveToNextToken();
+                Result paramResult = getParametersForSpecialFunctions(basicBlock);
+                res = ig.generateInstructionForPreDefinedFunctions(identifier, paramResult);
+                basicBlock.addInstruction(ig.getInstruction(res.getInstructionId()));
+            } else {
+                Function function = tracker.getFunction(identifier);
+                basicBlock.addFunctionCalled(function);
+                moveToNextToken();
+                ArrayList<Result> parameters = new ArrayList<>();
+                if (currentToken == OPENPAREN) {
+                    moveToNextToken();
+                    // Go from expression -> term -> factor -> designator -> identifier
+                    if (currentToken != CLOSEPAREN) {
+                        Result param = expression(basicBlock, function);
+                        parameters.add(param);
+                        while (currentToken == COMMA) {
+                            moveToNextToken();
+                            param = expression(basicBlock, function);
+                            parameters.add(param);
+                        }
+                        ArrayList<Instruction> instructions = ig.generateInstructionForParams(parameters);
+                        for (Instruction instruction : instructions) basicBlock.addInstruction(instruction);
+                    }
+                    if (currentToken == CLOSEPAREN) {
+                        moveToNextToken();
+                    } else generateError(CLOSE_PAREN_NOT_FOUND);
+                }
+                res = ig.generateInstructionForFunctionCall(parameters.size(), basicBlock.getId());
+                basicBlock.addInstruction(ig.getInstruction(res.getInstructionId()));
+            }
         }
         return res;
     }
@@ -538,6 +548,7 @@ public class Parser {
         whileJoinBlock.setType(BB_WHILE_JOIN);
         whileJoinBlock.addParent(whileConditionBlock);
 
+        // Being added only in do
         whileConditionBlock.addChildren(whileJoinBlock);
 
         Result fixUpResult = relation(whileConditionBlock, function);
