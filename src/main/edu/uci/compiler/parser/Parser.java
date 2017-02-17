@@ -189,9 +189,9 @@ public class Parser {
     private void addFunctionParameters(Function function) {
         String identifier = scanner.getCurrentIdentifier();
         Integer ssaVersion = function.getLocalSSAForVariable(identifier);
-        if(ssaVersion == null){
+        if (ssaVersion == null) {
             ssaVersion = tracker.getSSAVersion(identifier);
-            if(ssaVersion == null){
+            if (ssaVersion == null) {
 //                System.out.println("identifier is " + identifier + " not declared");
 //                generateError(FUNC_PARAM_NOT_DECLARED);
             }
@@ -257,7 +257,7 @@ public class Parser {
         tracker.updateSSAForVariable(lhs.getIdentifierName(), instruction.getInstructionId());
         lhs.setSsaVersion(instruction.getInstructionId());
 //        basicBlock.updateLocalSSAVersion(lhs.getIdentifierName(), instruction.getInstructionId());
-        if(function != null){
+        if (function != null) {
             function.addLocalSSAVariable(lhs.getIdentifierName(), instruction.getInstructionId());
         }
         /*
@@ -408,7 +408,7 @@ public class Parser {
             TODO: pattern to handle these kind of duplicate code
              */
         if (currentToken != CALL) generateError(CALL_NOT_FOUND);
-            moveToNextToken();
+        moveToNextToken();
         if (currentToken == IDENTIFIER) {
             String identifier = scanner.getCurrentIdentifier();
             if (isPreDefinedFunction(identifier)) {
@@ -486,10 +486,6 @@ public class Parser {
         ifThenBlock.addParent(ifConditionBlock);
         ifConditionBlock.addChildren(ifThenBlock);
 
-        BasicBlock joinBlock = new BasicBlock(BB_IF_JOIN);
-        joinBlock.addParent(ifThenBlock);
-        ifThenBlock.addChildren(joinBlock);
-
         BasicBlock elseBlock = null;
         Result fixUpResult = relation(ifConditionBlock, function);
         if (currentToken != THEN) generateError(THEN_STATEMENT_ERROR);
@@ -497,34 +493,39 @@ public class Parser {
 
         ifThenBlock = statSequence(ifThenBlock, function);
 
+        BasicBlock.Type joinBlockType = BB_IF_THEN_JOIN;
+        BasicBlock joinBlock = new BasicBlock(joinBlockType);
+        joinBlock.addParent(ifThenBlock);
+        ifThenBlock.addChildren(joinBlock);
+        // BRA instruction from IF Block to JOIN Block
+        addBranchInstruction(ifThenBlock, joinBlock);
+
         if (currentToken == ELSE) {
             moveToNextToken();
             elseBlock = new BasicBlock(BB_ELSE);
-            elseBlock.addParent(ifConditionBlock);
-            elseBlock.addChildren(joinBlock);
+            // NEGATED Jump to ELSE BLOCK from IF_CONDITION BLOCK if not TRUE
+            fixUpNegCompareInstruction(fixUpResult, elseBlock);
 
+            elseBlock.addParent(ifConditionBlock);
             ifConditionBlock.addChildren(elseBlock);
 
-            joinBlock.addParent(elseBlock);
             joinBlock.setType(BB_IF_ELSE_JOIN);
+            joinBlock.addParent(elseBlock);
+            elseBlock.addChildren(joinBlock);
 
             elseBlock = statSequence(elseBlock, function);
+            // BRA instruction from ELSE Block to JOIN Block
+            addBranchInstruction(elseBlock, joinBlock);
         }
 
-        if (currentToken == FI) {
-            moveToNextToken();
-            // BRA instruction from IF Block to JOIN Block
-            addBranchInstruction(ifThenBlock, joinBlock);
+        if (currentToken != FI) generateError(FI_STATEMENT_ERROR);
+        moveToNextToken();
 
-        } else generateError(FI_STATEMENT_ERROR);
-
-        if (elseBlock != null) {
-            fixUpNegCompareInstruction(fixUpResult, elseBlock);
-            return elseBlock;
+        if (elseBlock == null) {
+            // NEGATED Jump to JOIN BLOCK from IF_CONDITION block, if condition is NOT TRUE
+            fixUpNegCompareInstruction(fixUpResult, joinBlock);
         }
-        ifConditionBlock.addChildren(joinBlock);
-        joinBlock.addParent(ifConditionBlock);
-        fixUpNegCompareInstruction(fixUpResult, joinBlock);
+
         return joinBlock;
     }
 
@@ -540,18 +541,18 @@ public class Parser {
         return res.fixUpResult;
     }
 
-    private void setSSAForVariableResult(Result res, Function function){
-        if(res.getKind() == VARIABLE){
-            if(function != null){
+    private void setSSAForVariableResult(Result res, Function function) {
+        if (res.getKind() == VARIABLE) {
+            if (function != null) {
                 Integer ssaVersion = function.getLocalSSAForVariable(res.getIdentifierName());
-                if(ssaVersion == null){
+                if (ssaVersion == null) {
                     ssaVersion = tracker.getSSAVersion(res.getIdentifierName());
-                    if(ssaVersion == null) generateError(VARIABLE_NOT_DECLARED);
+                    if (ssaVersion == null) generateError(VARIABLE_NOT_DECLARED);
                 }
                 res.setSsaVersion(ssaVersion);
             } else {
                 Integer ssaVersion = tracker.getSSAVersion(res.getIdentifierName());
-                if(ssaVersion == null) generateError(VARIABLE_NOT_DECLARED);
+                if (ssaVersion == null) generateError(VARIABLE_NOT_DECLARED);
                 res.setSsaVersion(ssaVersion);
             }
         }
@@ -614,9 +615,9 @@ public class Parser {
         ig.getInstruction(fixUpResult.getFixUpInstructionId()).getOperand2().setBasicBlockId(joinBlock.getId());
     }
 
-    private void addBranchInstruction(BasicBlock fromBlock, BasicBlock gotoBlock) {
+    private void addBranchInstruction(BasicBlock fromBlock, BasicBlock toBlock) {
         Instruction branchInstruction = ig.generateBranchInstruction();
-        branchInstruction.getOperand1().setBasicBlockId(gotoBlock.getId());
+        branchInstruction.getOperand1().setBasicBlockId(toBlock.getId());
         fromBlock.addInstruction(branchInstruction);
     }
 

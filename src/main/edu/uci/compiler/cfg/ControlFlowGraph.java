@@ -27,6 +27,9 @@ public class ControlFlowGraph {
         if (basicBlock.isVisited()) return;
         basicBlock.setIsVisited();
         System.out.println("Basic Block " + basicBlock.getId() + " type is " + basicBlock.getType());
+        if(basicBlock.getInstructions().size() == 0){
+            System.out.println("No Instructions in this basic block");
+        }
         for(Instruction instruction: basicBlock.getInstructions()) {
             System.out.println(instruction.getInstructionId() + ": " + instruction.toString());
         }
