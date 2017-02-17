@@ -23,17 +23,6 @@ public class BasicBlock {
     ArrayList<Function> functionsCalled;
     boolean isVisited;
 
-    public BasicBlock() {
-        id = numBasicBlocks;
-        type = Type.BB_NONE;
-        instructions = new ArrayList<Instruction>();
-        parent = new ArrayList<BasicBlock>();
-        children = new ArrayList<BasicBlock>();
-        localSSATracker = new HashMap<>();
-        functionsCalled = new ArrayList<>();
-        this.isVisited = false;
-        ++numBasicBlocks;
-    }
     public BasicBlock(Type type){
         id = numBasicBlocks;
         this.type = type;

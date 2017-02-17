@@ -111,8 +111,8 @@ public class Parser {
             if (arrayDimensions != null) {
                 tracker.addArrayVariable(identifier, arrayDimensions);
             } else {
-                tracker.updateSSAForVariable(scanner.getCurrentIdentifier(), tracker.getDefaultSSAVersion());
                 Instruction instruction = ig.generateInstructionToInitVar(identifier);
+                tracker.updateSSAForVariable(identifier, instruction.getInstructionId());
                 instruction.getOperand2().setSsaVersion(tracker.getSSAVersion(identifier));
                 basicBlock.addInstruction(instruction);
             }
@@ -471,18 +471,15 @@ public class Parser {
         if (currentToken != IF) generateError(IF_STATEMENT_ERROR);
         moveToNextToken();
 
-        BasicBlock ifConditionBlock = new BasicBlock();
-        ifConditionBlock.setType(BB_IF_CONDITION);
+        BasicBlock ifConditionBlock = new BasicBlock(BB_IF_CONDITION);
         ifConditionBlock.addParent(basicBlock);
         basicBlock.addChildren(ifConditionBlock);
 
-        BasicBlock ifThenBlock = new BasicBlock();
-        ifThenBlock.setType(BB_IF_THEN);
+        BasicBlock ifThenBlock = new BasicBlock(BB_IF_THEN);
         ifThenBlock.addParent(ifConditionBlock);
         ifConditionBlock.addChildren(ifThenBlock);
 
-        BasicBlock joinBlock = new BasicBlock();
-        joinBlock.setType(BB_IF_JOIN);
+        BasicBlock joinBlock = new BasicBlock(BB_IF_JOIN);
         joinBlock.addParent(ifThenBlock);
         ifThenBlock.addChildren(joinBlock);
 
@@ -495,8 +492,7 @@ public class Parser {
 
         if (currentToken == ELSE) {
             moveToNextToken();
-            elseBlock = new BasicBlock();
-            elseBlock.setType(BB_ELSE);
+            elseBlock = new BasicBlock(BB_ELSE);
             elseBlock.addParent(ifConditionBlock);
             elseBlock.addChildren(joinBlock);
 
@@ -539,13 +535,11 @@ public class Parser {
         if (currentToken != WHILE) generateError(WHILE_STATEMENT_ERROR);
         moveToNextToken();
 
-        BasicBlock whileConditionBlock = new BasicBlock();
-        whileConditionBlock.setType(BB_WHILE);
+        BasicBlock whileConditionBlock = new BasicBlock(BB_WHILE);
         whileConditionBlock.addParent(basicBlock);
         basicBlock.addChildren(whileConditionBlock);
 
-        BasicBlock whileJoinBlock = new BasicBlock();
-        whileJoinBlock.setType(BB_WHILE_JOIN);
+        BasicBlock whileJoinBlock = new BasicBlock(BB_WHILE_JOIN);
         whileJoinBlock.addParent(whileConditionBlock);
 
         // Being added only in do
@@ -557,8 +551,7 @@ public class Parser {
         if (currentToken != DO) generateError(DO_EXPECTED);
 
         moveToNextToken();
-        BasicBlock whileBodyBlock = new BasicBlock();
-        whileBodyBlock.setType(BB_WHILE_BODY);
+        BasicBlock whileBodyBlock = new BasicBlock(BB_WHILE_BODY);
         whileBodyBlock.addParent(whileConditionBlock);
         whileBodyBlock.addChildren(whileConditionBlock);
 

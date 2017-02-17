@@ -10,8 +10,6 @@ import java.util.HashMap;
  */
 public class Tracker {
 
-    private static Integer defaultSSAVersion = -1;
-    private static Tracker instance;
     private HashMap<String, Integer> ssaTrackerForVariables;
     private HashMap<String, ArrayList<Integer>> arrayVariables;
     private HashMap<String, Function> functions;
@@ -28,9 +26,6 @@ public class Tracker {
 
     public Integer getSSAVersion(String identifier) {
         return ssaTrackerForVariables.get(identifier);
-    }
-    public Integer getDefaultSSAVersion(){
-        return this.defaultSSAVersion;
     }
     public void addArrayVariable(String identifier, ArrayList<Integer> dimensions){
         this.arrayVariables.put(identifier, dimensions);

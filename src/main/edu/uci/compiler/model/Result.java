@@ -124,17 +124,17 @@ public class Result {
     @Override
     public String toString() {
 
-        if (kind == KIND.VARIABLE) return identifierName + "_" + ssaVersion;
-        if (kind == KIND.CONSTANT) return Integer.toString(value);
-        if (kind == KIND.CONDITION) return condition.toString();
-        if (kind == KIND.INSTRUCTION) return "(" + instructionId + ")";
+        if (kind == KIND.VARIABLE) return this.identifierName + "_" + ssaVersion;
+        if (kind == KIND.CONSTANT) return Integer.toString(this.value);
+        if (kind == KIND.CONDITION) return this.condition.toString();
+        if (kind == KIND.INSTRUCTION) return "(" + this.instructionId + ")";
         if (kind == KIND.BRANCH_INSTRUCTION) return "[" + basicBlockId + "]";
-        if (kind == KIND.FIX_UP) return "fix_up instruction_id (" + fixUpInstructionId + ")";
-        if (kind == KIND.ARRAY_VARIABLE) return identifierName;
-        if (kind == KIND.BASE_ADDRESS) return identifierName + "_baseAddress";
+        if (kind == KIND.FIX_UP) return "fix_up instruction_id (" + this.fixUpInstructionId + ")";
+        if (kind == KIND.ARRAY_VARIABLE) return this.identifierName;
+        if (kind == KIND.BASE_ADDRESS) return this.identifierName + "_baseAddress";
         if (kind == KIND.FRAME_POINTER) return "FRAME_POINTER";
-        if (kind == KIND.FUNCTION) return "[" + funcBasicBlockId + "]";
-        if (kind == KIND.PARAMETER_COUNT) return "parameter_count " + parameterCount;
+        if (kind == KIND.FUNCTION) return "[" + this.funcBasicBlockId + "]";
+        if (kind == KIND.PARAMETER_COUNT) return "parameter_count " + this.parameterCount;
         return super.toString();
     }
 }
