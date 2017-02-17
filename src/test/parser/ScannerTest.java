@@ -21,7 +21,7 @@ public class ScannerTest {
         boolean noExceptionOccurred = true;
         try {
             //Test only one code at a time
-            String fileName = resourcePath + "/test004.txt";
+            String fileName = resourcePath + "/test007.txt";
             Scanner s = new Scanner(fileName);
             Token str;
             while (!s.isEOF()) {

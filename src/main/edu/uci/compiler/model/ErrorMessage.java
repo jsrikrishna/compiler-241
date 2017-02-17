@@ -35,7 +35,9 @@ public enum ErrorMessage {
     OD_EXPECTED("Expected od keyword to be present"),
     RETURN_EXPECTED("Expected return keyword to be present"),
     RELATION_OP_NOT_FOUND("Expected Relation Operation to be present"),
-    ARRAY_DIMENSION_MISMATCH("Error in specifying array dimensions");
+    ARRAY_DIMENSION_MISMATCH("Error in specifying array dimensions"),
+
+    NOT_ABLE_TO_LINK_NEG_INSTR("Not able to link branch instructions");
 
     private String errorMessage;
     private ErrorMessage(String errorMessage){

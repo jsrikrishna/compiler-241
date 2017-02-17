@@ -14,8 +14,8 @@ import java.util.Set;
 public class ControlFlowGraph {
     BasicBlock startBasicBlock;
 
-    public ControlFlowGraph() {
-        startBasicBlock = new BasicBlock(BasicBlock.Type.BB_MAIN);
+    public void setStartBasicBlock(BasicBlock basicBlock){
+        this.startBasicBlock = basicBlock;
     }
 
     public BasicBlock getBasicBlock() {

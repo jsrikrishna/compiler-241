@@ -55,7 +55,8 @@ public class Parser {
     public void computation() throws IOException {
         if (currentToken != MAIN) generateError(MAIN_NOT_FOUND);
         moveToNextToken();
-        BasicBlock startBasicBlock = cfg.getBasicBlock();
+        BasicBlock startBasicBlock = new BasicBlock(BB_MAIN);
+        cfg.setStartBasicBlock(startBasicBlock);
         while (currentToken == VAR || currentToken == ARRAY) {
             //TODO: Deal with array's later
             // Need not move to next token, it is handled by varDecl
@@ -75,7 +76,7 @@ public class Parser {
         if (currentToken != PERIOD) generateError(PERIOD_NOT_FOUND);
         moveToNextToken();
         startBasicBlock.addInstruction(ig.generateEndInstruction());
-        cfg.printBasicBlocks(startBasicBlock);
+        cfg.printBasicBlocks(cfg.getBasicBlock());
     }
 
 
@@ -191,7 +192,8 @@ public class Parser {
         if(ssaVersion == null){
             ssaVersion = tracker.getSSAVersion(identifier);
             if(ssaVersion == null){
-                generateError(FUNC_PARAM_NOT_DECLARED);
+//                System.out.println("identifier is " + identifier + " not declared");
+//                generateError(FUNC_PARAM_NOT_DECLARED);
             }
         }
         function.addLocalSSAVariable(identifier, ssaVersion);
@@ -254,7 +256,7 @@ public class Parser {
          */
         tracker.updateSSAForVariable(lhs.getIdentifierName(), instruction.getInstructionId());
         lhs.setSsaVersion(instruction.getInstructionId());
-        basicBlock.updateLocalSSAVersion(lhs.getIdentifierName(), instruction.getInstructionId());
+//        basicBlock.updateLocalSSAVersion(lhs.getIdentifierName(), instruction.getInstructionId());
         if(function != null){
             function.addLocalSSAVariable(lhs.getIdentifierName(), instruction.getInstructionId());
         }
@@ -262,10 +264,11 @@ public class Parser {
         Update rhs result with Tracker
          */
         if (rhs.getKind() == VARIABLE) {
-            Integer localSSAVersion = basicBlock.getSSAVersion(rhs.getIdentifierName());
-            if (localSSAVersion == null) {
-                rhs.setSsaVersion(tracker.getSSAVersion(rhs.getIdentifierName()));
-            } else rhs.setSsaVersion(localSSAVersion);
+//            Integer localSSAVersion = basicBlock.getSSAVersion(rhs.getIdentifierName());
+//            if (localSSAVersion == null) {
+//                rhs.setSsaVersion(tracker.getSSAVersion(rhs.getIdentifierName()));
+//            } else rhs.setSsaVersion(localSSAVersion);
+            Integer ssaVersion = tracker.getSSAVersion(rhs.getIdentifierName());
         }
 
 
@@ -319,7 +322,9 @@ public class Parser {
                 }
                 res.setSsaVersion(ssaVersion);
             } else {
-                res.setSsaVersion(basicBlock.getSSAVersion(identifier));
+//                res.setSsaVersion(basicBlock.getSSAVersion(identifier));
+                //TODO: I don't understand why we need to get from basic block SSA and maintain basic block SSA
+                res.setSsaVersion(tracker.getSSAVersion(identifier));
             }
         }
 
@@ -455,7 +460,9 @@ public class Parser {
                 result = new Result();
                 result.setKind(VARIABLE);
                 result.setIdentifierName(identifier);
-                result.setSsaVersion(basicBlock.getSSAVersion(identifier));
+//                result.setSsaVersion(basicBlock.getSSAVersion(identifier));
+                //TODO: Need to understand the need of getting SSA from basic block
+                result.setSsaVersion(tracker.getSSAVersion(identifier));
             } else if (currentToken == NUMBER) {
                 result = new Result();
                 result.setKind(CONSTANT);
@@ -526,9 +533,28 @@ public class Parser {
         Result condition = relOp();
         Result rhs = expression(basicBlock, function);
         RelationResult res = ig.computeRelation(condition, lhs, rhs);
+        setSSAForVariableResult(lhs, function);
+        setSSAForVariableResult(rhs, function);
         basicBlock.addInstruction(res.compareInstruction);
         basicBlock.addInstruction(res.negCompareInstruction);
         return res.fixUpResult;
+    }
+
+    private void setSSAForVariableResult(Result res, Function function){
+        if(res.getKind() == VARIABLE){
+            if(function != null){
+                Integer ssaVersion = function.getLocalSSAForVariable(res.getIdentifierName());
+                if(ssaVersion == null){
+                    ssaVersion = tracker.getSSAVersion(res.getIdentifierName());
+                    if(ssaVersion == null) generateError(VARIABLE_NOT_DECLARED);
+                }
+                res.setSsaVersion(ssaVersion);
+            } else {
+                Integer ssaVersion = tracker.getSSAVersion(res.getIdentifierName());
+                if(ssaVersion == null) generateError(VARIABLE_NOT_DECLARED);
+                res.setSsaVersion(ssaVersion);
+            }
+        }
     }
 
     public BasicBlock whileStatement(BasicBlock basicBlock, Function function) throws IOException {
@@ -595,7 +621,7 @@ public class Parser {
     }
 
     public void generateError(ErrorMessage message) {
-        System.out.println("Syntax Error occurred - " + message);
+        System.out.println("Syntax Error occurred - " + message.toString());
         System.exit(1);
     }
 }

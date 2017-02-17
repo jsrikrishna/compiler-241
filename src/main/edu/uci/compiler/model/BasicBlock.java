@@ -82,13 +82,13 @@ public class BasicBlock {
         return this.type;
     }
 
-    public Integer getSSAVersion(String identifier) {
-        return localSSATracker.get(identifier);
-    }
+//    public Integer getSSAVersion(String identifier) {
+//        return localSSATracker.get(identifier);
+//    }
 
-    public void updateLocalSSAVersion(String identifier, Integer instructionId) {
-        localSSATracker.put(identifier, instructionId);
-    }
+//    public void updateLocalSSAVersion(String identifier, Integer instructionId) {
+//        localSSATracker.put(identifier, instructionId);
+//    }
 
     public void addFunctionCalled(Function function) {
         this.functionsCalled.add(function);

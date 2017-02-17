@@ -32,6 +32,9 @@ public class Function {
     }
 
     public void addLocalSSAVariable(String identifier, Integer instructionId){
+        if(instructionId == null){
+            instructionId = 1; // this for function parameters only
+        }
         this.localSSATrackerForVariables.put(identifier, instructionId);
     }
     public Integer getLocalSSAForVariable(String identifier){

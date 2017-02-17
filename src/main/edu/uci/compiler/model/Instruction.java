@@ -11,7 +11,7 @@ public class Instruction {
     Operation operation;
     Result operand1;
     Result operand2;
-    int instructionId;
+    private int instructionId;
 
     public Instruction() {
         this.instructionId = numberOfInstructions;
@@ -56,7 +56,8 @@ public class Instruction {
         if (this.operation == null) {
 //            System.out.println("Operation is null");
             return null;
-        };
+        }
+        ;
         if (this.isBinaryOperand()) return forTwoOperands();
         if (this.isUnaryOperand()) return forOneOperand();
         if (this.noOperand()) return forNoOperand();
@@ -81,7 +82,7 @@ public class Instruction {
                 || this.operation == Operation.BGE
                 || this.operation == Operation.BGT
                 || this.operation == Operation.BLE
-                || this.operation == Operation.BLT){
+                || this.operation == Operation.BLT) {
 //            System.out.println("returning true for binary");
             return true;
         }
@@ -93,13 +94,13 @@ public class Instruction {
         if (this.operation == Operation.BRA
                 || this.operation == Operation.RET
                 || this.operation == Operation.PARAM
-                || this.operation == Operation.READ
                 || this.operation == Operation.WRITE) return true;
         return false;
     }
 
     private boolean noOperand() {
-        if (this.operation == Operation.END || this.operation == Operation.WRITENL) return true;
+        if (this.operation == Operation.END || this.operation == Operation.WRITENL || this.operation == Operation.READ)
+            return true;
         return false;
     }
 
