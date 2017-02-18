@@ -2,6 +2,7 @@ package main.edu.uci.compiler.model;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 
 /**
@@ -19,7 +20,7 @@ public class BasicBlock {
     int id;
     Type type;
     static Integer numBasicBlocks = 0;
-    List<Instruction> instructions;
+    LinkedList<Instruction> instructions;
     List<BasicBlock> parent;
     List<BasicBlock> children;
     HashMap<String, Integer> localSSATracker;
@@ -29,7 +30,7 @@ public class BasicBlock {
     public BasicBlock(Type type){
         id = numBasicBlocks;
         this.type = type;
-        instructions = new ArrayList<Instruction>();
+        instructions = new LinkedList<>();
         parent = new ArrayList<BasicBlock>();
         children = new ArrayList<BasicBlock>();
         localSSATracker = new HashMap<>();
@@ -42,7 +43,7 @@ public class BasicBlock {
         this.instructions.add(instruction);
     }
 
-    public void setInstructions(List<Instruction> instructions) {
+    public void setInstructions(LinkedList<Instruction> instructions) {
         this.instructions = instructions;
     }
     public List<Instruction> getInstructions(){

@@ -26,6 +26,9 @@ public class InstructionGenerator {
         Instruction negCompareInstruction;
     }
 
+    /*
+    This is class is used for returning Array Related Instructions
+     */
     class ArrayBase {
         ArrayList<Integer> instructionIds;
         Result finalResult; // i.e. after summing up all dimensions -> k.mn + i.n + j for indices [k][i][j] and [l][m][n]
