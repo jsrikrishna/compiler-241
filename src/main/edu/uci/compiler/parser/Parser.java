@@ -168,21 +168,19 @@ public class Parser {
         if (currentToken == OPENPAREN) {
             moveToNextToken();
             if (currentToken == IDENTIFIER) {
-                //TODO: need to store the variable at common place
+                //TODO: need to store the variable at common place - Done i guess, but still keeping for validate check
                 addFunctionParameters(function);
                 moveToNextToken();
                 while (currentToken == COMMA) {
                     moveToNextToken();
-                    if (currentToken == IDENTIFIER) {
-                        //TODO: need to store the variable at common place
-                        addFunctionParameters(function);
-                        moveToNextToken();
-                    } else generateError(FORMAL_PARAM_DECL_ERROR);
+                    if (currentToken != IDENTIFIER) generateError(FORMAL_PARAM_DECL_ERROR);
+                    //TODO: need to store the variable at common place - Done i guess, but still keeping for validate check
+                    addFunctionParameters(function);
+                    moveToNextToken();
                 }
             }
-            if (currentToken == CLOSEPAREN) {
-                moveToNextToken();
-            } else generateError(FORMAL_PARAM_DECL_ERROR);
+            if (currentToken != CLOSEPAREN) generateError(FORMAL_PARAM_DECL_ERROR);
+            moveToNextToken();
         }
     }
 
@@ -191,24 +189,18 @@ public class Parser {
         Integer ssaVersion = function.getLocalSSAForVariable(identifier);
         if (ssaVersion == null) {
             ssaVersion = tracker.getSSAVersion(identifier);
-            if (ssaVersion == null) {
-//                System.out.println("identifier is " + identifier + " not declared");
-//                generateError(FUNC_PARAM_NOT_DECLARED);
-            }
         }
-        function.addLocalSSAVariable(identifier, ssaVersion);
+        function.addLocalSSAVariable(identifier, ssaVersion); // SSA Version might be NULL
         function.setFuncParameter(identifier);
     }
 
     public void funcBody(Function function) throws IOException {
         while (currentToken == VAR || currentToken == ARRAY) varDecl(function, function.getFuncBasicBlock());
-        if (currentToken == BEGIN) {
-            moveToNextToken();
-            BasicBlock finalBlock = statSequence(function.getFuncBasicBlock(), function);
-            if (currentToken == END) {
-                moveToNextToken();
-            } else generateError(END_NOT_FOUND);
-        } else generateError(BEGIN_NOT_FOUND);
+        if(currentToken != BEGIN) generateError(BEGIN_NOT_FOUND);
+        moveToNextToken();
+        BasicBlock finalBlock = statSequence(function.getFuncBasicBlock(), function);
+        if (currentToken != END) generateError(END_NOT_FOUND);
+        moveToNextToken();
     }
 
     public BasicBlock statSequence(BasicBlock basicBlock, Function function) throws IOException {
@@ -375,30 +367,34 @@ public class Parser {
     }
 
     public Result factor(BasicBlock basicBlock, Function function) throws IOException {
-        Result result = null;
+        if (!isAFactor(currentToken)) generateError(FACTOR_ERROR);
         if (currentToken == IDENTIFIER) {
             //TODO: Need to deal with identifiers
-            result = designator(basicBlock, function);
-        } else if (currentToken == NUMBER) {
+            return designator(basicBlock, function);
+        }
+        if (currentToken == NUMBER) {
             //TODO: Need to deal with number
-            result = new Result();
+            Result result = new Result();
             result.setKind(CONSTANT);
             result.setValue(number());
-        } else if (currentToken == CALL) {
+            return result;
+        }
+        if (currentToken == CALL) {
             //TODO: Need to deal with function calls
-            result = funcCall(basicBlock);
-        } else if (currentToken == OPENPAREN) {
+            return funcCall(basicBlock);
+        }
+        if (currentToken == OPENPAREN) {
             moveToNextToken();
-            result = expression(basicBlock, function);
-            if (currentToken == CLOSEPAREN) {
-                moveToNextToken();
-            } else {
-                //TODO: Can be CLOSE_PAREN_NOT_FOUND, again needs to design the error message
-                //TODO: Done i guess, but still keeping to clarify
-                generateError(CLOSE_PAREN_NOT_FOUND);
-            }
-        } else generateError(FACTOR_ERROR);
-        return result;
+            Result result = expression(basicBlock, function);
+            if (currentToken != CLOSEPAREN) generateError(CLOSE_PAREN_NOT_FOUND);
+            moveToNextToken();
+            return result;
+        }
+        return null;
+    }
+
+    private boolean isAFactor(Token token) {
+        return token == IDENTIFIER || token == NUMBER || token == CALL || token == OPENPAREN;
     }
 
     public Result funcCall(BasicBlock basicBlock) throws IOException {
@@ -435,9 +431,8 @@ public class Parser {
                         ArrayList<Instruction> instructions = ig.generateInstructionForParams(parameters);
                         for (Instruction instruction : instructions) basicBlock.addInstruction(instruction);
                     }
-                    if (currentToken == CLOSEPAREN) {
-                        moveToNextToken();
-                    } else generateError(CLOSE_PAREN_NOT_FOUND);
+                    if (currentToken != CLOSEPAREN) generateError(CLOSE_PAREN_NOT_FOUND);
+                    moveToNextToken();
                 }
                 res = ig.generateInstructionForFunctionCall(parameters.size(), basicBlock.getId());
                 basicBlock.addInstruction(ig.getInstruction(res.getInstructionId()));
@@ -468,8 +463,8 @@ public class Parser {
                 result.setKind(CONSTANT);
                 result.setValue(number());
             }
-            if (currentToken == CLOSEPAREN) moveToNextToken();
-            else generateError(CLOSE_PAREN_NOT_FOUND);
+            if (currentToken != CLOSEPAREN) generateError(CLOSE_PAREN_NOT_FOUND);
+            moveToNextToken();
         }
         return result;
     }
