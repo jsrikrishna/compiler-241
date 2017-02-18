@@ -494,11 +494,11 @@ public class Parser {
 
         BasicBlock ifConditionBlock = new BasicBlock(BB_IF_CONDITION);
         ifConditionBlock.addParent(basicBlock);
-        basicBlock.addChildren(ifConditionBlock);
+        basicBlock.addChildrenAndUpdateChildrenTracker(ifConditionBlock);
 
         BasicBlock ifThenBlock = new BasicBlock(BB_IF_THEN);
         ifThenBlock.addParent(ifConditionBlock);
-        ifConditionBlock.addChildren(ifThenBlock);
+        ifConditionBlock.addChildrenAndUpdateChildrenTracker(ifThenBlock);
 
         BasicBlock elseBlock = null;
         Result fixUpResult = relation(ifConditionBlock, function);
@@ -510,7 +510,7 @@ public class Parser {
         BasicBlock.Type joinBlockType = BB_IF_THEN_JOIN;
         BasicBlock joinBlock = new BasicBlock(joinBlockType);
         joinBlock.addParent(ifThenBlock);
-        ifThenBlock.addChildren(joinBlock);
+        ifThenBlock.addChildrenAndUpdateChildrenTracker(joinBlock);
         // BRA instruction from IF Block to JOIN Block
         addBranchInstruction(ifThenBlock, joinBlock);
 
@@ -521,11 +521,11 @@ public class Parser {
             fixUpNegCompareInstruction(fixUpResult, elseBlock);
 
             elseBlock.addParent(ifConditionBlock);
-            ifConditionBlock.addChildren(elseBlock);
+            ifConditionBlock.addChildrenAndUpdateChildrenTracker(elseBlock);
 
             joinBlock.setType(BB_IF_ELSE_JOIN);
             joinBlock.addParent(elseBlock);
-            elseBlock.addChildren(joinBlock);
+            elseBlock.addChildrenAndUpdateChildrenTracker(joinBlock);
 
             elseBlock = statSequence(elseBlock, function);
             // BRA instruction from ELSE Block to JOIN Block
@@ -578,13 +578,13 @@ public class Parser {
 
         BasicBlock whileConditionBlock = new BasicBlock(BB_WHILE_CONDITION);
         whileConditionBlock.addParent(basicBlock);
-        basicBlock.addChildren(whileConditionBlock);
+        basicBlock.addChildrenAndUpdateChildrenTracker(whileConditionBlock);
 
         BasicBlock whileJoinBlock = new BasicBlock(BB_WHILE_JOIN);
         whileJoinBlock.addParent(whileConditionBlock);
 
         // Being added only in do
-        whileConditionBlock.addChildren(whileJoinBlock);
+        whileConditionBlock.addChildrenAndUpdateChildrenTracker(whileJoinBlock);
 
         Result fixUpResult = relation(whileConditionBlock, function);
         fixUpNegCompareInstruction(fixUpResult, whileJoinBlock);
@@ -594,9 +594,9 @@ public class Parser {
         moveToNextToken();
         BasicBlock whileBodyBlock = new BasicBlock(BB_WHILE_BODY);
         whileBodyBlock.addParent(whileConditionBlock);
-        whileBodyBlock.addChildren(whileConditionBlock);
+        whileBodyBlock.addChildrenAndUpdateChildrenTracker(whileConditionBlock);
 
-        whileConditionBlock.addChildren(whileBodyBlock);
+        whileConditionBlock.addChildrenAndUpdateChildrenTracker(whileBodyBlock);
 
         whileBodyBlock = statSequence(whileBodyBlock, function);
         //Go Back to while condition -> adding instruction for that

@@ -1,9 +1,6 @@
 package main.edu.uci.compiler.model;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 
 /**
  * Created by srikrishna on 2/2/17.
@@ -47,7 +44,7 @@ public class BasicBlock {
         this.instructions = instructions;
     }
 
-    public List<Instruction> getInstructions() {
+    public LinkedList<Instruction> getInstructions() {
         return this.instructions;
     }
 
@@ -71,8 +68,9 @@ public class BasicBlock {
         this.children = children;
     }
 
-    public void addChildren(BasicBlock children) {
+    public void addChildrenAndUpdateChildrenTracker(BasicBlock children) {
         this.children.add(children);
+        children.setLocalTracker(this.getCopyOfVariableTracker());
     }
 
     public void addParent(BasicBlock parent) {
@@ -117,6 +115,14 @@ public class BasicBlock {
 
     public void setIsVisited() {
         this.isVisited = true;
+    }
+
+    public HashMap<String, Integer> getCopyOfVariableTracker(){
+        HashMap<String, Integer> copy = new HashMap<>();
+        for(Map.Entry<String, Integer> entry: this.localTracker.entrySet()){
+            copy.put(entry.getKey(), entry.getValue());
+        }
+        return copy;
     }
 
     @Override
