@@ -11,6 +11,8 @@ import static main.edu.uci.compiler.model.BasicBlock.Type.*;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Created by srikrishna on 1/27/17.
@@ -20,8 +22,8 @@ public class Parser {
     private Token currentToken;
     private ControlFlowGraph cfg;
     private InstructionGenerator ig;
-    ArrayList<Token> relOpList;
-    ArrayList<Token> statSeqList;
+    private ArrayList<Token> relOpList;
+    private ArrayList<Token> statSeqList;
     private Tracker tracker;
     private Integer DEFAULT_SSA_VERSION = -1;
 
@@ -66,7 +68,7 @@ public class Parser {
         startBasicBlock.setLocalTracker(tracker.getCopyOfVariableTracker());
         while (currentToken == Token.FUNCTION || currentToken == PROCEDURE) {
             // Need not move to next token, it is handled by funcDecl
-            funcDecl(startBasicBlock);
+            funcDecl();
         }
         if (currentToken != BEGIN) generateError(BEGIN_NOT_FOUND);
         moveToNextToken();
@@ -82,7 +84,7 @@ public class Parser {
     }
 
 
-    public void varDecl(Function function, BasicBlock basicBlock) throws IOException {
+    private void varDecl(Function function, BasicBlock basicBlock) throws IOException {
         ArrayList<Integer> arrayDimensions = typeDecl();
         if (currentToken != IDENTIFIER) generateError(VARIABLE_DECL_ERROR);
         storeVariables(arrayDimensions, function, basicBlock);
@@ -97,7 +99,7 @@ public class Parser {
         moveToNextToken();
     }
 
-    public void storeVariables(ArrayList<Integer> arrayDimensions, Function function, BasicBlock basicBlock) {
+    private void storeVariables(ArrayList<Integer> arrayDimensions, Function function, BasicBlock basicBlock) {
         String identifier = scanner.getCurrentIdentifier();
         if (function != null) {
             if (arrayDimensions != null) {
@@ -125,7 +127,7 @@ public class Parser {
 
     }
 
-    public ArrayList<Integer> typeDecl() throws IOException {
+    private ArrayList<Integer> typeDecl() throws IOException {
         if (currentToken != VAR && currentToken != ARRAY) generateError(TYPE_DECL_ERROR);
         if (currentToken == VAR) {
             moveToNextToken();
@@ -143,13 +145,13 @@ public class Parser {
         return arrayDimensions;
     }
 
-    public int number() throws IOException {
+    private int number() throws IOException {
         if (currentToken != NUMBER) generateError(NUMBER_EXPECTED);
         moveToNextToken();
         return scanner.getCurrentNumber();
     }
 
-    public void funcDecl(BasicBlock basicBlock) throws IOException {
+    private void funcDecl() throws IOException {
         if (currentToken == Token.FUNCTION || currentToken == PROCEDURE) {
             moveToNextToken();
             if (currentToken == IDENTIFIER) {
@@ -168,7 +170,7 @@ public class Parser {
         } else generateError(FUNCTION_PROCEDURE_NOT_FOUND);
     }
 
-    public void formalParam(Function function) throws IOException {
+    private void formalParam(Function function) throws IOException {
         if (currentToken == OPENPAREN) {
             moveToNextToken();
             if (currentToken == IDENTIFIER) {
@@ -205,7 +207,7 @@ public class Parser {
         function.setFuncParameter(identifier);
     }
 
-    public void funcBody(Function function) throws IOException {
+    private void funcBody(Function function) throws IOException {
         while (currentToken == VAR || currentToken == ARRAY) varDecl(function, function.getFuncBasicBlock());
         if (currentToken != BEGIN) generateError(BEGIN_NOT_FOUND);
         moveToNextToken();
@@ -214,7 +216,7 @@ public class Parser {
         moveToNextToken();
     }
 
-    public BasicBlock statSequence(BasicBlock basicBlock, Function function) throws IOException {
+    private BasicBlock statSequence(BasicBlock basicBlock, Function function) throws IOException {
         basicBlock = statement(basicBlock, function);
         while (currentToken == SEMICOLON) {
             moveToNextToken();
@@ -223,7 +225,7 @@ public class Parser {
         return basicBlock;
     }
 
-    public BasicBlock statement(BasicBlock basicBlock, Function function) throws IOException {
+    private BasicBlock statement(BasicBlock basicBlock, Function function) throws IOException {
         if (!(statSeqList.contains(currentToken))) generateError(KEYWORD_EXPECTED);
 
         if (currentToken == IF) {
@@ -243,7 +245,7 @@ public class Parser {
 
     }
 
-    public Result assignment(BasicBlock basicBlock, Function function) throws IOException {
+    private Result assignment(BasicBlock basicBlock, Function function) throws IOException {
         if (currentToken != LET) generateError(ASSIGNMENT_ERROR);
         moveToNextToken();
         Result lhs = designator(basicBlock, function);
@@ -286,7 +288,7 @@ public class Parser {
         return lhs;
     }
 
-    public Result designator(BasicBlock basicBlock, Function function) throws IOException {
+    private Result designator(BasicBlock basicBlock, Function function) throws IOException {
         if (currentToken != IDENTIFIER) generateError(DESIGNATOR_ERROR);
         // Could be array variable or a normal variable
         Result res = new Result();
@@ -333,9 +335,6 @@ public class Parser {
                 res.setSsaVersion(ssaVersion);
             } else {
                 res.setSsaVersion(basicBlock.getSSAVersion(identifier));
-                //TODO: I don't understand why we need to get from basic block SSA and maintain basic block SSA
-                //Update: I guess for Phi, but will make sure
-//                res.setSsaVersion(tracker.getSSAVersion(identifier));
             }
         }
 
@@ -355,7 +354,7 @@ public class Parser {
         return res.finalResult;
     }
 
-    public Result expression(BasicBlock basicBlock, Function function) throws IOException {
+    private Result expression(BasicBlock basicBlock, Function function) throws IOException {
         Result lhs = term(basicBlock, function);
         while (currentToken == PLUS || currentToken == MINUS) {
             Token prevToken = currentToken;
@@ -370,7 +369,7 @@ public class Parser {
         return lhs;
     }
 
-    public Result term(BasicBlock basicBlock, Function function) throws IOException {
+    private Result term(BasicBlock basicBlock, Function function) throws IOException {
         Result lhs = factor(basicBlock, function);
         while (currentToken == TIMES || currentToken == DIV) {
             Token prevToken = currentToken;
@@ -385,7 +384,7 @@ public class Parser {
         return lhs;
     }
 
-    public Result factor(BasicBlock basicBlock, Function function) throws IOException {
+    private Result factor(BasicBlock basicBlock, Function function) throws IOException {
         if (!isAFactor(currentToken)) generateError(FACTOR_ERROR);
         if (currentToken == IDENTIFIER) {
             //TODO: Need to deal with identifiers
@@ -416,7 +415,7 @@ public class Parser {
         return token == IDENTIFIER || token == NUMBER || token == CALL || token == OPENPAREN;
     }
 
-    public Result funcCall(BasicBlock basicBlock) throws IOException {
+    private Result funcCall(BasicBlock basicBlock) throws IOException {
         Result res = null;
         /*
             TODO: this code may be never be reached, as we already checked for let in statement, need to identify a
@@ -488,7 +487,7 @@ public class Parser {
         return result;
     }
 
-    public BasicBlock ifStatement(BasicBlock basicBlock, Function function) throws IOException {
+    private BasicBlock ifStatement(BasicBlock basicBlock, Function function) throws IOException {
         if (currentToken != IF) generateError(IF_STATEMENT_ERROR);
         moveToNextToken();
 
@@ -507,8 +506,7 @@ public class Parser {
 
         ifThenBlock = statSequence(ifThenBlock, function);
 
-        BasicBlock.Type joinBlockType = BB_IF_THEN_JOIN;
-        BasicBlock joinBlock = new BasicBlock(joinBlockType);
+        BasicBlock joinBlock = new BasicBlock(BB_IF_THEN_JOIN);
         joinBlock.addParent(ifThenBlock);
         ifThenBlock.addChildrenAndUpdateChildrenTracker(joinBlock);
         // BRA instruction from IF Block to JOIN Block
@@ -530,6 +528,7 @@ public class Parser {
             elseBlock = statSequence(elseBlock, function);
             // BRA instruction from ELSE Block to JOIN Block
             addBranchInstruction(elseBlock, joinBlock);
+            insertPhiFunctionForIfStatement(ifThenBlock, elseBlock, joinBlock);
         }
 
         if (currentToken != FI) generateError(FI_STATEMENT_ERROR);
@@ -538,12 +537,13 @@ public class Parser {
         if (elseBlock == null) {
             // NEGATED Jump to JOIN BLOCK from IF_CONDITION block, if condition is NOT TRUE
             fixUpNegCompareInstruction(fixUpResult, joinBlock);
+            insertPhiFunctionForIfStatement(ifConditionBlock, ifThenBlock, joinBlock);
         }
 
         return joinBlock;
     }
 
-    public Result relation(BasicBlock basicBlock, Function function) throws IOException {
+    private Result relation(BasicBlock basicBlock, Function function) throws IOException {
         Result lhs = expression(basicBlock, function);
         Result condition = relOp();
         Result rhs = expression(basicBlock, function);
@@ -572,7 +572,7 @@ public class Parser {
         }
     }
 
-    public BasicBlock whileStatement(BasicBlock basicBlock, Function function) throws IOException {
+    private BasicBlock whileStatement(BasicBlock basicBlock, Function function) throws IOException {
         if (currentToken != WHILE) generateError(WHILE_STATEMENT_ERROR);
         moveToNextToken();
 
@@ -606,7 +606,7 @@ public class Parser {
         return whileJoinBlock;
     }
 
-    public void returnStatement(BasicBlock basicBlock, Function function) throws IOException {
+    private void returnStatement(BasicBlock basicBlock, Function function) throws IOException {
         if (currentToken != RETURN) generateError(RETURN_EXPECTED);
         moveToNextToken();
         if (currentToken != END) {
@@ -616,7 +616,7 @@ public class Parser {
         }
     }
 
-    public Result relOp() throws IOException {
+    private Result relOp() throws IOException {
         if ((!relOpList.contains(currentToken))) generateError(RELATION_OP_NOT_FOUND);
         Result relOpResult = new Result();
         relOpResult.setKind(CONDITION);
@@ -635,7 +635,43 @@ public class Parser {
         fromBlock.addInstruction(branchInstruction);
     }
 
-    public void generateError(ErrorMessage message) {
+    private void insertPhiFunctionForIfStatement(BasicBlock leftBlock, BasicBlock rightBlock, BasicBlock joinBlock){
+        HashMap<String, Integer> leftTracker = leftBlock.getLocalTracker();
+        HashMap<String, Integer> rightTracker = rightBlock.getLocalTracker();
+        HashMap<String, Integer> joinTracker = new HashMap<>();
+        for(Map.Entry<String, Integer> trackEntry : leftTracker.entrySet()){
+            String identifier = trackEntry.getKey();
+            Integer leftSSAVersion = trackEntry.getValue();
+            if(rightTracker.containsKey(identifier) && leftSSAVersion != rightTracker.get(identifier)){
+                Integer rightSSAVersion = rightTracker.get(identifier);
+                Result leftResult = resultForVariable(identifier, leftSSAVersion);
+                Result rightResult = resultForVariable(identifier, rightSSAVersion);
+                Instruction phiInstruction = ig.generatePhiInstruction(leftResult, rightResult);
+                joinBlock.addInstruction(phiInstruction);
+                // Same as phiInstruction.getInstructionId() instead of phiInstruction.getOperand3().getSsaVersion()
+                joinTracker.put(identifier, phiInstruction.getOperand3().getSsaVersion());
+                tracker.updateSSAForVariable(identifier, phiInstruction.getInstructionId());
+            }
+            else joinTracker.put(identifier, leftSSAVersion);
+        }
+        for(Map.Entry<String, Integer> rightEntry: rightTracker.entrySet()){
+            String identifier = rightEntry.getKey();
+            Integer rightSSAVersion = rightEntry.getValue();
+            if(leftTracker.containsKey(identifier)) continue;
+            joinTracker.put(identifier, rightSSAVersion);
+        }
+        joinBlock.setLocalTracker(joinTracker);
+    }
+
+    private Result resultForVariable(String identifier, Integer ssaVersion){
+        Result result = new Result();
+        result.setKind(VARIABLE);
+        result.setIdentifierName(identifier);
+        result.setSsaVersion(ssaVersion);
+        return  result;
+    }
+
+    private void generateError(ErrorMessage message) {
         System.out.println("Syntax Error occurred - " + message.toString());
         System.exit(1);
     }
