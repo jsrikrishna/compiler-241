@@ -562,7 +562,7 @@ public class Parser {
         if (currentToken != WHILE) generateError(WHILE_STATEMENT_ERROR);
         moveToNextToken();
 
-        BasicBlock whileConditionBlock = new BasicBlock(BB_WHILE);
+        BasicBlock whileConditionBlock = new BasicBlock(BB_WHILE_CONDITION);
         whileConditionBlock.addParent(basicBlock);
         basicBlock.addChildren(whileConditionBlock);
 
