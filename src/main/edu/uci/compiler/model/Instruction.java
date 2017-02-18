@@ -62,7 +62,7 @@ public class Instruction {
         if (this.isUnaryOperand()) return forOneOperand();
         if (this.noOperand()) return forNoOperand();
         if (this.operation == Operation.MOVE || this.operation == Operation.STORE)
-            return this.operation + " " + this.operand2.toString() + " " + this.operand1.toString();
+            return this.operation + " " + this.operand1.toString() + " " + this.operand2.toString();
 //        System.out.println("Instruction " + this.operation);
         return "";
     }
