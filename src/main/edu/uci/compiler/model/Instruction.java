@@ -11,6 +11,7 @@ public class Instruction {
     Operation operation;
     Result operand1;
     Result operand2;
+    Result operand3; // Used for PHI FUNCTIONS
     private int instructionId;
 
     public Instruction() {
@@ -42,6 +43,14 @@ public class Instruction {
         this.operand2 = operand2;
     }
 
+    public Result getOperand3() {
+        return operand3;
+    }
+
+    public void setOperand3(Result operand3) {
+        this.operand3 = operand3;
+    }
+
     public int getInstructionId() {
         return instructionId;
     }
@@ -52,24 +61,21 @@ public class Instruction {
 
     @Override
     public String toString() {
-//        System.out.println("coming here " + this.operation);
-        if (this.operation == null) {
-//            System.out.println("Operation is null");
-            return null;
-        }
-        ;
+        if (this.operation == null) return null;
         if (this.isBinaryOperand()) return forTwoOperands();
         if (this.isUnaryOperand()) return forOneOperand();
         if (this.noOperand()) return forNoOperand();
-        if (this.operation == Operation.MOVE || this.operation == Operation.STORE)
+        if (this.operation == Operation.MOVE
+                || this.operation == Operation.STORE)
             return this.operation + " " + this.operand1.toString() + " " + this.operand2.toString();
-//        System.out.println("Instruction " + this.operation);
+        if(this.operation == Operation.PHI){
+            return this.operation + " " + this.operand1.toString() + " "+ this.operand2.toString() + " " + this.operand3.toString();
+        }
         return "";
     }
 
     private boolean isBinaryOperand() {
-//        System.out.println("coming into Binary");
-        if (this.operation == Operation.ADD
+        return (this.operation == Operation.ADD
                 || this.operation == Operation.SUB
                 || this.operation == Operation.MUL
                 || this.operation == Operation.DIV
@@ -82,32 +88,25 @@ public class Instruction {
                 || this.operation == Operation.BGE
                 || this.operation == Operation.BGT
                 || this.operation == Operation.BLE
-                || this.operation == Operation.BLT) {
-//            System.out.println("returning true for binary");
-            return true;
-        }
-
-        return false;
+                || this.operation == Operation.BLT);
     }
 
     private boolean isUnaryOperand() {
-        if (this.operation == Operation.BRA
+        return (this.operation == Operation.BRA
                 || this.operation == Operation.RET
                 || this.operation == Operation.PARAM
-                || this.operation == Operation.WRITE) return true;
-        return false;
+                || this.operation == Operation.WRITE);
     }
 
     private boolean noOperand() {
-        if (this.operation == Operation.END || this.operation == Operation.WRITENL || this.operation == Operation.READ)
-            return true;
-        return false;
+        return (this.operation == Operation.END
+                || this.operation == Operation.WRITENL
+                || this.operation == Operation.READ);
+
     }
 
     private String forTwoOperands() {
-        String res = this.operation.toString() + " " + this.operand1.toString() + " " + this.operand2.toString();
-//        System.out.println("two operand result is " + res);
-        return res;
+        return this.operation.toString() + " " + this.operand1.toString() + " " + this.operand2.toString();
     }
 
     private String forOneOperand() {

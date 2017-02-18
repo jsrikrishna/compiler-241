@@ -306,6 +306,16 @@ public class InstructionGenerator {
         return generateInstruction(MOVE, zero, varResult);
     }
 
+    public Instruction generatePhiInstruction(Result lhs, Result rhs){
+        Instruction instruction = generateInstruction(PHI, lhs, rhs);
+        Result result = new Result();
+        result.setKind(VARIABLE);
+        result.setIdentifierName(lhs.getIdentifierName());
+        result.setSsaVersion(instruction.getInstructionId());
+        instruction.setOperand3(result);
+        return instruction;
+    }
+
     public void generateError(String message) {
         System.out.println("Syntax Error occurred in Instruction generator - " + message);
         System.exit(1);
