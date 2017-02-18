@@ -31,13 +31,10 @@ public class Function {
         return this.functionId;
     }
 
-    public void addLocalSSAVariable(String identifier, Integer instructionId){
-        if(instructionId == null){
-            instructionId = 1; // this for function parameters only
-        }
+    public void updateSSAVariable(String identifier, Integer instructionId){
         this.localSSATrackerForVariables.put(identifier, instructionId);
     }
-    public Integer getLocalSSAForVariable(String identifier){
+    public Integer getSSAForVariable(String identifier){
         return this.localSSATrackerForVariables.get(identifier);
     }
     public void addLocalArrayVariable(String arrayIdentifier, ArrayList<Integer> dimensions){

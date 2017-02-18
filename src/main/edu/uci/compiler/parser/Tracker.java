@@ -4,6 +4,7 @@ import main.edu.uci.compiler.model.Function;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Created by srikrishna on 2/6/17.
@@ -41,6 +42,13 @@ public class Tracker {
     }
     public Function getFunction(String identifier){
         return this.functions.get(identifier);
+    }
+    public HashMap<String, Integer> getCopyOfVariableTracker(){
+        HashMap<String, Integer> copy = new HashMap<>();
+        for(Map.Entry<String, Integer> entry: this.ssaTrackerForVariables.entrySet()){
+            copy.put(entry.getKey(), entry.getValue());
+        }
+        return copy;
     }
 
 }

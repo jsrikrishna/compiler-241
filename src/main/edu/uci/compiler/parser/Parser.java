@@ -23,6 +23,7 @@ public class Parser {
     ArrayList<Token> relOpList;
     ArrayList<Token> statSeqList;
     private Tracker tracker;
+    private Integer DEFAULT_SSA_VERSION = -1;
 
 
     public Parser(String fileName) throws IOException {
@@ -62,6 +63,7 @@ public class Parser {
             // Need not move to next token, it is handled by varDecl
             varDecl(null, startBasicBlock);
         }
+        startBasicBlock.setLocalTracker(tracker.getCopyOfVariableTracker());
         while (currentToken == Token.FUNCTION || currentToken == PROCEDURE) {
             // Need not move to next token, it is handled by funcDecl
             funcDecl(startBasicBlock);
@@ -103,7 +105,9 @@ public class Parser {
             } else {
                 Instruction instruction = ig.generateInstructionToInitVar(identifier);
                 instruction.getOperand2().setSsaVersion(instruction.getInstructionId());
-                function.addLocalSSAVariable(identifier, instruction.getInstructionId());
+                function.updateSSAVariable(identifier, instruction.getInstructionId());
+                // Here for sure, code will have the instruction id, so updating in basic block copy as well
+                basicBlock.updateSSAVersion(identifier, instruction.getInstructionId());
                 // May be normal block as well, need to check -> checked, need not do, it will be either func or non-func
                 basicBlock.addInstruction(instruction);
             }
@@ -186,17 +190,24 @@ public class Parser {
 
     private void addFunctionParameters(Function function) {
         String identifier = scanner.getCurrentIdentifier();
-        Integer ssaVersion = function.getLocalSSAForVariable(identifier);
+        Integer ssaVersion = function.getSSAForVariable(identifier);
+//        I shouldn't be doing the following IF and getting from global tracker i guess, commenting it out
+//        if (ssaVersion == null) {
+//            ssaVersion = tracker.getSSAVersion(identifier);
+//        }
+//        SSA Version might be NULL, then it will be initialized of -1
         if (ssaVersion == null) {
-            ssaVersion = tracker.getSSAVersion(identifier);
+            ssaVersion = DEFAULT_SSA_VERSION;
+            tracker.updateSSAForVariable(identifier, ssaVersion);
+            function.getFuncBasicBlock().updateSSAVersion(identifier, ssaVersion);
         }
-        function.addLocalSSAVariable(identifier, ssaVersion); // SSA Version might be NULL
+        function.updateSSAVariable(identifier, ssaVersion);
         function.setFuncParameter(identifier);
     }
 
     public void funcBody(Function function) throws IOException {
         while (currentToken == VAR || currentToken == ARRAY) varDecl(function, function.getFuncBasicBlock());
-        if(currentToken != BEGIN) generateError(BEGIN_NOT_FOUND);
+        if (currentToken != BEGIN) generateError(BEGIN_NOT_FOUND);
         moveToNextToken();
         BasicBlock finalBlock = statSequence(function.getFuncBasicBlock(), function);
         if (currentToken != END) generateError(END_NOT_FOUND);
@@ -241,31 +252,37 @@ public class Parser {
         Result rhs = expression(basicBlock, function);
         Instruction instruction = ig.generateInstructionForAssignment(lhs, rhs);
         /*
-        Update lhs result with Tracker
+        Update lhs result with SSA Version
         Update Tracker for local result, both basic block level and global level
         TODO: Q - do we need to update lhs globally as well ?
         TODO: Q - Does array as well have Tracker ?
          */
         tracker.updateSSAForVariable(lhs.getIdentifierName(), instruction.getInstructionId());
         lhs.setSsaVersion(instruction.getInstructionId());
-//        basicBlock.updateLocalSSAVersion(lhs.getIdentifierName(), instruction.getInstructionId());
+        // Keep a Copy in Basic Block also, so that it can be used while generating Phi Functions
+        basicBlock.updateSSAVersion(lhs.getIdentifierName(), instruction.getInstructionId());
         if (function != null) {
-            function.addLocalSSAVariable(lhs.getIdentifierName(), instruction.getInstructionId());
+            function.updateSSAVariable(lhs.getIdentifierName(), instruction.getInstructionId());
+            // Tag:  FUNC_BASIC_BLOCK_VS_NORMAL_BASIC_BLOCK_CHECK
         }
         /*
-        Update rhs result with Tracker
+        Update rhs result with SSA Version
          */
         if (rhs.getKind() == VARIABLE) {
-//            Integer localSSAVersion = basicBlock.getSSAVersion(rhs.getIdentifierName());
-//            if (localSSAVersion == null) {
-//                rhs.setSsaVersion(tracker.getSSAVersion(rhs.getIdentifierName()));
-//            } else rhs.setSsaVersion(localSSAVersion);
-            Integer ssaVersion = tracker.getSSAVersion(rhs.getIdentifierName());
+            String identifier = rhs.getIdentifierName();
+            // I may get Basic Block correct all the time,
+            // so i can take the ssa from Basic Block all the time instead of checking for func == null
+            if (function != null) {
+                Integer funcSSAVersion = function.getFuncBasicBlock().getSSAVersion(identifier);
+                if (funcSSAVersion == null) funcSSAVersion = tracker.getSSAVersion(identifier);
+                rhs.setSsaVersion(funcSSAVersion);
+            } else {
+                Integer basicBlockSSAVersion = basicBlock.getSSAVersion(identifier);
+                if (basicBlockSSAVersion == null) basicBlockSSAVersion = tracker.getSSAVersion(identifier);
+                rhs.setSsaVersion(basicBlockSSAVersion);
+            }
         }
-
-
         basicBlock.addInstruction(instruction);
-
         return lhs;
     }
 
@@ -307,16 +324,18 @@ public class Parser {
             res.setKind(VARIABLE);
             res.setIdentifierName(identifier);
             if (function != null) {
-                Integer ssaVersion = function.getLocalSSAForVariable(identifier);//Need to perform a check here, compared with old code
+                //Need to perform a check here, compared with old code
+                Integer ssaVersion = function.getFuncBasicBlock().getSSAVersion(identifier);
                 if (ssaVersion == null) {
                     ssaVersion = tracker.getSSAVersion(identifier);
                     if (ssaVersion == null) generateError(VARIABLE_NOT_DECLARED);
                 }
                 res.setSsaVersion(ssaVersion);
             } else {
-//                res.setSsaVersion(basicBlock.getSSAVersion(identifier));
+                res.setSsaVersion(basicBlock.getSSAVersion(identifier));
                 //TODO: I don't understand why we need to get from basic block SSA and maintain basic block SSA
-                res.setSsaVersion(tracker.getSSAVersion(identifier));
+                //Update: I guess for Phi, but will make sure
+//                res.setSsaVersion(tracker.getSSAVersion(identifier));
             }
         }
 
@@ -455,9 +474,9 @@ public class Parser {
                 result = new Result();
                 result.setKind(VARIABLE);
                 result.setIdentifierName(identifier);
-//                result.setSsaVersion(basicBlock.getSSAVersion(identifier));
+                result.setSsaVersion(basicBlock.getSSAVersion(identifier));
                 //TODO: Need to understand the need of getting SSA from basic block
-                result.setSsaVersion(tracker.getSSAVersion(identifier));
+//                result.setSsaVersion(tracker.getSSAVersion(identifier));
             } else if (currentToken == NUMBER) {
                 result = new Result();
                 result.setKind(CONSTANT);
@@ -539,7 +558,7 @@ public class Parser {
     private void setSSAForVariableResult(Result res, Function function) {
         if (res.getKind() == VARIABLE) {
             if (function != null) {
-                Integer ssaVersion = function.getLocalSSAForVariable(res.getIdentifierName());
+                Integer ssaVersion = function.getSSAForVariable(res.getIdentifierName());
                 if (ssaVersion == null) {
                     ssaVersion = tracker.getSSAVersion(res.getIdentifierName());
                     if (ssaVersion == null) generateError(VARIABLE_NOT_DECLARED);

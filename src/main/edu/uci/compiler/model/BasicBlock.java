@@ -23,17 +23,17 @@ public class BasicBlock {
     LinkedList<Instruction> instructions;
     List<BasicBlock> parent;
     List<BasicBlock> children;
-    HashMap<String, Integer> localSSATracker;
+    HashMap<String, Integer> localTracker; // Local SSA Tracker
     ArrayList<Function> functionsCalled;
     boolean isVisited;
 
-    public BasicBlock(Type type){
+    public BasicBlock(Type type) {
         id = numBasicBlocks;
         this.type = type;
         instructions = new LinkedList<>();
         parent = new ArrayList<BasicBlock>();
         children = new ArrayList<BasicBlock>();
-        localSSATracker = new HashMap<>();
+        localTracker = new HashMap<>();
         functionsCalled = new ArrayList<>();
         this.isVisited = false;
         ++numBasicBlocks;
@@ -46,7 +46,8 @@ public class BasicBlock {
     public void setInstructions(LinkedList<Instruction> instructions) {
         this.instructions = instructions;
     }
-    public List<Instruction> getInstructions(){
+
+    public List<Instruction> getInstructions() {
         return this.instructions;
     }
 
@@ -86,13 +87,21 @@ public class BasicBlock {
         return this.type;
     }
 
-//    public Integer getSSAVersion(String identifier) {
-//        return localSSATracker.get(identifier);
-//    }
+    public Integer getSSAVersion(String identifier) {
+        return localTracker.get(identifier);
+    }
 
-//    public void updateLocalSSAVersion(String identifier, Integer instructionId) {
-//        localSSATracker.put(identifier, instructionId);
-//    }
+    public void updateSSAVersion(String identifier, Integer instructionId) {
+        localTracker.put(identifier, instructionId);
+    }
+
+    public void setLocalTracker(HashMap<String, Integer> globalTracker) {
+        this.localTracker = globalTracker;
+    }
+
+    public HashMap<String, Integer> getLocalTracker() {
+        return this.localTracker;
+    }
 
     public void addFunctionCalled(Function function) {
         this.functionsCalled.add(function);
@@ -101,10 +110,12 @@ public class BasicBlock {
     public ArrayList<Function> getFunctionCalled() {
         return this.functionsCalled;
     }
-    public boolean isVisited(){
+
+    public boolean isVisited() {
         return this.isVisited;
     }
-    public void setIsVisited(){
+
+    public void setIsVisited() {
         this.isVisited = true;
     }
 
