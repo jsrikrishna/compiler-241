@@ -23,7 +23,6 @@ public class BasicBlock {
     HashMap<String, Integer> localTracker; // Local SSA Tracker
     ArrayList<Function> functionsCalled;
     boolean isVisited;
-    boolean phiVisited;
 
     public BasicBlock(Type type) {
         id = numBasicBlocks;
@@ -34,7 +33,6 @@ public class BasicBlock {
         localTracker = new HashMap<>();
         functionsCalled = new ArrayList<>();
         this.isVisited = false;
-        this.phiVisited = false;
         ++numBasicBlocks;
     }
 
@@ -76,9 +74,10 @@ public class BasicBlock {
 
     public void addChildrenAndUpdateChildrenTracker(BasicBlock children) {
         this.children.add(children);
-        if(children.getLocalTracker().isEmpty()){
-            children.setLocalTracker(this.getCopyOfVariableTracker());
-        }
+        children.setLocalTracker(this.getCopyOfVariableTracker());
+//        if(children.getLocalTracker().isEmpty()){
+//
+//        }
     }
 
     public void addParent(BasicBlock parent) {
@@ -123,14 +122,6 @@ public class BasicBlock {
 
     public void setIsVisited() {
         this.isVisited = true;
-    }
-
-    public boolean isPhiVisited() {
-        return this.phiVisited;
-    }
-
-    public void setIsPhiVisited() {
-        this.phiVisited = true;
     }
 
     public HashMap<String, Integer> getCopyOfVariableTracker(){

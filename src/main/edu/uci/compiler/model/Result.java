@@ -81,7 +81,7 @@ public class Result {
     }
 
     public String getIdentifierName() {
-        return identifierName;
+        return this.identifierName;
     }
 
     public void setIdentifierName(String identifierName) {
