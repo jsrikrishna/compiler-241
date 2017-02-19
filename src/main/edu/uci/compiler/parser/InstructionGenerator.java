@@ -307,13 +307,18 @@ public class InstructionGenerator {
     }
 
     public Instruction generatePhiInstruction(Result lhs, Result rhs){
-        Instruction instruction = generateInstruction(PHI, lhs, rhs);
+        Instruction phiInstruction = generateInstruction(PHI, lhs, rhs);
+        Result phiResult = resultForVariable(lhs.getIdentifierName(), phiInstruction.getInstructionId());
+        phiInstruction.setOperand3(phiResult);
+        return phiInstruction;
+    }
+
+    public Result resultForVariable(String identifier, Integer ssaVersion){
         Result result = new Result();
         result.setKind(VARIABLE);
-        result.setIdentifierName(lhs.getIdentifierName());
-        result.setSsaVersion(instruction.getInstructionId());
-        instruction.setOperand3(result);
-        return instruction;
+        result.setIdentifierName(identifier);
+        result.setSsaVersion(ssaVersion);
+        return  result;
     }
 
     public void generateError(String message) {

@@ -3,6 +3,7 @@ package main.edu.uci.compiler.parser;
 import main.edu.uci.compiler.cfg.ControlFlowGraph;
 import main.edu.uci.compiler.model.*;
 import main.edu.uci.compiler.parser.InstructionGenerator.*;
+import sun.tools.java.Identifier;
 
 import static main.edu.uci.compiler.model.Token.*;
 import static main.edu.uci.compiler.model.ErrorMessage.*;
@@ -10,9 +11,7 @@ import static main.edu.uci.compiler.model.Result.KIND.*;
 import static main.edu.uci.compiler.model.BasicBlock.Type.*;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Created by srikrishna on 1/27/17.
@@ -334,6 +333,11 @@ public class Parser {
                 }
                 res.setSsaVersion(ssaVersion);
             } else {
+//                Integer ssaVersion = basicBlock.getSSAVersion(identifier);
+//                if (ssaVersion == null) {
+//                    ssaVersion = tracker.getSSAVersion(identifier);
+//                    if (ssaVersion == null) generateError(VARIABLE_NOT_DECLARED);
+//                }
                 res.setSsaVersion(basicBlock.getSSAVersion(identifier));
             }
         }
@@ -583,9 +587,9 @@ public class Parser {
         BasicBlock whileJoinBlock = new BasicBlock(BB_WHILE_JOIN);
         whileJoinBlock.addParent(whileConditionBlock);
 
+
         // Being added only in do
         whileConditionBlock.addChildrenAndUpdateChildrenTracker(whileJoinBlock);
-
         Result fixUpResult = relation(whileConditionBlock, function);
         fixUpNegCompareInstruction(fixUpResult, whileJoinBlock);
 
@@ -594,13 +598,16 @@ public class Parser {
         moveToNextToken();
         BasicBlock whileBodyBlock = new BasicBlock(BB_WHILE_BODY);
         whileBodyBlock.addParent(whileConditionBlock);
-        whileBodyBlock.addChildrenAndUpdateChildrenTracker(whileConditionBlock);
 
         whileConditionBlock.addChildrenAndUpdateChildrenTracker(whileBodyBlock);
+        // Should this after whileCondition.addChildren(whileBody) because, SSA needs to be present in parent
+        whileBodyBlock.addChildrenAndUpdateChildrenTracker(whileConditionBlock);
+
 
         whileBodyBlock = statSequence(whileBodyBlock, function);
         //Go Back to while condition -> adding instruction for that
         addBranchInstruction(whileBodyBlock, whileConditionBlock);
+        insertPhiFunctionForWhileStatement(whileConditionBlock, whileBodyBlock, whileJoinBlock, basicBlock);
         if (currentToken != OD) generateError(OD_EXPECTED);
         moveToNextToken();
         return whileJoinBlock;
@@ -635,40 +642,159 @@ public class Parser {
         fromBlock.addInstruction(branchInstruction);
     }
 
-    private void insertPhiFunctionForIfStatement(BasicBlock leftBlock, BasicBlock rightBlock, BasicBlock joinBlock){
+    private void insertPhiFunctionForIfStatement(BasicBlock leftBlock,
+                                                 BasicBlock rightBlock,
+                                                 BasicBlock joinBlock) {
+
         HashMap<String, Integer> leftTracker = leftBlock.getLocalTracker();
         HashMap<String, Integer> rightTracker = rightBlock.getLocalTracker();
         HashMap<String, Integer> joinTracker = new HashMap<>();
-        for(Map.Entry<String, Integer> trackEntry : leftTracker.entrySet()){
+        for (Map.Entry<String, Integer> trackEntry : leftTracker.entrySet()) {
             String identifier = trackEntry.getKey();
             Integer leftSSAVersion = trackEntry.getValue();
-            if(rightTracker.containsKey(identifier) && leftSSAVersion != rightTracker.get(identifier)){
+            if (rightTracker.containsKey(identifier) && !leftSSAVersion.equals(rightTracker.get(identifier))) {
                 Integer rightSSAVersion = rightTracker.get(identifier);
-                Result leftResult = resultForVariable(identifier, leftSSAVersion);
-                Result rightResult = resultForVariable(identifier, rightSSAVersion);
+
+                Result leftResult = ig.resultForVariable(identifier, leftSSAVersion);
+                Result rightResult = ig.resultForVariable(identifier, rightSSAVersion);
+
                 Instruction phiInstruction = ig.generatePhiInstruction(leftResult, rightResult);
+
                 joinBlock.addInstruction(phiInstruction);
                 // Same as phiInstruction.getInstructionId() instead of phiInstruction.getOperand3().getSsaVersion()
+
                 joinTracker.put(identifier, phiInstruction.getOperand3().getSsaVersion());
                 tracker.updateSSAForVariable(identifier, phiInstruction.getInstructionId());
-            }
-            else joinTracker.put(identifier, leftSSAVersion);
+            } else joinTracker.put(identifier, leftSSAVersion);
         }
-        for(Map.Entry<String, Integer> rightEntry: rightTracker.entrySet()){
-            String identifier = rightEntry.getKey();
-            Integer rightSSAVersion = rightEntry.getValue();
-            if(leftTracker.containsKey(identifier)) continue;
-            joinTracker.put(identifier, rightSSAVersion);
-        }
+        putRemainingTrackerEntries(leftTracker, rightTracker, joinTracker);
         joinBlock.setLocalTracker(joinTracker);
     }
 
-    private Result resultForVariable(String identifier, Integer ssaVersion){
-        Result result = new Result();
-        result.setKind(VARIABLE);
-        result.setIdentifierName(identifier);
-        result.setSsaVersion(ssaVersion);
-        return  result;
+    private void insertPhiFunctionForWhileStatement(BasicBlock whileConditionBlock,
+                                                    BasicBlock whileBodyBlock,
+                                                    BasicBlock whileJoinBlock,
+                                                    BasicBlock parentBasicBlock) {
+        HashMap<String, Integer> parentTracker = parentBasicBlock.getLocalTracker();
+        HashMap<String, Integer> whileBodyTracker = whileBodyBlock.getLocalTracker();
+        HashMap<String, Integer> whileJoinTracker = new HashMap<>();
+        ArrayList<Instruction> phiInstructionList = new ArrayList<>();
+
+        for (Map.Entry<String, Integer> whileBodyEntry : whileBodyTracker.entrySet()) {
+            String identifier = whileBodyEntry.getKey();
+            Integer whileBodySSAVersion = whileBodyEntry.getValue();
+            if (parentTracker.containsKey(identifier)
+                    && !whileBodySSAVersion.equals(parentTracker.get(identifier))) {
+
+                Integer parentSSAVersion = parentTracker.get(identifier);
+
+                Result whileBodyResult = ig.resultForVariable(identifier, whileBodySSAVersion);
+                Result parentResult = ig.resultForVariable(identifier, parentSSAVersion);
+
+                // First Operand of Phi Instruction should be parent always for while phi instructions
+                Instruction phiInstruction = ig.generatePhiInstruction(parentResult, whileBodyResult);
+                phiInstructionList.add(phiInstruction);
+
+                tracker.updateSSAForVariable(identifier, phiInstruction.getInstructionId());
+                whileConditionBlock.updateSSAVersion(identifier, phiInstruction.getInstructionId());
+                whileBodyBlock.updateSSAVersion(identifier, phiInstruction.getInstructionId());
+
+                whileJoinTracker.put(identifier, phiInstruction.getInstructionId());
+            } else whileJoinTracker.put(identifier, whileBodySSAVersion);
+        }
+        putRemainingTrackerEntries(whileBodyTracker, parentTracker, whileJoinTracker);
+
+        // Update all the Phi Variables in WHILE_CONDITION_BLOCK to use PHI_RESULT
+        updatePhiVariablesInWhileConditionBlock(whileConditionBlock, phiInstructionList);
+
+        // Update all the Phi Variables in WHILE_BODY_BLOCK and
+        // its children and children's children ... continues [BFS]
+        updatePhiVariablesInWhileBodyBlock(whileBodyBlock, phiInstructionList);
+
+        // Insert phi instructions into WHILE_CONDITION_BLOCK at the START
+        for (Instruction phiInstruction : phiInstructionList)
+            whileConditionBlock.addInstructionAtStart(phiInstruction);
+
+
+        // Update SSA Tracker of whileJoinBlock
+        whileJoinBlock.setLocalTracker(whileJoinTracker);
+
+    }
+
+    private void putRemainingTrackerEntries(HashMap<String, Integer> leftTracker,
+                                            HashMap<String, Integer> rightTracker,
+                                            HashMap<String, Integer> joinTracker) {
+
+        for (Map.Entry<String, Integer> rightEntry : rightTracker.entrySet()) {
+            String identifier = rightEntry.getKey();
+            Integer rightSSAVersion = rightEntry.getValue();
+            if (leftTracker.containsKey(identifier)) continue;
+            joinTracker.put(identifier, rightSSAVersion);
+        }
+    }
+
+    private void updatePhiVariablesInWhileConditionBlock(BasicBlock whileConditionBlock,
+                                                         ArrayList<Instruction> phiInstructions) {
+
+        for (Instruction phiInstruction : phiInstructions) {
+            String identifier = phiInstruction.getOperand3().getIdentifierName();
+            updateInstructionsWithPhiVariables(whileConditionBlock, phiInstruction, identifier);
+        }
+
+    }
+
+    private void updatePhiVariablesInWhileBodyBlock(BasicBlock whileBodyBlock,
+                                                    ArrayList<Instruction> phiInstructions) {
+        ArrayList<BasicBlock> childrenBasicBlocks = getChildrenOfWhileBodyBlock(whileBodyBlock);
+        for (Instruction phiInstruction : phiInstructions) {
+            String identifier = phiInstruction.getOperand3().getIdentifierName();
+            for (BasicBlock basicBlock : childrenBasicBlocks) {
+                updateInstructionsWithPhiVariables(basicBlock, phiInstruction, identifier);
+            }
+        }
+
+    }
+
+    private ArrayList<BasicBlock> getChildrenOfWhileBodyBlock(BasicBlock whileBodyBlock) {
+        ArrayList<BasicBlock> childrenBasicBlocks = new ArrayList<>();
+        Queue<BasicBlock> frontier = new LinkedList<>();
+        frontier.add(whileBodyBlock);
+        while (!frontier.isEmpty()) {
+            BasicBlock currentBasicBlock = frontier.poll();
+            currentBasicBlock.setIsPhiVisited();
+            childrenBasicBlocks.add(currentBasicBlock);
+            for (BasicBlock children : currentBasicBlock.getChildren()) {
+                if (children.isPhiVisited()) frontier.add(children);
+            }
+        }
+        return childrenBasicBlocks;
+
+    }
+
+    private void updateInstructionsWithPhiVariables(BasicBlock basicBlock,
+                                                    Instruction phiInstruction,
+                                                    String phiIndentifier) {
+        Result phiInstructionOperand1Operand1 = phiInstruction.getOperand1();
+        Integer operand1SsaVersionInPhiInstruction = phiInstructionOperand1Operand1.getSsaVersion();
+        for (Instruction instruction : basicBlock.getInstructions()) {
+            Result operand1 = instruction.getOperand1();
+
+            if (checkIsSameOperandWithSsaVersion(operand1, operand1SsaVersionInPhiInstruction, phiIndentifier)) {
+                operand1.setSsaVersion(phiInstruction.getInstructionId());
+            }
+            Result operand2 = instruction.getOperand2();
+            if (checkIsSameOperandWithSsaVersion(operand2, operand1SsaVersionInPhiInstruction, phiIndentifier)) {
+                operand2.setSsaVersion(phiInstruction.getInstructionId());
+            }
+        }
+    }
+
+    private boolean checkIsSameOperandWithSsaVersion(Result operand, Integer phiSsaVersion, String phiIdentifier) {
+        return (operand != null
+                && operand.getKind() == VARIABLE
+                && operand.getIdentifierName().equals(phiIdentifier)
+                // Need to update only when parentSSAVersion is used like a_1
+                && operand.getSsaVersion().equals(phiSsaVersion));
     }
 
     private void generateError(ErrorMessage message) {
