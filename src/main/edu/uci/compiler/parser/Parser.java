@@ -258,13 +258,15 @@ public class Parser {
         TODO: Q - do we need to update lhs globally as well ?
         TODO: Q - Does array as well have Tracker ?
          */
-        tracker.updateSSAForVariable(lhs.getIdentifierName(), instruction.getInstructionId());
-        lhs.setSsaVersion(instruction.getInstructionId());
-        // Keep a Copy in Basic Block also, so that it can be used while generating Phi Functions
-        basicBlock.updateSSAVersion(lhs.getIdentifierName(), instruction.getInstructionId());
-        if (function != null) {
-            function.updateSSAVariable(lhs.getIdentifierName(), instruction.getInstructionId());
-            // Tag:  FUNC_BASIC_BLOCK_VS_NORMAL_BASIC_BLOCK_CHECK
+        if(lhs.getKind() == VARIABLE){
+            tracker.updateSSAForVariable(lhs.getIdentifierName(), instruction.getInstructionId());
+            lhs.setSsaVersion(instruction.getInstructionId());
+            // Keep a Copy in Basic Block also, so that it can be used while generating Phi Functions
+            basicBlock.updateSSAVersion(lhs.getIdentifierName(), instruction.getInstructionId());
+            if (function != null) {
+                function.updateSSAVariable(lhs.getIdentifierName(), instruction.getInstructionId());
+                // Tag:  FUNC_BASIC_BLOCK_VS_NORMAL_BASIC_BLOCK_CHECK
+            }
         }
         /*
         Update rhs result with SSA Version
@@ -290,9 +292,7 @@ public class Parser {
     private Result designator(BasicBlock basicBlock, Function function) throws IOException {
         if (currentToken != IDENTIFIER) generateError(DESIGNATOR_ERROR);
         // Could be array variable or a normal variable
-        Result res = new Result();
         String identifier = scanner.getCurrentIdentifier();
-
         boolean isArrayInFunction = function != null && function.getLocalArrayVariable(identifier) != null;
         boolean isArrayInMain = tracker.containsArrayVariable(identifier);
         if (isArrayInFunction || isArrayInMain) {
@@ -318,29 +318,32 @@ public class Parser {
             Result arrayDimensionResult = handleArrayDimInstructions(dimensionExp, dimensions, basicBlock);
             Result indexInArray = handleArrayDesignator(arrayDimensionResult, identifier, basicBlock);
             return indexInArray;
+        }
+
+
+        // ToDo: Q - Need to check, may be null as well,
+        // for assignment - its a different process, this will be used for terms or factors
+        // Need to add ssa-version to result from the instruction number or figure out
+        Result res = new Result();
+        res.setKind(VARIABLE);
+        res.setIdentifierName(identifier);
+        if (function != null) {
+            //Need to perform a check here, compared with old code
+            Integer ssaVersion = function.getFuncBasicBlock().getSSAVersion(identifier);
+            if (ssaVersion == null) {
+                ssaVersion = tracker.getSSAVersion(identifier);
+                if (ssaVersion == null) generateError(VARIABLE_NOT_DECLARED);
+            }
+            res.setSsaVersion(ssaVersion);
         } else {
-            // ToDo: Q - Need to check, may be null as well,
-            // for assignment - its a different process, this will be used for terms or factors
-            // Need to add ssa-version to result from the instruction number or figure out
-            res.setKind(VARIABLE);
-            res.setIdentifierName(identifier);
-            if (function != null) {
-                //Need to perform a check here, compared with old code
-                Integer ssaVersion = function.getFuncBasicBlock().getSSAVersion(identifier);
-                if (ssaVersion == null) {
-                    ssaVersion = tracker.getSSAVersion(identifier);
-                    if (ssaVersion == null) generateError(VARIABLE_NOT_DECLARED);
-                }
-                res.setSsaVersion(ssaVersion);
-            } else {
 //                Integer ssaVersion = basicBlock.getSSAVersion(identifier);
 //                if (ssaVersion == null) {
 //                    ssaVersion = tracker.getSSAVersion(identifier);
 //                    if (ssaVersion == null) generateError(VARIABLE_NOT_DECLARED);
 //                }
-                res.setSsaVersion(basicBlock.getSSAVersion(identifier));
-            }
+            res.setSsaVersion(basicBlock.getSSAVersion(identifier));
         }
+
 
         moveToNextToken();
         return res;
@@ -507,12 +510,11 @@ public class Parser {
         Result fixUpResult = relation(ifConditionBlock, function);
         if (currentToken != THEN) generateError(THEN_STATEMENT_ERROR);
         moveToNextToken();
-
         ifThenBlock = statSequence(ifThenBlock, function);
 
         BasicBlock joinBlock = new BasicBlock(BB_IF_THEN_JOIN);
-        joinBlock.addParent(ifThenBlock);
         ifThenBlock.addChildrenAndUpdateChildrenTracker(joinBlock);
+        joinBlock.addParent(ifThenBlock);
         // BRA instruction from IF Block to JOIN Block
         addBranchInstruction(ifThenBlock, joinBlock);
 
@@ -581,15 +583,15 @@ public class Parser {
         moveToNextToken();
 
         BasicBlock whileConditionBlock = new BasicBlock(BB_WHILE_CONDITION);
-        whileConditionBlock.addParent(basicBlock);
         basicBlock.addChildrenAndUpdateChildrenTracker(whileConditionBlock);
+        whileConditionBlock.addParent(basicBlock);
 
         BasicBlock whileJoinBlock = new BasicBlock(BB_WHILE_JOIN);
+        whileConditionBlock.addChildrenAndUpdateChildrenTracker(whileJoinBlock);
         whileJoinBlock.addParent(whileConditionBlock);
 
 
         // Being added only in do
-        whileConditionBlock.addChildrenAndUpdateChildrenTracker(whileJoinBlock);
         Result fixUpResult = relation(whileConditionBlock, function);
         fixUpNegCompareInstruction(fixUpResult, whileJoinBlock);
 
@@ -597,17 +599,24 @@ public class Parser {
 
         moveToNextToken();
         BasicBlock whileBodyBlock = new BasicBlock(BB_WHILE_BODY);
+        whileConditionBlock.addChildrenAndUpdateChildrenTracker(whileBodyBlock);
         whileBodyBlock.addParent(whileConditionBlock);
 
-        whileConditionBlock.addChildrenAndUpdateChildrenTracker(whileBodyBlock);
+
         // Should this after whileCondition.addChildren(whileBody) because, SSA needs to be present in parent
         whileBodyBlock.addChildrenAndUpdateChildrenTracker(whileConditionBlock);
 
 
-        whileBodyBlock = statSequence(whileBodyBlock, function);
+        BasicBlock whileBodyEndBlock = statSequence(whileBodyBlock, function);
         //Go Back to while condition -> adding instruction for that
         addBranchInstruction(whileBodyBlock, whileConditionBlock);
-        insertPhiFunctionForWhileStatement(whileConditionBlock, whileBodyBlock, whileJoinBlock, basicBlock);
+
+        insertPhiFunctionForWhileStatement(basicBlock,
+                whileConditionBlock,
+                whileBodyEndBlock,
+                whileBodyBlock,
+                whileJoinBlock);
+
         if (currentToken != OD) generateError(OD_EXPECTED);
         moveToNextToken();
         return whileJoinBlock;
@@ -645,10 +654,10 @@ public class Parser {
     private void insertPhiFunctionForIfStatement(BasicBlock leftBlock,
                                                  BasicBlock rightBlock,
                                                  BasicBlock joinBlock) {
-
         HashMap<String, Integer> leftTracker = leftBlock.getLocalTracker();
         HashMap<String, Integer> rightTracker = rightBlock.getLocalTracker();
         HashMap<String, Integer> joinTracker = new HashMap<>();
+
         for (Map.Entry<String, Integer> trackEntry : leftTracker.entrySet()) {
             String identifier = trackEntry.getKey();
             Integer leftSSAVersion = trackEntry.getValue();
@@ -671,12 +680,14 @@ public class Parser {
         joinBlock.setLocalTracker(joinTracker);
     }
 
-    private void insertPhiFunctionForWhileStatement(BasicBlock whileConditionBlock,
+    private void insertPhiFunctionForWhileStatement(BasicBlock parentBasicBlock,
+                                                    BasicBlock whileConditionBlock,
+                                                    BasicBlock whileBodyEndBlock,
                                                     BasicBlock whileBodyBlock,
-                                                    BasicBlock whileJoinBlock,
-                                                    BasicBlock parentBasicBlock) {
+                                                    BasicBlock whileJoinBlock) {
+
         HashMap<String, Integer> parentTracker = parentBasicBlock.getLocalTracker();
-        HashMap<String, Integer> whileBodyTracker = whileBodyBlock.getLocalTracker();
+        HashMap<String, Integer> whileBodyTracker = whileBodyEndBlock.getLocalTracker();
         HashMap<String, Integer> whileJoinTracker = new HashMap<>();
         ArrayList<Instruction> phiInstructionList = new ArrayList<>();
 
@@ -694,12 +705,13 @@ public class Parser {
                 // First Operand of Phi Instruction should be parent always for while phi instructions
                 Instruction phiInstruction = ig.generatePhiInstruction(parentResult, whileBodyResult);
                 phiInstructionList.add(phiInstruction);
+                Integer phiInstructionId = phiInstruction.getInstructionId();
 
-                tracker.updateSSAForVariable(identifier, phiInstruction.getInstructionId());
-                whileConditionBlock.updateSSAVersion(identifier, phiInstruction.getInstructionId());
-                whileBodyBlock.updateSSAVersion(identifier, phiInstruction.getInstructionId());
+                tracker.updateSSAForVariable(identifier, phiInstructionId);
+                whileConditionBlock.updateSSAVersion(identifier, phiInstructionId);
+                whileBodyEndBlock.updateSSAVersion(identifier, phiInstructionId);
 
-                whileJoinTracker.put(identifier, phiInstruction.getInstructionId());
+                whileJoinTracker.put(identifier, phiInstructionId);
             } else whileJoinTracker.put(identifier, whileBodySSAVersion);
         }
         putRemainingTrackerEntries(whileBodyTracker, parentTracker, whileJoinTracker);
@@ -714,7 +726,6 @@ public class Parser {
         // Insert phi instructions into WHILE_CONDITION_BLOCK at the START
         for (Instruction phiInstruction : phiInstructionList)
             whileConditionBlock.addInstructionAtStart(phiInstruction);
-
 
         // Update SSA Tracker of whileJoinBlock
         whileJoinBlock.setLocalTracker(whileJoinTracker);
@@ -753,18 +764,25 @@ public class Parser {
             }
         }
 
+
     }
 
     private ArrayList<BasicBlock> getChildrenOfWhileBodyBlock(BasicBlock whileBodyBlock) {
+
+        HashSet<BasicBlock> visitedBlocks = new HashSet<>();
+
         ArrayList<BasicBlock> childrenBasicBlocks = new ArrayList<>();
         Queue<BasicBlock> frontier = new LinkedList<>();
         frontier.add(whileBodyBlock);
+
         while (!frontier.isEmpty()) {
+
             BasicBlock currentBasicBlock = frontier.poll();
-            currentBasicBlock.setIsPhiVisited();
+            visitedBlocks.add(currentBasicBlock);
             childrenBasicBlocks.add(currentBasicBlock);
+
             for (BasicBlock children : currentBasicBlock.getChildren()) {
-                if (children.isPhiVisited()) frontier.add(children);
+                if (!visitedBlocks.contains(children)) frontier.add(children);
             }
         }
         return childrenBasicBlocks;
@@ -773,28 +791,40 @@ public class Parser {
 
     private void updateInstructionsWithPhiVariables(BasicBlock basicBlock,
                                                     Instruction phiInstruction,
-                                                    String phiIndentifier) {
-        Result phiInstructionOperand1Operand1 = phiInstruction.getOperand1();
-        Integer operand1SsaVersionInPhiInstruction = phiInstructionOperand1Operand1.getSsaVersion();
+                                                    String phiIdentifier) {
+        Integer phiInstructionId = phiInstruction.getInstructionId();
+
+        Result phiInstructionOperand1 = phiInstruction.getOperand1();
+
+        Integer leftResSsaVersion = phiInstructionOperand1.getSsaVersion();
         for (Instruction instruction : basicBlock.getInstructions()) {
             Result operand1 = instruction.getOperand1();
-
-            if (checkIsSameOperandWithSsaVersion(operand1, operand1SsaVersionInPhiInstruction, phiIndentifier)) {
-                operand1.setSsaVersion(phiInstruction.getInstructionId());
-            }
             Result operand2 = instruction.getOperand2();
-            if (checkIsSameOperandWithSsaVersion(operand2, operand1SsaVersionInPhiInstruction, phiIndentifier)) {
-                operand2.setSsaVersion(phiInstruction.getInstructionId());
+            if (checkIsSameOperandWithSsaVersion(operand1, phiIdentifier, leftResSsaVersion)) {
+                operand1.setSsaVersion(phiInstructionId);
+            }
+
+            if (checkIsSameOperandWithSsaVersion(operand2, phiIdentifier, leftResSsaVersion)) {
+                operand2.setSsaVersion(phiInstructionId);
             }
         }
     }
 
-    private boolean checkIsSameOperandWithSsaVersion(Result operand, Integer phiSsaVersion, String phiIdentifier) {
-        return (operand != null
-                && operand.getKind() == VARIABLE
-                && operand.getIdentifierName().equals(phiIdentifier)
-                // Need to update only when parentSSAVersion is used like a_1
-                && operand.getSsaVersion().equals(phiSsaVersion));
+    private boolean checkIsSameOperandWithSsaVersion(Result operand,
+                                                     String phiIdentifier,
+                                                     Integer leftResSsaVersion) {
+        // Need to update only when parentSSAVersion is used like a_1
+        if (isSameIdentifier(operand, phiIdentifier)) {
+            Integer operandSsa = operand.getSsaVersion();
+            return operandSsa.equals(leftResSsaVersion);
+        }
+        return false;
+    }
+
+    private boolean isSameIdentifier(Result operand, String phiIdentifier) {
+        if (operand == null) return false;
+        if (operand.getKind() != VARIABLE) return false;
+        return !(operand.getIdentifierName().equals(phiIdentifier));
     }
 
     private void generateError(ErrorMessage message) {
