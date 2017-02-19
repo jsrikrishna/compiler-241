@@ -258,7 +258,7 @@ public class Parser {
         TODO: Q - do we need to update lhs globally as well ?
         TODO: Q - Does array as well have Tracker ?
          */
-        if(lhs.getKind() == VARIABLE){
+        if (lhs.getKind() == VARIABLE) {
             tracker.updateSSAForVariable(lhs.getIdentifierName(), instruction.getInstructionId());
             lhs.setSsaVersion(instruction.getInstructionId());
             // Keep a Copy in Basic Block also, so that it can be used while generating Phi Functions
@@ -822,9 +822,9 @@ public class Parser {
     }
 
     private boolean isSameIdentifier(Result operand, String phiIdentifier) {
-        if (operand == null) return false;
-        if (operand.getKind() != VARIABLE) return false;
-        return !(operand.getIdentifierName().equals(phiIdentifier));
+        return operand != null
+                && operand.getKind() == VARIABLE
+                && operand.getIdentifierName().equals(phiIdentifier);
     }
 
     private void generateError(ErrorMessage message) {
