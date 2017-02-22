@@ -514,6 +514,7 @@ public class Parser {
 
         BasicBlock joinBlock = new BasicBlock(BB_IF_THEN_JOIN);
         ifThenBlock.addChildrenAndUpdateChildrenTracker(joinBlock);
+        ifConditionBlock.addChildrenAndUpdateChildrenTracker(joinBlock);
         joinBlock.addParent(ifThenBlock);
         // BRA instruction from IF Block to JOIN Block
         addBranchInstruction(ifThenBlock, joinBlock);
