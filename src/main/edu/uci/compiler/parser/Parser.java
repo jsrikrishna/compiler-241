@@ -17,6 +17,7 @@ import java.util.*;
  * Created by srikrishna on 1/27/17.
  */
 public class Parser {
+    private String fileName;
     private Scanner scanner;
     private Token currentToken;
     private ControlFlowGraph cfg;
@@ -28,6 +29,7 @@ public class Parser {
 
 
     public Parser(String fileName) throws IOException {
+        this.fileName = fileName;
         scanner = new Scanner(fileName);
         currentToken = scanner.getToken();
         cfg = new ControlFlowGraph();
@@ -79,7 +81,7 @@ public class Parser {
         if (currentToken != PERIOD) generateError(PERIOD_NOT_FOUND);
         moveToNextToken();
         startBasicBlock.addInstruction(ig.generateEndInstruction());
-        cfg.printBasicBlocks(cfg.getBasicBlock());
+        cfg.writeToCFGFile(fileName, cfg.getBasicBlock(), startBasicBlock.getListOfAllBasicBlocks());
     }
 
 
@@ -514,7 +516,6 @@ public class Parser {
 
         BasicBlock joinBlock = new BasicBlock(BB_IF_THEN_JOIN);
         ifThenBlock.addChildrenAndUpdateChildrenTracker(joinBlock);
-        ifConditionBlock.addChildrenAndUpdateChildrenTracker(joinBlock);
         joinBlock.addParent(ifThenBlock);
         // BRA instruction from IF Block to JOIN Block
         addBranchInstruction(ifThenBlock, joinBlock);
@@ -530,9 +531,10 @@ public class Parser {
 
             joinBlock.setType(BB_IF_ELSE_JOIN);
             joinBlock.addParent(elseBlock);
-            elseBlock.addChildrenAndUpdateChildrenTracker(joinBlock);
 
             elseBlock = statSequence(elseBlock, function);
+            // Need to add here, because, last elseBlock returned should link to if-else-join
+            elseBlock.addChildrenAndUpdateChildrenTracker(joinBlock);
             // BRA instruction from ELSE Block to JOIN Block
             addBranchInstruction(elseBlock, joinBlock);
             insertPhiFunctionForIfStatement(ifThenBlock, elseBlock, joinBlock);

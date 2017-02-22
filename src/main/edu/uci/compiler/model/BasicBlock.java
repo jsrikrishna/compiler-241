@@ -17,6 +17,7 @@ public class BasicBlock {
     int id;
     Type type;
     static Integer numBasicBlocks = 0;
+    static LinkedList<BasicBlock> allBasicBlocks = new LinkedList<>();
     LinkedList<Instruction> instructions;
     List<BasicBlock> parent;
     List<BasicBlock> children;
@@ -33,6 +34,7 @@ public class BasicBlock {
         localTracker = new HashMap<>();
         functionsCalled = new ArrayList<>();
         this.isVisited = false;
+        allBasicBlocks.add(this);
         ++numBasicBlocks;
     }
 
@@ -130,6 +132,10 @@ public class BasicBlock {
             copy.put(entry.getKey(), entry.getValue());
         }
         return copy;
+    }
+
+    public LinkedList<BasicBlock> getListOfAllBasicBlocks(){
+        return this.allBasicBlocks;
     }
 
     @Override
