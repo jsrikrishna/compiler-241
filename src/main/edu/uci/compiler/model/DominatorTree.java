@@ -13,7 +13,6 @@ import java.util.*;
 public class DominatorTree {
     private BasicBlock mainStartBasicBlock;
     private HashMap<String, Function> functions;
-    private DominatorBlock root;
     private Set<BasicBlock> allRootBasicBlocks;
     private HashSet<Map<BasicBlock, Set<BasicBlock>>> allDominatorsInProgram;
     private Set<DominatorBlock> allRootDominatorBlocks;
@@ -25,10 +24,6 @@ public class DominatorTree {
         allRootBasicBlocks = new HashSet<>();
         allRootDominatorBlocks = new HashSet<>();
         allDominatorsInProgram = new HashSet<>();
-    }
-
-    public Set<DominatorBlock> getAllRootDominatorBlocks() {
-        return this.allRootDominatorBlocks;
     }
 
     private void findAllReachableBlocksExceptFromV(BasicBlock currentBlock,
@@ -151,7 +146,7 @@ public class DominatorTree {
         return rootDominatorBlock;
     }
 
-    public void generateDomTreeForProgram() {
+    private void generateDomTreeForProgram() {
         for (Map<BasicBlock, Set<BasicBlock>> domRelations : allDominatorsInProgram) {
             BasicBlock rootBasicBlock = getRootBasicBlock(domRelations);
             if (rootBasicBlock != null) {
@@ -168,6 +163,7 @@ public class DominatorTree {
         Set<Function> functionsSet = new HashSet<>();
         for (Map.Entry<String, Function> entry : functions.entrySet()) functionsSet.add(entry.getValue());
         generateDomRelationsForProgram(mainStartBasicBlock, functionsSet);
+        generateDomTreeForProgram();
     }
 
     public void printDomForProgram() {
@@ -178,6 +174,7 @@ public class DominatorTree {
 
     public void generateDomVCGForProgram(String fileName) {
         generateDomRelationsForProgram();
+
         List<String> domDigraph = new ArrayList<>();
         domDigraph.add("digraph{");
         for (Map<BasicBlock, Set<BasicBlock>> domRelations : allDominatorsInProgram) {
