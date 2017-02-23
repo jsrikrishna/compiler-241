@@ -1,9 +1,9 @@
-package test.parser.scanner;
+package test.edu.uci.compiler.scanner;
 
 import main.edu.uci.compiler.model.Token;
 import main.edu.uci.compiler.parser.Scanner;
 import org.junit.Test;
-import test.parser.model.TokenizeException;
+import test.edu.uci.compiler.model.TokenizeException;
 
 import java.io.IOException;
 

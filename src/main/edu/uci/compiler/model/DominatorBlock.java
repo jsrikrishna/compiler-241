@@ -29,6 +29,9 @@ public class DominatorBlock {
     public void setChildren(Set<DominatorBlock> children){
         this.children = children;
     }
+    public void addParent(DominatorBlock parentDominatorBlock){
+        this.parent.add(parentDominatorBlock);
+    }
     public void addChildren(DominatorBlock dominatorBlock){
         this.children.add(dominatorBlock);
     }

@@ -1,4 +1,4 @@
-package test.parser.dominatorTest;
+package test.edu.uci.compiler.dominatorTest;
 
 import main.edu.uci.compiler.parser.Parser;
 import org.junit.Test;

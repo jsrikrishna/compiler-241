@@ -23,6 +23,7 @@ public class Parser {
     private BasicBlock startBasicBlock;
     private ControlFlowGraph cfg;
     private InstructionGenerator ig;
+    private DominatorTree domTree;
     private ArrayList<Token> relOpList;
     private ArrayList<Token> statSeqList;
     private Tracker tracker;
@@ -35,6 +36,7 @@ public class Parser {
         currentToken = scanner.getToken();
         cfg = new ControlFlowGraph();
         tracker = new Tracker();
+        domTree = new DominatorTree();
         ig = new InstructionGenerator();
         relOpList = new ArrayList<Token>() {{
             add(EQL);
@@ -73,6 +75,10 @@ public class Parser {
             // Need not move to next token, it is handled by funcDecl
             funcDecl();
         }
+
+        // Update DOM Tree Class with Start Basic Block and functions called
+        domTree.updateDomTree(startBasicBlock, tracker.getFunctions());
+
         if (currentToken != BEGIN) generateError(BEGIN_NOT_FOUND);
         moveToNextToken();
         startBasicBlock = statSequence(startBasicBlock, null);
@@ -85,16 +91,15 @@ public class Parser {
         startBasicBlock.addInstruction(ig.generateEndInstruction());
     }
 
-    public void generateCFG(){
+    public void generateCFG() {
         cfg.writeToCFGFile(fileName, cfg.getBasicBlock(), startBasicBlock.getListOfAllBasicBlocks());
     }
 
-    public void generateDomTree(){
-        DominatorTree tree = new DominatorTree(startBasicBlock, tracker.getFunctions());
-        tree.generateDomVCGForProgram(fileName);
+    public void generateDomTree() {
+        domTree.generateDomVCGForProgram(fileName);
     }
 
-    public BasicBlock getStartBasicBlock(){
+    public BasicBlock getStartBasicBlock() {
         return this.startBasicBlock;
     }
 
@@ -627,7 +632,7 @@ public class Parser {
 
         BasicBlock whileBodyEndBlock = statSequence(whileBodyBlock, function);
         //Go Back to while condition -> adding instruction for that
-        if(whileBodyBlock != whileBodyEndBlock)
+        if (whileBodyBlock != whileBodyEndBlock)
             whileBodyEndBlock.addChildrenAndUpdateChildrenTracker(whileConditionJoinBlock);
 
         addBranchInstruction(whileBodyBlock, whileConditionJoinBlock);

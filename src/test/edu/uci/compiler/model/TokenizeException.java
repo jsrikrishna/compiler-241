@@ -1,4 +1,4 @@
-package test.parser.model;
+package test.edu.uci.compiler.model;
 
 /**
  * Created by srikrishna on 2/1/17.

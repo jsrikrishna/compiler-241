@@ -1,4 +1,4 @@
-package test.parser.Parser;
+package test.edu.uci.compiler.Parser;
 
 import main.edu.uci.compiler.parser.Parser;
 import org.junit.Test;

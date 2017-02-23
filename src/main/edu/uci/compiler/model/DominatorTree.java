@@ -14,16 +14,23 @@ public class DominatorTree {
     private BasicBlock mainStartBasicBlock;
     private HashMap<String, Function> functions;
     private Set<BasicBlock> allRootBasicBlocks;
-    private HashSet<Map<BasicBlock, Set<BasicBlock>>> allDominatorsInProgram;
+    private HashSet<Map<BasicBlock, Set<BasicBlock>>> allDomRelationsInProgram;
     private Set<DominatorBlock> allRootDominatorBlocks;
+    private Set<DominatorBlock> allDominatorBlocks;
 
 
-    public DominatorTree(BasicBlock mainStartBasicBlock, HashMap<String, Function> functions) {
-        this.mainStartBasicBlock = mainStartBasicBlock;
-        this.functions = functions;
+    public DominatorTree() {
+        mainStartBasicBlock = null;
+        functions = null;
         allRootBasicBlocks = new HashSet<>();
         allRootDominatorBlocks = new HashSet<>();
-        allDominatorsInProgram = new HashSet<>();
+        allDomRelationsInProgram = new HashSet<>();
+        allDominatorBlocks = new HashSet<>();
+    }
+
+    public void updateDomTree(BasicBlock mainStartBasicBlock, HashMap<String, Function> functions){
+        this.mainStartBasicBlock = mainStartBasicBlock;
+        this.functions = functions;
     }
 
     private void findAllReachableBlocksExceptFromV(BasicBlock currentBlock,
@@ -78,14 +85,14 @@ public class DominatorTree {
         Set<BasicBlock> mainBasicBlocks = basicBlockBFS(mainStartBasicBlock);
         Map<BasicBlock, Set<BasicBlock>> domRelations = generateDomRelations(mainBasicBlocks, mainStartBasicBlock);
         generateTransitiveDomDependency(domRelations);
-        allDominatorsInProgram.add(domRelations);
+        allDomRelationsInProgram.add(domRelations);
         for (Function function : functions) {
             BasicBlock funcBasicBlock = function.getFuncBasicBlock();
             allRootBasicBlocks.add(funcBasicBlock);
             Set<BasicBlock> funcBasicBlocks = basicBlockBFS(funcBasicBlock);
             domRelations = generateDomRelations(funcBasicBlocks, funcBasicBlock);
             generateTransitiveDomDependency(domRelations);
-            allDominatorsInProgram.add(domRelations);
+            allDomRelationsInProgram.add(domRelations);
         }
     }
 
@@ -138,16 +145,24 @@ public class DominatorTree {
 
         while (!frontier.isEmpty()) {
             dominatorBlock = frontier.poll();
+            allDominatorBlocks.add(dominatorBlock);
             Set<BasicBlock> domChildrens = domRelations.get(dominatorBlock.getMyBasicBlock());
+
             for (BasicBlock domChildren : domChildrens) {
-                frontier.add(new DominatorBlock(domChildren));
+                DominatorBlock domBlockChildren = new DominatorBlock(domChildren);
+
+                // Establish dom-block relationships
+                dominatorBlock.addChildren(domBlockChildren);
+                domBlockChildren.addParent(dominatorBlock);
+
+                frontier.add(domBlockChildren);
             }
         }
         return rootDominatorBlock;
     }
 
     private void generateDomTreeForProgram() {
-        for (Map<BasicBlock, Set<BasicBlock>> domRelations : allDominatorsInProgram) {
+        for (Map<BasicBlock, Set<BasicBlock>> domRelations : allDomRelationsInProgram) {
             BasicBlock rootBasicBlock = getRootBasicBlock(domRelations);
             if (rootBasicBlock != null) {
                 allRootDominatorBlocks.add(generateDomTreeForRoot(rootBasicBlock, domRelations));
@@ -159,7 +174,7 @@ public class DominatorTree {
         }
     }
 
-    private void generateDomRelationsForProgram(){
+    private void generateDomRelationsForProgram() {
         Set<Function> functionsSet = new HashSet<>();
         for (Map.Entry<String, Function> entry : functions.entrySet()) functionsSet.add(entry.getValue());
         generateDomRelationsForProgram(mainStartBasicBlock, functionsSet);
@@ -167,7 +182,7 @@ public class DominatorTree {
     }
 
     public void printDomForProgram() {
-        for (Map<BasicBlock, Set<BasicBlock>> domRelations : allDominatorsInProgram) {
+        for (Map<BasicBlock, Set<BasicBlock>> domRelations : allDomRelationsInProgram) {
             printBlockDomRelations(domRelations);
         }
     }
@@ -177,7 +192,7 @@ public class DominatorTree {
 
         List<String> domDigraph = new ArrayList<>();
         domDigraph.add("digraph{");
-        for (Map<BasicBlock, Set<BasicBlock>> domRelations : allDominatorsInProgram) {
+        for (Map<BasicBlock, Set<BasicBlock>> domRelations : allDomRelationsInProgram) {
             for (Map.Entry<BasicBlock, Set<BasicBlock>> entry : domRelations.entrySet()) {
                 Integer parentBasicBlockId = entry.getKey().getId();
                 for (BasicBlock basicBlock : entry.getValue()) {

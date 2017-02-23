@@ -22,7 +22,8 @@ public class BasicBlock {
     List<BasicBlock> parent;
     List<BasicBlock> children;
     HashMap<String, Integer> localTracker; // Local SSA Tracker
-    ArrayList<Function> functionsCalled;
+    ArrayList<Function> functionsCalled; // functions called from basic blocks
+    HashMap<Operation, Instruction> anchor;
     boolean isVisited;
 
     public BasicBlock(Type type) {
