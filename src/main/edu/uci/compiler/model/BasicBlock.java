@@ -8,7 +8,7 @@ import java.util.*;
 public class BasicBlock {
     public enum Type {
         BB_IF_CONDITION, BB_IF_THEN, BB_ELSE, BB_IF_THEN_JOIN, BB_IF_ELSE_JOIN,
-        BB_WHILE_CONDITION, BB_WHILE_BODY, BB_WHILE_JOIN,
+        BB_WHILE_CONDITION_AND_JOIN, BB_WHILE_BODY, BB_WHILE_FALL_THROUGH,
         BB_RETURN, BB_NORMAL, BB_NONE,
         BB_FUNCTION,
         BB_MAIN;

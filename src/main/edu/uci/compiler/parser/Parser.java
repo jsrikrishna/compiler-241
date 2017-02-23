@@ -586,47 +586,47 @@ public class Parser {
         if (currentToken != WHILE) generateError(WHILE_STATEMENT_ERROR);
         moveToNextToken();
 
-        BasicBlock whileConditionBlock = new BasicBlock(BB_WHILE_CONDITION);
-        basicBlock.addChildrenAndUpdateChildrenTracker(whileConditionBlock);
-        whileConditionBlock.addParent(basicBlock);
+        BasicBlock whileConditionJoinBlock = new BasicBlock(BB_WHILE_CONDITION_AND_JOIN);
+        basicBlock.addChildrenAndUpdateChildrenTracker(whileConditionJoinBlock);
+        whileConditionJoinBlock.addParent(basicBlock);
 
-        BasicBlock whileJoinBlock = new BasicBlock(BB_WHILE_JOIN);
-        whileConditionBlock.addChildrenAndUpdateChildrenTracker(whileJoinBlock);
-        whileJoinBlock.addParent(whileConditionBlock);
+        BasicBlock whileFallThrough = new BasicBlock(BB_WHILE_FALL_THROUGH);
+        whileConditionJoinBlock.addChildrenAndUpdateChildrenTracker(whileFallThrough);
+        whileFallThrough.addParent(whileConditionJoinBlock);
 
 
         // Being added only in do
-        Result fixUpResult = relation(whileConditionBlock, function);
-        fixUpNegCompareInstruction(fixUpResult, whileJoinBlock);
+        Result fixUpResult = relation(whileConditionJoinBlock, function);
+        fixUpNegCompareInstruction(fixUpResult, whileFallThrough);
 
         if (currentToken != DO) generateError(DO_EXPECTED);
 
         moveToNextToken();
         BasicBlock whileBodyBlock = new BasicBlock(BB_WHILE_BODY);
-        whileConditionBlock.addChildrenAndUpdateChildrenTracker(whileBodyBlock);
-        whileBodyBlock.addParent(whileConditionBlock);
+        whileConditionJoinBlock.addChildrenAndUpdateChildrenTracker(whileBodyBlock);
+        whileBodyBlock.addParent(whileConditionJoinBlock);
 
 
         // Should this after whileCondition.addChildren(whileBody) because, SSA needs to be present in parent
-        whileBodyBlock.addChildrenAndUpdateChildrenTracker(whileConditionBlock);
+        whileBodyBlock.addChildrenAndUpdateChildrenTracker(whileConditionJoinBlock);
 
 
         BasicBlock whileBodyEndBlock = statSequence(whileBodyBlock, function);
         //Go Back to while condition -> adding instruction for that
         if(whileBodyBlock != whileBodyEndBlock)
-            whileBodyEndBlock.addChildrenAndUpdateChildrenTracker(whileConditionBlock);
+            whileBodyEndBlock.addChildrenAndUpdateChildrenTracker(whileConditionJoinBlock);
 
-        addBranchInstruction(whileBodyBlock, whileConditionBlock);
+        addBranchInstruction(whileBodyBlock, whileConditionJoinBlock);
 
         insertPhiFunctionForWhileStatement(basicBlock,
-                whileConditionBlock,
+                whileConditionJoinBlock,
                 whileBodyEndBlock,
                 whileBodyBlock,
-                whileJoinBlock);
+                whileFallThrough);
 
         if (currentToken != OD) generateError(OD_EXPECTED);
         moveToNextToken();
-        return whileJoinBlock;
+        return whileFallThrough;
     }
 
     private void returnStatement(BasicBlock basicBlock, Function function) throws IOException {
