@@ -12,12 +12,11 @@ import java.util.*;
  */
 public class DominatorTree {
     private BasicBlock mainStartBasicBlock;
-    private HashMap<String, Function> functions;
     private Set<BasicBlock> allRootBasicBlocks;
-    private HashSet<Map<BasicBlock, Set<BasicBlock>>> allDomRelationsInProgram;
     private Set<DominatorBlock> allRootDominatorBlocks;
-    private Set<DominatorBlock> allDominatorBlocks;
-
+    private HashMap<String, Function> functions;
+    private HashMap<BasicBlock, DominatorBlock> allDominatorBlocks;
+    private HashSet<Map<BasicBlock, Set<BasicBlock>>> allDomRelationsInProgram;
 
     public DominatorTree() {
         mainStartBasicBlock = null;
@@ -25,7 +24,7 @@ public class DominatorTree {
         allRootBasicBlocks = new HashSet<>();
         allRootDominatorBlocks = new HashSet<>();
         allDomRelationsInProgram = new HashSet<>();
-        allDominatorBlocks = new HashSet<>();
+        allDominatorBlocks = new HashMap<>();
     }
 
     public void updateDomTree(BasicBlock mainStartBasicBlock, HashMap<String, Function> functions){
@@ -145,7 +144,7 @@ public class DominatorTree {
 
         while (!frontier.isEmpty()) {
             dominatorBlock = frontier.poll();
-            allDominatorBlocks.add(dominatorBlock);
+            allDominatorBlocks.put(dominatorBlock.getMyBasicBlock(), dominatorBlock);
             Set<BasicBlock> domChildrens = domRelations.get(dominatorBlock.getMyBasicBlock());
 
             for (BasicBlock domChildren : domChildrens) {
