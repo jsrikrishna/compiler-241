@@ -91,7 +91,7 @@ public class Parser {
 
     public void generateDomTree(){
         DominatorTree tree = new DominatorTree(startBasicBlock, tracker.getFunctions());
-        tree.printDomForProgram();
+        tree.generateDomVCGForProgram(fileName);
     }
 
     public BasicBlock getStartBasicBlock(){

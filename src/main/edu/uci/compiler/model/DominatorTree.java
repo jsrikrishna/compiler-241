@@ -1,7 +1,9 @@
 package main.edu.uci.compiler.model;
 
-import sun.jvm.hotspot.debugger.bsd.amd64.BsdAMD64CFrame;
-
+import java.io.BufferedWriter;
+import java.io.FileOutputStream;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
 import java.util.*;
 
 /**
@@ -11,19 +13,27 @@ import java.util.*;
 public class DominatorTree {
     private BasicBlock mainStartBasicBlock;
     private HashMap<String, Function> functions;
-    private DominatorNode root;
+    private DominatorBlock root;
+    private Set<BasicBlock> allRootBasicBlocks;
     private HashSet<Map<BasicBlock, Set<BasicBlock>>> allDominatorsInProgram;
+    private Set<DominatorBlock> allRootDominatorBlocks;
 
 
     public DominatorTree(BasicBlock mainStartBasicBlock, HashMap<String, Function> functions) {
         this.mainStartBasicBlock = mainStartBasicBlock;
         this.functions = functions;
+        allRootBasicBlocks = new HashSet<>();
+        allRootDominatorBlocks = new HashSet<>();
         allDominatorsInProgram = new HashSet<>();
     }
 
+    public Set<DominatorBlock> getAllRootDominatorBlocks() {
+        return this.allRootDominatorBlocks;
+    }
+
     private void findAllReachableBlocksExceptFromV(BasicBlock currentBlock,
-                                                  BasicBlock v,
-                                                  Set<BasicBlock> visitedBlocks) {
+                                                   BasicBlock v,
+                                                   Set<BasicBlock> visitedBlocks) {
 
         if (!visitedBlocks.contains(currentBlock) && v.getId() != currentBlock.getId()) {
             visitedBlocks.add(currentBlock);
@@ -33,8 +43,8 @@ public class DominatorTree {
     }
 
     private Set<BasicBlock> blocksDominatedByV(Set<BasicBlock> allBasicBlocks,
-                                              BasicBlock root,
-                                              BasicBlock v) {
+                                               BasicBlock root,
+                                               BasicBlock v) {
         HashSet<BasicBlock> visitedBlocks = new HashSet<>();
         findAllReachableBlocksExceptFromV(root, v, visitedBlocks);
         HashSet<BasicBlock> allBasicBlocksSet = new HashSet<>(allBasicBlocks);
@@ -44,7 +54,7 @@ public class DominatorTree {
     }
 
     private Map<BasicBlock, Set<BasicBlock>> generateDomRelations(Set<BasicBlock> allBasicBlocks,
-                                                                 BasicBlock root) {
+                                                                  BasicBlock root) {
         Map<BasicBlock, Set<BasicBlock>> dominatorRelationships = new HashMap<>();
         for (BasicBlock currentBlock : allBasicBlocks) {
             Set<BasicBlock> blocksDominatedByCurrentBlock = blocksDominatedByV(allBasicBlocks, root, currentBlock);
@@ -68,16 +78,37 @@ public class DominatorTree {
     }
 
     private void generateDomRelationsForProgram(BasicBlock mainStartBasicBlock,
-                                               Set<Function> functions) {
+                                                Set<Function> functions) {
+        allRootBasicBlocks.add(mainStartBasicBlock);
         Set<BasicBlock> mainBasicBlocks = basicBlockBFS(mainStartBasicBlock);
-        Map<BasicBlock, Set<BasicBlock>> dominanceRelationship = generateDomRelations(mainBasicBlocks, mainStartBasicBlock);
-        allDominatorsInProgram.add(dominanceRelationship);
+        Map<BasicBlock, Set<BasicBlock>> domRelations = generateDomRelations(mainBasicBlocks, mainStartBasicBlock);
+        generateTransitiveDomDependency(domRelations);
+        allDominatorsInProgram.add(domRelations);
         for (Function function : functions) {
             BasicBlock funcBasicBlock = function.getFuncBasicBlock();
+            allRootBasicBlocks.add(funcBasicBlock);
             Set<BasicBlock> funcBasicBlocks = basicBlockBFS(funcBasicBlock);
-            Map<BasicBlock, Set<BasicBlock>> relationships = generateDomRelations(funcBasicBlocks, funcBasicBlock);
-            allDominatorsInProgram.add(relationships);
+            domRelations = generateDomRelations(funcBasicBlocks, funcBasicBlock);
+            generateTransitiveDomDependency(domRelations);
+            allDominatorsInProgram.add(domRelations);
         }
+    }
+
+    /*
+    Get Immediate Dominance Relationships
+    Ex: what we have is 1 dom (2,3,4), [but actually 1 dom (2) and 2 dom (3,4)]
+    So what we need is 1 dom (2) and 2 dom (3,4).
+     */
+    private void generateTransitiveDomDependency(Map<BasicBlock, Set<BasicBlock>> domRelationships) {
+        for (Map.Entry<BasicBlock, Set<BasicBlock>> entry : domRelationships.entrySet()) {
+            Set<BasicBlock> dominanceChilds = entry.getValue();
+            Set<BasicBlock> childrenOfChildren = new HashSet<>();
+            for (BasicBlock child : dominanceChilds) {
+                childrenOfChildren.addAll(domRelationships.get(child));
+            }
+            dominanceChilds.removeAll(childrenOfChildren);
+        }
+
     }
 
     private void printBlockDomRelations(Map<BasicBlock, Set<BasicBlock>> domRelations) {
@@ -93,13 +124,94 @@ public class DominatorTree {
         }
     }
 
-    public void printDomForProgram(){
+    private BasicBlock getRootBasicBlock(Map<BasicBlock, Set<BasicBlock>> domRelations) {
+        for (Map.Entry<BasicBlock, Set<BasicBlock>> entry : domRelations.entrySet()) {
+            if (allRootBasicBlocks.contains(entry.getKey())) return entry.getKey();
+        }
+        System.err.println("Root Not Found");
+        return null;
+    }
+
+    private DominatorBlock generateDomTreeForRoot(BasicBlock rootBasicBlock,
+                                                  Map<BasicBlock, Set<BasicBlock>> domRelations) {
+        DominatorBlock rootDominatorBlock = new DominatorBlock(rootBasicBlock);
+        DominatorBlock dominatorBlock = rootDominatorBlock;
+
+        Queue<DominatorBlock> frontier = new LinkedList<>();
+        // There wont be any cycles as it is a tree, so not keeping visited set of dom blocks
+        frontier.add(dominatorBlock);
+
+        while (!frontier.isEmpty()) {
+            dominatorBlock = frontier.poll();
+            Set<BasicBlock> domChildrens = domRelations.get(dominatorBlock.getMyBasicBlock());
+            for (BasicBlock domChildren : domChildrens) {
+                frontier.add(new DominatorBlock(domChildren));
+            }
+        }
+        return rootDominatorBlock;
+    }
+
+    public void generateDomTreeForProgram() {
+        for (Map<BasicBlock, Set<BasicBlock>> domRelations : allDominatorsInProgram) {
+            BasicBlock rootBasicBlock = getRootBasicBlock(domRelations);
+            if (rootBasicBlock != null) {
+                allRootDominatorBlocks.add(generateDomTreeForRoot(rootBasicBlock, domRelations));
+
+            } else {
+                System.err.println("Root Basic Block not found");
+                System.exit(100);
+            }
+        }
+    }
+
+    private void generateDomRelationsForProgram(){
         Set<Function> functionsSet = new HashSet<>();
-        for(Map.Entry<String, Function> entry : functions.entrySet()) functionsSet.add(entry.getValue());
+        for (Map.Entry<String, Function> entry : functions.entrySet()) functionsSet.add(entry.getValue());
         generateDomRelationsForProgram(mainStartBasicBlock, functionsSet);
-        for(Map<BasicBlock, Set<BasicBlock>> domRelations : allDominatorsInProgram){
+    }
+
+    public void printDomForProgram() {
+        for (Map<BasicBlock, Set<BasicBlock>> domRelations : allDominatorsInProgram) {
             printBlockDomRelations(domRelations);
         }
     }
+
+    public void generateDomVCGForProgram(String fileName) {
+        generateDomRelationsForProgram();
+        List<String> domDigraph = new ArrayList<>();
+        domDigraph.add("digraph{");
+        for (Map<BasicBlock, Set<BasicBlock>> domRelations : allDominatorsInProgram) {
+            for (Map.Entry<BasicBlock, Set<BasicBlock>> entry : domRelations.entrySet()) {
+                Integer parentBasicBlockId = entry.getKey().getId();
+                for (BasicBlock basicBlock : entry.getValue()) {
+                    domDigraph.add("BasicBlock" + parentBasicBlockId + " -> BasicBlock" + basicBlock.getId());
+                }
+            }
+        }
+        domDigraph.add("}");
+        generateDomVcgImage(fileName, domDigraph);
+    }
+
+    private void generateDomVcgImage(String fileName, List<String> domDigraph) {
+        Writer writer = null;
+        try {
+            String newFileName = fileName.substring(0, fileName.length() - 4) + "DOM.dot";
+            String domFileName = fileName.substring(0, fileName.length() - 4) + "DOM.png";
+            writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(newFileName), "utf-8"));
+            for (String str : domDigraph) {
+                writer.write(str + "\n");
+            }
+            Runtime.getRuntime().exec("dot -Tpng " + newFileName + " -o " + domFileName);
+        } catch (Exception ex) {
+            System.err.print("Error occured while writing DOM Data to file");
+        } finally {
+            try {
+                writer.close();
+            } catch (Exception ex) {
+                System.err.println("Error while closing writer and exiting");
+            }
+        }
+    }
+
 
 }
