@@ -1,14 +1,9 @@
 package test.parser;
 
-import main.edu.uci.compiler.model.BasicBlock;
-import main.edu.uci.compiler.model.DominatorTree;
-import main.edu.uci.compiler.model.Function;
 import main.edu.uci.compiler.parser.Parser;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.List;
 
 import static org.junit.Assert.assertTrue;
 

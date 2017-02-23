@@ -1,9 +1,7 @@
 package test.parser;
 
-import main.edu.uci.compiler.model.Token;
 import main.edu.uci.compiler.parser.Parser;
 import org.junit.Test;
-import test.parser.model.TokenizeException;
 
 import java.io.IOException;
 
@@ -14,6 +12,7 @@ import static org.junit.Assert.assertTrue;
  */
 public class ParserTestAll {
     static int index = 1;
+
     @Test
     public void testParser() {
         String resourcePath = "resources/programs";
@@ -27,7 +26,7 @@ public class ParserTestAll {
                 parser.computation();
                 parser.generateCFG();
                 noExceptionOccurred = true;
-            } catch (IOException  ex) {
+            } catch (IOException ex) {
                 System.out.println("Exception is " + ex.getMessage());
                 noExceptionOccurred = false;
             }
@@ -35,9 +34,9 @@ public class ParserTestAll {
         }
     }
 
-    public String generateProgramName(){
+    public String generateProgramName() {
         StringBuffer s = new StringBuffer();
-        if(index < 10){
+        if (index < 10) {
             s.append(0);
             s.append(index);
         } else {

@@ -1,9 +1,7 @@
 package test.parser;
 
-import main.edu.uci.compiler.model.Token;
 import main.edu.uci.compiler.parser.Parser;
 import org.junit.Test;
-import test.parser.model.TokenizeException;
 
 import java.io.IOException;
 
@@ -22,12 +20,12 @@ public class ParserTest {
             //To Test one code at a time
 //            String fileName = resourcePath + "/test024.txt";
 //             String fileName = resourcePath + "/big.txt";
-             String fileName = resourcePath + "/cell.txt";
+            String fileName = resourcePath + "/cell.txt";
             System.out.println("File name is " + fileName);
             Parser parser = new Parser(fileName);
             parser.computation();
             parser.generateCFG();
-        } catch (IOException ex){
+        } catch (IOException ex) {
             System.out.println("Exception is " + ex.getMessage());
             noExceptionOccurred = false;
         }
