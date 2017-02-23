@@ -2,10 +2,12 @@ package test.parser;
 
 import main.edu.uci.compiler.model.BasicBlock;
 import main.edu.uci.compiler.model.DominatorTree;
+import main.edu.uci.compiler.model.Function;
 import main.edu.uci.compiler.parser.Parser;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
 
 import static org.junit.Assert.assertTrue;
@@ -21,17 +23,13 @@ public class DominatorRelationships {
 
         try {
             //To Test one code at a time
-            String fileName = resourcePath + "/test010.txt";
+            String fileName = resourcePath + "/test004.txt";
 //             String fileName = resourcePath + "/big.txt";
 //             String fileName = resourcePath + "/cell.txt";
             System.out.println("File name is " + fileName);
             Parser parser = new Parser(fileName);
             parser.computation();
-            BasicBlock startBasicBlock = parser.getStartBasicBlock();
-            List<BasicBlock> listOfAllBasicBlocks = startBasicBlock.getListOfAllBasicBlocks();
-            System.out.println("list of basic blocks is " + listOfAllBasicBlocks.size());
-            DominatorTree tree = new DominatorTree(listOfAllBasicBlocks, startBasicBlock);
-            tree.printDominatorRelationships();
+            parser.generateDomTree();
         } catch (IOException ex) {
             System.out.println("Exception is " + ex.getMessage());
             noExceptionOccurred = false;

@@ -9,18 +9,19 @@ import java.util.*;
  * Implements the naive algorithm to find the nodes dominated by a given basic block
  */
 public class DominatorTree {
-    private List<BasicBlock> allBasicBlocks;
-    private BasicBlock startBasicBlock;
+    private BasicBlock mainStartBasicBlock;
+    private HashMap<String, Function> functions;
     private DominatorNode root;
-    private Map<BasicBlock, Set<BasicBlock>> dominatorRelationships;
+    private HashSet<Map<BasicBlock, Set<BasicBlock>>> allDominatorsInProgram;
 
-    public DominatorTree(List<BasicBlock> allBasicBlocks, BasicBlock startBasicBlock) {
-        this.startBasicBlock = startBasicBlock;
-        this.allBasicBlocks = allBasicBlocks;
-        dominatorRelationships = new HashMap<>();
+
+    public DominatorTree(BasicBlock mainStartBasicBlock, HashMap<String, Function> functions) {
+        this.mainStartBasicBlock = mainStartBasicBlock;
+        this.functions = functions;
+        allDominatorsInProgram = new HashSet<>();
     }
 
-    public void findAllReachableBlocksExceptFromV(BasicBlock currentBlock,
+    private void findAllReachableBlocksExceptFromV(BasicBlock currentBlock,
                                                   BasicBlock v,
                                                   Set<BasicBlock> visitedBlocks) {
 
@@ -31,7 +32,7 @@ public class DominatorTree {
         }
     }
 
-    public Set<BasicBlock> blocksDominatedByV(List<BasicBlock> allBasicBlocks,
+    private Set<BasicBlock> blocksDominatedByV(Set<BasicBlock> allBasicBlocks,
                                               BasicBlock root,
                                               BasicBlock v) {
         HashSet<BasicBlock> visitedBlocks = new HashSet<>();
@@ -42,17 +43,45 @@ public class DominatorTree {
         return allBasicBlocksSet;
     }
 
-    public void generateDominationRelationships(List<BasicBlock> allBasicBlocks, BasicBlock root) {
+    private Map<BasicBlock, Set<BasicBlock>> generateDomRelations(Set<BasicBlock> allBasicBlocks,
+                                                                 BasicBlock root) {
+        Map<BasicBlock, Set<BasicBlock>> dominatorRelationships = new HashMap<>();
         for (BasicBlock currentBlock : allBasicBlocks) {
             Set<BasicBlock> blocksDominatedByCurrentBlock = blocksDominatedByV(allBasicBlocks, root, currentBlock);
             dominatorRelationships.put(currentBlock, blocksDominatedByCurrentBlock);
         }
+        return dominatorRelationships;
     }
 
-    public void printDominatorRelationships() {
-        generateDominationRelationships(allBasicBlocks, startBasicBlock);
-        System.out.println("size is " + dominatorRelationships.size());
-        for (Map.Entry<BasicBlock, Set<BasicBlock>> entry : dominatorRelationships.entrySet()) {
+    private Set<BasicBlock> basicBlockBFS(BasicBlock startBasicBlock) {
+        Set<BasicBlock> listOfAllBasicBlocks = new HashSet<>();
+        Queue<BasicBlock> frontier = new LinkedList<>();
+        frontier.add(startBasicBlock);
+        while (!frontier.isEmpty()) {
+            BasicBlock currentBasicBlock = frontier.poll();
+            listOfAllBasicBlocks.add(currentBasicBlock);
+            for (BasicBlock children : currentBasicBlock.getChildren()) {
+                if (!listOfAllBasicBlocks.contains(children)) frontier.add(children);
+            }
+        }
+        return listOfAllBasicBlocks;
+    }
+
+    private void generateDomRelationsForProgram(BasicBlock mainStartBasicBlock,
+                                               Set<Function> functions) {
+        Set<BasicBlock> mainBasicBlocks = basicBlockBFS(mainStartBasicBlock);
+        Map<BasicBlock, Set<BasicBlock>> dominanceRelationship = generateDomRelations(mainBasicBlocks, mainStartBasicBlock);
+        allDominatorsInProgram.add(dominanceRelationship);
+        for (Function function : functions) {
+            BasicBlock funcBasicBlock = function.getFuncBasicBlock();
+            Set<BasicBlock> funcBasicBlocks = basicBlockBFS(funcBasicBlock);
+            Map<BasicBlock, Set<BasicBlock>> relationships = generateDomRelations(funcBasicBlocks, funcBasicBlock);
+            allDominatorsInProgram.add(relationships);
+        }
+    }
+
+    private void printBlockDomRelations(Map<BasicBlock, Set<BasicBlock>> domRelations) {
+        for (Map.Entry<BasicBlock, Set<BasicBlock>> entry : domRelations.entrySet()) {
             BasicBlock basicBlock = entry.getKey();
             Set<BasicBlock> blocksDominated = entry.getValue();
             System.out.print("[" + basicBlock.getId() + "]: {");
@@ -61,6 +90,15 @@ public class DominatorTree {
 
             }
             System.out.print("}\n");
+        }
+    }
+
+    public void printDomForProgram(){
+        Set<Function> functionsSet = new HashSet<>();
+        for(Map.Entry<String, Function> entry : functions.entrySet()) functionsSet.add(entry.getValue());
+        generateDomRelationsForProgram(mainStartBasicBlock, functionsSet);
+        for(Map<BasicBlock, Set<BasicBlock>> domRelations : allDominatorsInProgram){
+            printBlockDomRelations(domRelations);
         }
     }
 

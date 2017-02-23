@@ -89,6 +89,11 @@ public class Parser {
         cfg.writeToCFGFile(fileName, cfg.getBasicBlock(), startBasicBlock.getListOfAllBasicBlocks());
     }
 
+    public void generateDomTree(){
+        DominatorTree tree = new DominatorTree(startBasicBlock, tracker.getFunctions());
+        tree.printDomForProgram();
+    }
+
     public BasicBlock getStartBasicBlock(){
         return this.startBasicBlock;
     }

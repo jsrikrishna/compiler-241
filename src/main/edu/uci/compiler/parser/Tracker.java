@@ -43,6 +43,9 @@ public class Tracker {
     public Function getFunction(String identifier){
         return this.functions.get(identifier);
     }
+    public HashMap<String, Function> getFunctions(){
+        return this.functions;
+    }
     public HashMap<String, Integer> getCopyOfVariableTracker(){
         HashMap<String, Integer> copy = new HashMap<>();
         for(Map.Entry<String, Integer> entry: this.ssaTrackerForVariables.entrySet()){
