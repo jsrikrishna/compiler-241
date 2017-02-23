@@ -20,6 +20,7 @@ public class Parser {
     private String fileName;
     private Scanner scanner;
     private Token currentToken;
+    private BasicBlock startBasicBlock;
     private ControlFlowGraph cfg;
     private InstructionGenerator ig;
     private ArrayList<Token> relOpList;
@@ -60,6 +61,7 @@ public class Parser {
         if (currentToken != MAIN) generateError(MAIN_NOT_FOUND);
         moveToNextToken();
         BasicBlock startBasicBlock = new BasicBlock(BB_MAIN);
+        this.startBasicBlock = startBasicBlock;
         cfg.setStartBasicBlock(startBasicBlock);
         while (currentToken == VAR || currentToken == ARRAY) {
             //TODO: Deal with array's later
@@ -81,7 +83,14 @@ public class Parser {
         if (currentToken != PERIOD) generateError(PERIOD_NOT_FOUND);
         moveToNextToken();
         startBasicBlock.addInstruction(ig.generateEndInstruction());
+    }
+
+    public void generateCFG(){
         cfg.writeToCFGFile(fileName, cfg.getBasicBlock(), startBasicBlock.getListOfAllBasicBlocks());
+    }
+
+    public BasicBlock getStartBasicBlock(){
+        return this.startBasicBlock;
     }
 
 
