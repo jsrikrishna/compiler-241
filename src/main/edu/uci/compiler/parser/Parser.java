@@ -545,6 +545,7 @@ public class Parser {
 
         if (elseBlock == null) {
             // NEGATED Jump to JOIN BLOCK from IF_CONDITION block, if condition is NOT TRUE
+            ifConditionBlock.addChildrenAndUpdateChildrenTracker(joinBlock);
             fixUpNegCompareInstruction(fixUpResult, joinBlock);
             insertPhiFunctionForIfStatement(ifConditionBlock, ifThenBlock, joinBlock);
         }
@@ -612,6 +613,9 @@ public class Parser {
 
         BasicBlock whileBodyEndBlock = statSequence(whileBodyBlock, function);
         //Go Back to while condition -> adding instruction for that
+        if(whileBodyBlock != whileBodyEndBlock)
+            whileBodyEndBlock.addChildrenAndUpdateChildrenTracker(whileConditionBlock);
+
         addBranchInstruction(whileBodyBlock, whileConditionBlock);
 
         insertPhiFunctionForWhileStatement(basicBlock,
