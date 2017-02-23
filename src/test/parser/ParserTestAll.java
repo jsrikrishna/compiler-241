@@ -25,6 +25,7 @@ public class ParserTestAll {
                 System.out.println("fileName - " + fileName);
                 Parser parser = new Parser(fileName);
                 parser.computation();
+                parser.generateCFG();
                 noExceptionOccurred = true;
             } catch (IOException  ex) {
                 System.out.println("Exception is " + ex.getMessage());

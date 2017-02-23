@@ -37,19 +37,15 @@ public class DominatorTree {
         HashSet<BasicBlock> visitedBlocks = new HashSet<>();
         findAllReachableBlocksExceptFromV(root, v, visitedBlocks);
         HashSet<BasicBlock> allBasicBlocksSet = new HashSet<>(allBasicBlocks);
-        if (allBasicBlocksSet.remove(v) && allBasicBlocksSet.removeAll(visitedBlocks)) return allBasicBlocksSet;
-        return null; // value is null, if not dominates any thing - might be wrong
+        allBasicBlocksSet.remove(v);
+        allBasicBlocksSet.removeAll(visitedBlocks);
+        return allBasicBlocksSet;
     }
 
     public void generateDominationRelationships(List<BasicBlock> allBasicBlocks, BasicBlock root) {
         for (BasicBlock currentBlock : allBasicBlocks) {
-            if (currentBlock.getId() != 0) {
-                Set<BasicBlock> blocksDominatedByCurrentBlock = blocksDominatedByV(allBasicBlocks, root, currentBlock);
-                dominatorRelationships.put(currentBlock, blocksDominatedByCurrentBlock);
-            } else {
-                dominatorRelationships.put(currentBlock, new HashSet<>(allBasicBlocks));
-            }
-
+            Set<BasicBlock> blocksDominatedByCurrentBlock = blocksDominatedByV(allBasicBlocks, root, currentBlock);
+            dominatorRelationships.put(currentBlock, blocksDominatedByCurrentBlock);
         }
     }
 
