@@ -1,0 +1,101 @@
+digraph{
+BasicBlock1 -> BasicBlock2
+BasicBlock2 -> BasicBlock3
+BasicBlock2 -> BasicBlock5
+BasicBlock3 -> BasicBlock4
+BasicBlock5 -> BasicBlock6
+BasicBlock6 -> BasicBlock7
+BasicBlock6 -> BasicBlock8
+BasicBlock7 -> BasicBlock8
+BasicBlock8 -> BasicBlock4
+BasicBlock0[shape="box", label="BasicBlock0
+
+ Type is BB_MAIN
+
+43: CALL [0] parameter_count 0
+44: END
+"]
+BasicBlock1[shape="box", label="BasicBlock1
+
+ Type is BB_FUNCTION
+
+0: MOVE 0 a_0
+1: MOVE 0 b_1
+2: MOVE 0 c_2
+3: MOVE 0 d_3
+4: MOVE 0 e_4
+5: MOVE 0 f_5
+6: MOVE 0 g_6
+7: MOVE 0 h_7
+8: ADD a_0 b_1
+9: MOVE (8) c_9
+10: MOVE c_9 d_10
+11: MUL d_10 d_10
+12: MOVE (11) e_12
+13: ADD a_0 c_9
+14: MOVE (13) f_14
+15: MOVE e_12 g_15
+16: ADD g_15 d_10
+17: MOVE (16) a_17
+"]
+BasicBlock2[shape="box", label="BasicBlock2
+
+ Type is BB_IF_CONDITION
+
+18: CMP a_17 c_9
+19: BGE (18) [5]
+"]
+BasicBlock3[shape="box", label="BasicBlock3
+
+ Type is BB_IF_THEN
+
+20: ADD g_15 1
+21: MOVE (20) h_21
+22: BRA [4]
+"]
+BasicBlock4[shape="box", label="BasicBlock4
+
+ Type is BB_IF_ELSE_JOIN
+
+31: PHI c_9 c_29 c_31
+32: PHI f_14 f_24 f_32
+33: PHI h_21 h_7 h_33
+34: MUL g_15 a_17
+35: MOVE (34) b_35
+36: WRITE a_17
+37: WRITE b_35
+38: WRITE c_31
+39: WRITE d_10
+40: WRITE f_32
+41: WRITE g_15
+42: WRITE h_33
+"]
+BasicBlock5[shape="box", label="BasicBlock5
+
+ Type is BB_ELSE
+
+23: SUB d_10 g_15
+24: MOVE (23) f_24
+"]
+BasicBlock6[shape="box", label="BasicBlock6
+
+ Type is BB_IF_CONDITION
+
+25: CMP f_24 a_17
+26: BLE (25) [8]
+"]
+BasicBlock7[shape="box", label="BasicBlock7
+
+ Type is BB_IF_THEN
+
+27: MOVE 2 c_27
+28: BRA [8]
+"]
+BasicBlock8[shape="box", label="BasicBlock8
+
+ Type is BB_IF_THEN_JOIN
+
+29: PHI c_9 c_27 c_29
+30: BRA [4]
+"]
+}

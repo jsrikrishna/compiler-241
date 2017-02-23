@@ -1,0 +1,56 @@
+digraph{
+BasicBlock0 -> BasicBlock1
+BasicBlock1 -> BasicBlock2
+BasicBlock1 -> BasicBlock4
+BasicBlock2 -> BasicBlock3
+BasicBlock4 -> BasicBlock3
+BasicBlock0[shape="box", label="BasicBlock0
+
+ Type is BB_MAIN
+
+0: MOVE 0 a_0
+1: MOVE 0 b_1
+2: MOVE 0 c_2
+3: MOVE 2 a_3
+4: MOVE 3 b_4
+"]
+BasicBlock1[shape="box", label="BasicBlock1
+
+ Type is BB_IF_CONDITION
+
+5: CMP a_3 b_4
+6: BGE (5) [4]
+"]
+BasicBlock2[shape="box", label="BasicBlock2
+
+ Type is BB_IF_THEN
+
+7: MOVE 1 a_7
+8: ADD a_7 1
+9: MOVE (8) b_9
+10: ADD a_7 1
+11: MOVE (10) a_11
+12: BRA [3]
+"]
+BasicBlock3[shape="box", label="BasicBlock3
+
+ Type is BB_IF_ELSE_JOIN
+
+17: PHI a_11 a_14 a_17
+18: PHI b_9 b_4 b_18
+19: PHI c_2 c_15 c_19
+20: ADD a_17 1
+21: MOVE (20) a_21
+22: WRITE a_21
+23: END
+"]
+BasicBlock4[shape="box", label="BasicBlock4
+
+ Type is BB_ELSE
+
+13: ADD a_3 1
+14: MOVE (13) a_14
+15: MOVE 2 c_15
+16: BRA [3]
+"]
+}

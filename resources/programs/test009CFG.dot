@@ -1,0 +1,137 @@
+digraph{
+BasicBlock0 -> BasicBlock1
+BasicBlock1 -> BasicBlock2
+BasicBlock1 -> BasicBlock10
+BasicBlock2 -> BasicBlock3
+BasicBlock3 -> BasicBlock4
+BasicBlock3 -> BasicBlock8
+BasicBlock4 -> BasicBlock5
+BasicBlock5 -> BasicBlock6
+BasicBlock5 -> BasicBlock7
+BasicBlock6 -> BasicBlock7
+BasicBlock7 -> BasicBlock8
+BasicBlock8 -> BasicBlock9
+BasicBlock10 -> BasicBlock11
+BasicBlock11 -> BasicBlock12
+BasicBlock11 -> BasicBlock14
+BasicBlock12 -> BasicBlock13
+BasicBlock13 -> BasicBlock9
+BasicBlock14 -> BasicBlock13
+BasicBlock0[shape="box", label="BasicBlock0
+
+ Type is BB_MAIN
+
+0: MOVE 0 a_0
+1: MOVE 0 b_1
+2: MOVE 0 c_2
+3: MOVE 1 a_3
+4: MOVE 2 b_4
+5: MOVE 3 c_5
+"]
+BasicBlock1[shape="box", label="BasicBlock1
+
+ Type is BB_IF_CONDITION
+
+6: CMP a_3 b_4
+7: BLE (6) [10]
+"]
+BasicBlock2[shape="box", label="BasicBlock2
+
+ Type is BB_IF_THEN
+
+8: ADD a_3 1
+9: MOVE (8) a_9
+"]
+BasicBlock3[shape="box", label="BasicBlock3
+
+ Type is BB_IF_CONDITION
+
+10: CMP a_9 b_4
+11: BGE (10) [8]
+"]
+BasicBlock4[shape="box", label="BasicBlock4
+
+ Type is BB_IF_THEN
+
+12: MUL a_9 4
+13: MOVE (12) a_13
+"]
+BasicBlock5[shape="box", label="BasicBlock5
+
+ Type is BB_IF_CONDITION
+
+14: CMP c_5 a_13
+15: BEQ (14) [7]
+"]
+BasicBlock6[shape="box", label="BasicBlock6
+
+ Type is BB_IF_THEN
+
+16: MOVE a_13 c_16
+17: BRA [7]
+"]
+BasicBlock7[shape="box", label="BasicBlock7
+
+ Type is BB_IF_THEN_JOIN
+
+18: PHI c_5 c_16 c_18
+19: BRA [8]
+"]
+BasicBlock8[shape="box", label="BasicBlock8
+
+ Type is BB_IF_THEN_JOIN
+
+20: PHI a_9 a_13 a_20
+21: PHI c_5 c_18 c_21
+22: BRA [9]
+"]
+BasicBlock9[shape="box", label="BasicBlock9
+
+ Type is BB_IF_ELSE_JOIN
+
+35: PHI a_20 a_33 a_35
+36: PHI b_4 b_24 b_36
+37: PHI c_21 c_5 c_37
+38: ADD a_35 1
+39: MOVE (38) a_39
+40: WRITE a_39
+41: END
+"]
+BasicBlock10[shape="box", label="BasicBlock10
+
+ Type is BB_ELSE
+
+23: ADD b_4 5
+24: MOVE (23) b_24
+"]
+BasicBlock11[shape="box", label="BasicBlock11
+
+ Type is BB_IF_CONDITION
+
+25: CMP a_20 b_24
+26: BGE (25) [14]
+"]
+BasicBlock12[shape="box", label="BasicBlock12
+
+ Type is BB_IF_THEN
+
+27: SUB a_3 2
+28: MOVE (27) a_28
+29: BRA [13]
+"]
+BasicBlock13[shape="box", label="BasicBlock13
+
+ Type is BB_IF_ELSE_JOIN
+
+33: PHI a_28 a_31 a_33
+34: BRA [9]
+"]
+BasicBlock14[shape="box", label="BasicBlock14
+
+ Type is BB_ELSE
+
+30: ADD a_3 3
+31: MOVE (30) a_31
+32: BRA [13]
+"]
+}
