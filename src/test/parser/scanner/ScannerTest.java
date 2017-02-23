@@ -1,4 +1,4 @@
-package test.parser;
+package test.parser.scanner;
 
 import main.edu.uci.compiler.model.Token;
 import main.edu.uci.compiler.parser.Scanner;
