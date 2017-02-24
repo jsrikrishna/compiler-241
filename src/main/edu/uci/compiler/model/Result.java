@@ -7,7 +7,8 @@ public class Result {
     public enum KIND {
         CONSTANT, VARIABLE, REGISTER, CONDITION, INSTRUCTION, BRANCH_INSTRUCTION, FIX_UP,
         ARRAY_VARIABLE, BASE_ADDRESS, FRAME_POINTER,
-        FUNCTION, PARAMETER_COUNT;
+        FUNCTION, PARAMETER_COUNT,
+        INIT;
     }
 
     private KIND kind;
@@ -22,6 +23,14 @@ public class Result {
     private Integer ssaVersion; // Tracker Version for a variable
     private Integer funcBasicBlockId;
     private Integer parameterCount;
+
+    public Result() {
+        kind = KIND.INIT;
+        value = address = regNo = fixUpInstructionId = -1;
+        instructionId = basicBlockId = ssaVersion = funcBasicBlockId = parameterCount = -1;
+        condition = Token.INIT;
+        identifierName = "";
+    }
 
 
     public int getInstructionId() {
@@ -66,6 +75,10 @@ public class Result {
 
     public int getFixUpInstructionId() {
         return fixUpInstructionId;
+    }
+
+    public int getBasicBlockId(){
+        return this.basicBlockId;
     }
 
     public void setFixUpInstructionId(int fixUpInstructionId) {
@@ -136,5 +149,23 @@ public class Result {
         if (kind == KIND.FUNCTION) return "[" + this.funcBasicBlockId + "]";
         if (kind == KIND.PARAMETER_COUNT) return "parameter_count " + this.parameterCount;
         return super.toString();
+    }
+
+    @Override
+    public int hashCode() {
+        return 13 * (this.value + this.address + this.ssaVersion + this.regNo + this.fixUpInstructionId +
+                this.instructionId + this.basicBlockId + this.funcBasicBlockId + this.parameterCount) + identifierName.length();
+    }
+
+    @Override
+    public boolean equals(Object obj){
+        Result result = (Result) obj;
+        boolean eq = (this.kind == result.getKind());
+        eq = eq & (this.value == result.getValue()) & (this.address == result.getAddress()) & (this.ssaVersion == result.getSsaVersion())
+                & (this.regNo == result.getRegNo()) & (this.fixUpInstructionId == result.getFixUpInstructionId())
+                & (this.instructionId == result.getInstructionId()) & (this.basicBlockId == result.getBasicBlockId())
+                & (this.funcBasicBlockId == result.getFuncBasicBlockId()) & (this.parameterCount == result.getParameterCount());
+        eq = eq & (this.identifierName.equals(result.getIdentifierName())) & (this.condition == result.getCondition());
+        return eq;
     }
 }

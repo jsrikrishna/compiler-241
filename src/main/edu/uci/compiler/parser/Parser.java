@@ -23,6 +23,8 @@ public class Parser {
     private BasicBlock startBasicBlock;
     private ControlFlowGraph cfg;
     private InstructionGenerator ig;
+    private Set<DominatorBlock> allRootDominatorBlocks;
+    private CopyPropagator cp;
     private DominatorTree domTree;
     private ArrayList<Token> relOpList;
     private ArrayList<Token> statSeqList;
@@ -32,11 +34,13 @@ public class Parser {
 
     public Parser(String fileName) throws IOException {
         this.fileName = fileName;
+        allRootDominatorBlocks = new HashSet<>();
         scanner = new Scanner(fileName);
         currentToken = scanner.getToken();
         cfg = new ControlFlowGraph();
         tracker = new Tracker();
-        domTree = new DominatorTree();
+        domTree = new DominatorTree(allRootDominatorBlocks);
+        cp = new CopyPropagator(allRootDominatorBlocks);
         ig = new InstructionGenerator();
         relOpList = new ArrayList<Token>() {{
             add(EQL);
@@ -89,10 +93,16 @@ public class Parser {
         if (currentToken != PERIOD) generateError(PERIOD_NOT_FOUND);
         moveToNextToken();
         startBasicBlock.addInstruction(ig.generateEndInstruction());
+
+        domTree.generateDomRelationsForProgram();
     }
 
-    public void generateCFG() {
-        cfg.writeToCFGFile(fileName, cfg.getBasicBlock(), startBasicBlock.getListOfAllBasicBlocks());
+    public void doCopyPropagation() {
+        cp.propagateCopiesForProgram();
+    }
+
+    public void generateCFG(boolean isCP) {
+        cfg.writeToCFGFile(fileName, isCP, cfg.getBasicBlock(), startBasicBlock.getListOfAllBasicBlocks());
     }
 
     public void generateDomTree() {

@@ -1,16 +1,15 @@
-package test.edu.uci.compiler.Parser;
+package test.edu.uci.compiler.copyPropagation;
 
-import main.edu.uci.compiler.parser.Parser;
 import org.junit.Test;
 
 import java.io.IOException;
 
 import static org.junit.Assert.assertTrue;
 
-/**
- * Created by srikrishna on 2/1/17.
- */
-public class ParserTest {
+import main.edu.uci.compiler.parser.Parser;
+
+
+public class copyPropagationTest {
     @Test
     public void testParser() {
         String resourcePath = "resources/programs";
@@ -22,9 +21,10 @@ public class ParserTest {
 //             String fileName = resourcePath + "/big.txt";
 //            String fileName = resourcePath + "/cell.txt";
             System.out.println("File name is " + fileName);
-            Parser parser_no_cp = new Parser(fileName);
-            parser_no_cp.computation();
-            parser_no_cp.generateCFG(false);
+            Parser parser_cp = new Parser(fileName);
+            parser_cp.computation();
+            parser_cp.doCopyPropagation();
+            parser_cp.generateCFG(true);
         } catch (IOException ex) {
             System.out.println("Exception is " + ex.getMessage());
             noExceptionOccurred = false;
@@ -32,3 +32,4 @@ public class ParserTest {
         assertTrue(noExceptionOccurred);
     }
 }
+

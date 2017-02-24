@@ -18,11 +18,11 @@ public class DominatorTree {
     private HashMap<BasicBlock, DominatorBlock> allDominatorBlocks;
     private HashSet<Map<BasicBlock, Set<BasicBlock>>> allDomRelationsInProgram;
 
-    public DominatorTree() {
+    public DominatorTree(Set<DominatorBlock> allRootDominatorBlocks) {
         mainStartBasicBlock = null;
         functions = null;
         allRootBasicBlocks = new HashSet<>();
-        allRootDominatorBlocks = new HashSet<>();
+        this.allRootDominatorBlocks = allRootDominatorBlocks;
         allDomRelationsInProgram = new HashSet<>();
         allDominatorBlocks = new HashMap<>();
     }
@@ -173,7 +173,7 @@ public class DominatorTree {
         }
     }
 
-    private void generateDomRelationsForProgram() {
+    public void generateDomRelationsForProgram() {
         Set<Function> functionsSet = new HashSet<>();
         for (Map.Entry<String, Function> entry : functions.entrySet()) functionsSet.add(entry.getValue());
         generateDomRelationsForProgram(mainStartBasicBlock, functionsSet);
@@ -187,8 +187,6 @@ public class DominatorTree {
     }
 
     public void generateDomVCGForProgram(String fileName) {
-        generateDomRelationsForProgram();
-
         List<String> domDigraph = new ArrayList<>();
         domDigraph.add("digraph{");
         for (Map<BasicBlock, Set<BasicBlock>> domRelations : allDomRelationsInProgram) {
