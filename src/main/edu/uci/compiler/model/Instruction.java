@@ -70,6 +70,27 @@ public class Instruction {
     }
 
     @Override
+    public boolean equals(Object object){
+        Instruction instruction = (Instruction) object;
+        boolean isSameOperation = this.operation.equals(instruction.getOperation());
+        boolean isSameOperand1 = areSameOperands(operand1, instruction.getOperand1());
+        boolean isSameOperand2 = areSameOperands(operand2, instruction.getOperand2());
+        if(!isSameOperand1 && !isSameOperand2){
+            isSameOperand1 = areSameOperands(operand1, instruction.getOperand2());
+            isSameOperand2 = areSameOperands(operand2, instruction.getOperand1());
+        }
+        boolean isSameOperand3 = areSameOperands(operand3, instruction.getOperand3());
+
+        return isSameOperation && isSameOperand1 && isSameOperand2 && isSameOperand3;
+    }
+
+    private boolean areSameOperands(Result operand, Result targetOperand){
+        if(operand == null && targetOperand == null) return true;
+        if(operand == null || targetOperand == null) return false;
+        return operand.equals(targetOperand);
+    }
+
+    @Override
     public String toString() {
         if (this.operation == null) return null;
         if (this.isBinaryOperand()) return forTwoOperands();

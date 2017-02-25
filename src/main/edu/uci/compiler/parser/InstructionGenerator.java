@@ -10,6 +10,7 @@ import static main.edu.uci.compiler.model.Result.KIND.*;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedList;
 
 /**
  * Created by srikrishna on 2/2/17.
@@ -17,6 +18,7 @@ import java.util.HashMap;
 public class InstructionGenerator {
     private static HashMap<Integer, Instruction> instructions;
     private HashMap<Token, Operation> operations;
+    private HashMap<Instruction, Result> instructionResults;
 
     class RelationResult {
         Result compareResult;
@@ -38,7 +40,8 @@ public class InstructionGenerator {
         }
     }
 
-    public InstructionGenerator() {
+    public InstructionGenerator(HashMap<Instruction, Result> instructionResults,
+                                HashMap<Integer, Instruction> allInstructions) {
         operations = new HashMap<Token, Operation>();
         operations.put(PLUS, ADD);
         operations.put(MINUS, SUB);
@@ -50,7 +53,8 @@ public class InstructionGenerator {
         operations.put(GTR, BLE);
         operations.put(GEQ, BLT);
         operations.put(Token.DIV, Operation.DIV);
-        instructions = new HashMap<Integer, Instruction>();
+        instructions = allInstructions;
+        this.instructionResults = instructionResults;
     }
 
     public Instruction getInstruction(Integer instructionId) {
@@ -89,10 +93,7 @@ public class InstructionGenerator {
                 }
             } else {
                 Instruction instruction = generateInstruction(operations.get(token), r1, r2);
-                Result res = new Result();
-                res.setKind(INSTRUCTION);
-                res.setInstructionId(instruction.getInstructionId());
-                return res;
+                return resultForInstruction(instruction);
             }
         }
         if (r1 != null) return r1;
@@ -115,9 +116,8 @@ public class InstructionGenerator {
         /*
         Compare Result
          */
-        r.compareResult = new Result();
-        r.compareResult.setKind(INSTRUCTION);
-        r.compareResult.setInstructionId(r.compareInstruction.getInstructionId());
+        r.compareResult = resultForInstruction(r.compareInstruction);
+
         /*
         Branch Result
          */
@@ -208,11 +208,8 @@ public class InstructionGenerator {
     }
 
     private Result generateAddInstructionForTwoResults(Result r1, Result r2) {
-        Result addInstructionResult = new Result();
         Instruction addInstruction = generateInstruction(ADD, r1, r2);
-        addInstructionResult.setKind(INSTRUCTION);
-        addInstructionResult.setInstructionId(addInstruction.getInstructionId());
-        return addInstructionResult;
+        return resultForInstruction(addInstruction);
     }
 
     public ArrayBase computeArrayDesignator(Result arrDimResult, String arrayIdentifier) {
@@ -253,6 +250,7 @@ public class InstructionGenerator {
         Result result = new Result();
         result.setKind(INSTRUCTION);
         result.setInstructionId(instruction.getInstructionId());
+        instructionResults.put(instruction, result);
         return result;
     }
 

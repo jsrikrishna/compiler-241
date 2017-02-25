@@ -23,6 +23,8 @@ public class Parser {
     private ControlFlowGraph cfg;
     private InstructionGenerator ig;
     private Set<DominatorBlock> allRootDominatorBlocks;
+    private HashMap<Instruction, Result> instructionResults;
+    private HashMap<Integer, Instruction> allInstructions;
     private CopyPropagator cp;
     private CommonSubExpElimination cse;
     private DominatorTree domTree;
@@ -35,14 +37,17 @@ public class Parser {
     public Parser(String fileName) throws IOException {
         this.fileName = fileName;
         allRootDominatorBlocks = new HashSet<>();
+        instructionResults = new HashMap<>();
+        allInstructions = new HashMap<>();
         scanner = new Scanner(fileName);
         currentToken = scanner.getToken();
+        ig = new InstructionGenerator(instructionResults, allInstructions);
         cfg = new ControlFlowGraph();
         tracker = new Tracker();
         domTree = new DominatorTree(allRootDominatorBlocks);
         cp = new CopyPropagator(allRootDominatorBlocks);
-        cse = new CommonSubExpElimination(allRootDominatorBlocks);
-        ig = new InstructionGenerator();
+        cse = new CommonSubExpElimination(allRootDominatorBlocks, instructionResults, allInstructions);
+
         relOpList = new ArrayList<Token>() {{
             add(EQL);
             add(NEQ);
@@ -111,7 +116,7 @@ public class Parser {
     }
 
     public void doCommonSubExpressionElimination(){
-        cse.generateAnchorRelationsForProgram();
+        cse.doCSEForProgram();
     }
 
     private void varDecl(Function function, BasicBlock basicBlock) throws IOException {
