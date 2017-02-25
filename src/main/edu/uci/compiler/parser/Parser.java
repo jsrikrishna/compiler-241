@@ -107,8 +107,8 @@ public class Parser {
         cp.propagateCopiesForProgram();
     }
 
-    public void generateCFG(boolean isCP) {
-        cfg.writeToCFGFile(fileName, isCP, cfg.getBasicBlock(), startBasicBlock.getListOfAllBasicBlocks());
+    public void generateCFG(boolean isCP, boolean isCSE) {
+        cfg.writeToCFGFile(fileName, isCP, isCSE, cfg.getBasicBlock(), startBasicBlock.getListOfAllBasicBlocks());
     }
 
     public void generateDomTree() {
