@@ -77,7 +77,7 @@ public class Result {
         return fixUpInstructionId;
     }
 
-    public int getBasicBlockId(){
+    public int getBasicBlockId() {
         return this.basicBlockId;
     }
 
@@ -153,19 +153,33 @@ public class Result {
 
     @Override
     public int hashCode() {
-        return 13 * (this.value + this.address + this.ssaVersion + this.regNo + this.fixUpInstructionId +
-                this.instructionId + this.basicBlockId + this.funcBasicBlockId + this.parameterCount) + identifierName.length();
+        return 31 * (this.value
+                + this.address
+                + this.ssaVersion
+                + this.regNo
+                + this.fixUpInstructionId
+                + this.instructionId
+                + this.basicBlockId
+                + this.funcBasicBlockId
+                + this.parameterCount)
+                + identifierName.length();
     }
 
     @Override
-    public boolean equals(Object obj){
+    public boolean equals(Object obj) {
         Result result = (Result) obj;
-        boolean eq = (this.kind == result.getKind());
-        eq = eq & (this.value == result.getValue()) & (this.address == result.getAddress()) & (this.ssaVersion == result.getSsaVersion())
-                & (this.regNo == result.getRegNo()) & (this.fixUpInstructionId == result.getFixUpInstructionId())
-                & (this.instructionId == result.getInstructionId()) & (this.basicBlockId == result.getBasicBlockId())
-                & (this.funcBasicBlockId == result.getFuncBasicBlockId()) & (this.parameterCount == result.getParameterCount());
-        eq = eq & (this.identifierName.equals(result.getIdentifierName())) & (this.condition == result.getCondition());
-        return eq;
+
+        return this.kind == result.getKind()
+                & this.value == result.getValue()
+                & this.address == result.getAddress()
+                & this.ssaVersion.equals(result.getSsaVersion())
+                & this.regNo == result.getRegNo()
+                & this.fixUpInstructionId == result.getFixUpInstructionId()
+                & this.instructionId == result.getInstructionId()
+                & this.basicBlockId == result.getBasicBlockId()
+                & this.funcBasicBlockId.equals(result.getFuncBasicBlockId())
+                & this.parameterCount.equals(result.getParameterCount())
+                & this.identifierName.equals(result.getIdentifierName())
+                & this.condition == result.getCondition();
     }
 }
