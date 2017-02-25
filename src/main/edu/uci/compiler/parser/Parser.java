@@ -3,7 +3,6 @@ package main.edu.uci.compiler.parser;
 import main.edu.uci.compiler.cfg.ControlFlowGraph;
 import main.edu.uci.compiler.model.*;
 import main.edu.uci.compiler.parser.InstructionGenerator.*;
-import sun.tools.java.Identifier;
 
 import static main.edu.uci.compiler.model.Token.*;
 import static main.edu.uci.compiler.model.ErrorMessage.*;
@@ -25,6 +24,7 @@ public class Parser {
     private InstructionGenerator ig;
     private Set<DominatorBlock> allRootDominatorBlocks;
     private CopyPropagator cp;
+    private CommonSubExpElimination cse;
     private DominatorTree domTree;
     private ArrayList<Token> relOpList;
     private ArrayList<Token> statSeqList;
@@ -41,6 +41,7 @@ public class Parser {
         tracker = new Tracker();
         domTree = new DominatorTree(allRootDominatorBlocks);
         cp = new CopyPropagator(allRootDominatorBlocks);
+        cse = new CommonSubExpElimination(allRootDominatorBlocks);
         ig = new InstructionGenerator();
         relOpList = new ArrayList<Token>() {{
             add(EQL);
@@ -109,10 +110,9 @@ public class Parser {
         domTree.generateDomVCGForProgram(fileName);
     }
 
-    public BasicBlock getStartBasicBlock() {
-        return this.startBasicBlock;
+    public void doCommonSubExpressionElimination(){
+        cse.generateAnchorRelationsForProgram();
     }
-
 
     private void varDecl(Function function, BasicBlock basicBlock) throws IOException {
         ArrayList<Integer> arrayDimensions = typeDecl();

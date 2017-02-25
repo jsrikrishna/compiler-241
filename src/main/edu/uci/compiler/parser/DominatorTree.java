@@ -1,4 +1,8 @@
-package main.edu.uci.compiler.model;
+package main.edu.uci.compiler.parser;
+
+import main.edu.uci.compiler.model.BasicBlock;
+import main.edu.uci.compiler.model.DominatorBlock;
+import main.edu.uci.compiler.model.Function;
 
 import java.io.BufferedWriter;
 import java.io.FileOutputStream;
@@ -27,7 +31,7 @@ public class DominatorTree {
         allDominatorBlocks = new HashMap<>();
     }
 
-    public void updateDomTree(BasicBlock mainStartBasicBlock, HashMap<String, Function> functions){
+    public void updateDomTree(BasicBlock mainStartBasicBlock, HashMap<String, Function> functions) {
         this.mainStartBasicBlock = mainStartBasicBlock;
         this.functions = functions;
     }
@@ -81,12 +85,14 @@ public class DominatorTree {
     private void generateDomRelationsForProgram(BasicBlock mainStartBasicBlock,
                                                 Set<Function> functions) {
         allRootBasicBlocks.add(mainStartBasicBlock);
+        mainStartBasicBlock.setIsRootBasicBlock();
         Set<BasicBlock> mainBasicBlocks = basicBlockBFS(mainStartBasicBlock);
         Map<BasicBlock, Set<BasicBlock>> domRelations = generateDomRelations(mainBasicBlocks, mainStartBasicBlock);
         generateTransitiveDomDependency(domRelations);
         allDomRelationsInProgram.add(domRelations);
         for (Function function : functions) {
             BasicBlock funcBasicBlock = function.getFuncBasicBlock();
+            funcBasicBlock.setIsRootBasicBlock();
             allRootBasicBlocks.add(funcBasicBlock);
             Set<BasicBlock> funcBasicBlocks = basicBlockBFS(funcBasicBlock);
             domRelations = generateDomRelations(funcBasicBlocks, funcBasicBlock);
@@ -152,7 +158,8 @@ public class DominatorTree {
 
                 // Establish dom-block relationships
                 dominatorBlock.addChildren(domBlockChildren);
-                domBlockChildren.addParent(dominatorBlock);
+//                domBlockChildren.addParent(dominatorBlock);
+                domBlockChildren.setParent(dominatorBlock);
 
                 frontier.add(domBlockChildren);
             }
@@ -164,7 +171,9 @@ public class DominatorTree {
         for (Map<BasicBlock, Set<BasicBlock>> domRelations : allDomRelationsInProgram) {
             BasicBlock rootBasicBlock = getRootBasicBlock(domRelations);
             if (rootBasicBlock != null) {
-                allRootDominatorBlocks.add(generateDomTreeForRoot(rootBasicBlock, domRelations));
+                DominatorBlock rootDomBlock = generateDomTreeForRoot(rootBasicBlock, domRelations);
+                rootDomBlock.setParent(null);
+                allRootDominatorBlocks.add(rootDomBlock);
 
             } else {
                 System.err.println("Root Basic Block not found");
@@ -211,6 +220,7 @@ public class DominatorTree {
                 writer.write(str + "\n");
             }
             Runtime.getRuntime().exec("dot -Tpng " + newFileName + " -o " + domFileName);
+            System.out.println("Generated DOM Tree " + domFileName);
         } catch (Exception ex) {
             System.err.print("Error occured while writing DOM Data to file");
         } finally {

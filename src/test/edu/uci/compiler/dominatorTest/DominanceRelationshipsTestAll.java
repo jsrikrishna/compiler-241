@@ -10,7 +10,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * Created by srikrishna on 2/23/17.
  */
-public class DominanceRelationshipsAll {
+public class DominanceRelationshipsTestAll {
     static int index = 1;
 
     @Test

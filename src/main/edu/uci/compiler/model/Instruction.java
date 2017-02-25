@@ -13,9 +13,11 @@ public class Instruction {
     Result operand2;
     Result operand3; // Used for PHI FUNCTIONS
     private int instructionId;
+    private Instruction anchorInstruction;
 
     public Instruction() {
         this.instructionId = numberOfInstructions;
+        anchorInstruction = null;
         ++numberOfInstructions;
     }
 
@@ -59,17 +61,29 @@ public class Instruction {
         this.instructionId = instructionId;
     }
 
+    public Instruction getAnchorInstruction() {
+        return this.anchorInstruction;
+    }
+
+    public void setAnchorInstruction(Instruction anchorInstruction){
+        this.anchorInstruction = anchorInstruction;
+    }
+
     @Override
     public String toString() {
         if (this.operation == null) return null;
         if (this.isBinaryOperand()) return forTwoOperands();
         if (this.isUnaryOperand()) return forOneOperand();
         if (this.noOperand()) return forNoOperand();
-        if (this.operation == Operation.MOVE
-                || this.operation == Operation.STORE)
-            return this.operation + " " + this.operand1.toString() + " " + this.operand2.toString();
-        if(this.operation == Operation.PHI){
-            return this.operation + " " + this.operand1.toString() + " "+ this.operand2.toString() + " " + this.operand3.toString();
+        if (this.operation == Operation.MOVE || this.operation == Operation.STORE)
+            return this.operation
+                    + " " + this.operand1.toString()
+                    + " " + this.operand2.toString();
+        if (this.operation == Operation.PHI) {
+            return this.operation
+                    + " " + this.operand1.toString()
+                    + " " + this.operand2.toString()
+                    + " " + this.operand3.toString();
         }
         return "";
     }

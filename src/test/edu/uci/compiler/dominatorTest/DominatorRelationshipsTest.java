@@ -10,7 +10,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * Created by srikrishna on 2/22/17.
  */
-public class DominatorRelationships {
+public class DominatorRelationshipsTest {
     @Test
     public void testDominanceRelationships() {
         String resourcePath = "resources/programs";
@@ -18,7 +18,7 @@ public class DominatorRelationships {
 
         try {
             //To Test one code at a time
-            String fileName = resourcePath + "/test007.txt";
+            String fileName = resourcePath + "/test009.txt";
 //             String fileName = resourcePath + "/big.txt";
 //             String fileName = resourcePath + "/cell.txt";
             System.out.println("File name is " + fileName);

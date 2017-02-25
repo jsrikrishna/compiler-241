@@ -105,10 +105,6 @@ public class Result {
         this.basicBlockId = basicBlockId;
     }
 
-//    public Integer getBasicBlockId() {
-//        return this.basicBlockId;
-//    }
-
     public void setSsaVersion(Integer ssaVersion) {
         this.ssaVersion = ssaVersion;
     }

@@ -10,13 +10,13 @@ public class DominatorBlock {
     private Integer id;
     private BasicBlock myBasicBlock;
     private Set<DominatorBlock> children;
-    private Set<DominatorBlock> parent;
+    private DominatorBlock parent;
 
     public DominatorBlock(BasicBlock basicBlock) {
         this.id = basicBlock.getId();
         this.myBasicBlock = basicBlock;
         children = new HashSet<>();
-        parent = new HashSet<>();
+        parent = null;
     }
 
     public Integer getId() {
@@ -39,19 +39,15 @@ public class DominatorBlock {
         this.children = children;
     }
 
-    public void addParent(DominatorBlock parentDominatorBlock) {
-        this.parent.add(parentDominatorBlock);
-    }
-
     public void addChildren(DominatorBlock dominatorBlock) {
         this.children.add(dominatorBlock);
     }
 
-    public Set<DominatorBlock> getParent() {
+    public DominatorBlock getParent() {
         return this.parent;
     }
 
-    public void setParent(Set<DominatorBlock> parent) {
+    public void setParent(DominatorBlock parent) {
         this.parent = parent;
     }
 }
