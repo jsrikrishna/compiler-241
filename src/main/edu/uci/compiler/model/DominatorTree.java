@@ -14,12 +14,24 @@ public class DominatorTree {
     private DominatorNode root;
     private HashSet<Map<BasicBlock, Set<BasicBlock>>> allDominatorsInProgram;
 
+    /**
+     * O(nlogn) Implementation
+     */
+    private int dfNum[];
+
 
     public DominatorTree(BasicBlock mainStartBasicBlock, HashMap<String, Function> functions) {
         this.mainStartBasicBlock = mainStartBasicBlock;
         this.functions = functions;
         allDominatorsInProgram = new HashSet<>();
+
+
+        this.numDFS(mainStartBasicBlock);
+        this.computeDominators();
+
     }
+
+
 
     private void findAllReachableBlocksExceptFromV(BasicBlock currentBlock,
                                                   BasicBlock v,
@@ -101,5 +113,26 @@ public class DominatorTree {
             printBlockDomRelations(domRelations);
         }
     }
+
+    public void numDFS(BasicBlock currentBlock){
+
+    }
+    public void computeDominators() {
+    }
+
+    /**
+     * Semi Dominators by block
+     */
+    private Map<BasicBlock,Integer> semi = new HashMap<BasicBlock,Integer>();
+    /**
+     * Parents
+     */
+    private Map<BasicBlock,BasicBlock> parent = new HashMap<BasicBlock,BasicBlock>();
+    /**
+     * Blocks in DFS order; used to look up a block from its semidominator
+     * numbering.
+     */
+    private ArrayList<BasicBlock> vertex = new ArrayList<BasicBlock>();
+
 
 }

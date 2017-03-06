@@ -18,7 +18,7 @@ public class DominatorRelationships {
 
         try {
             //To Test one code at a time
-            String fileName = resourcePath + "/test004.txt";
+            String fileName = resourcePath + "/test007.txt";
 //             String fileName = resourcePath + "/big.txt";
 //             String fileName = resourcePath + "/cell.txt";
             System.out.println("File name is " + fileName);
