@@ -658,8 +658,11 @@ public class Parser {
 
         BasicBlock whileBodyEndBlock = statSequence(whileBodyBlock, function);
         //Go Back to while condition -> adding instruction for that
-        if (whileBodyBlock != whileBodyEndBlock)
+        if (whileBodyBlock != whileBodyEndBlock){
             whileBodyEndBlock.addChildrenAndUpdateChildrenTracker(whileConditionJoinBlock);
+            whileConditionJoinBlock.addParent(whileBodyEndBlock);
+        }
+
 
         addBranchInstruction(whileBodyBlock, whileConditionJoinBlock);
 
