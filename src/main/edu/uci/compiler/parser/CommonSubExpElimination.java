@@ -115,10 +115,10 @@ public class CommonSubExpElimination {
                     canBeReplacedWithResult = toBeRemovedInstruction.get(anchorInstruction);
                 }
 
-                if (canBeReplacedWithResult == null) {
-                    System.err.println("this cannot be possible " + toBeCheckedInstruction);
-                    System.exit(100);
-                }
+//                if (canBeReplacedWithResult == null) {
+//                    System.err.println("this cannot be possible " + toBeCheckedInstruction);
+//                    System.exit(100);
+//                }
 
                 toBeRemovedInstruction.put(toBeCheckedInstruction, canBeReplacedWithResult);
                 return;

@@ -19,8 +19,8 @@ public class CommonSubExpressionEliminationTest {
         try {
             //To Test one code at a time
 //            String fileName = resourcePath + "/test031.txt";
-//             String fileName = resourcePath + "/big.txt";
-            String fileName = resourcePath + "/cell.txt";
+             String fileName = resourcePath + "/big.txt";
+//            String fileName = resourcePath + "/cell.txt";
             System.out.println("File name is " + fileName);
             Parser cseParser = new Parser(fileName);
             cseParser.computation();
