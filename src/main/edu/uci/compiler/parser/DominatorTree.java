@@ -1,6 +1,7 @@
 package main.edu.uci.compiler.parser;
 
 import com.sun.org.apache.regexp.internal.RE;
+import main.edu.uci.compiler.cfg.ControlFlowGraph;
 import main.edu.uci.compiler.model.BasicBlock;
 import main.edu.uci.compiler.model.DominatorBlock;
 import main.edu.uci.compiler.model.Function;
@@ -215,39 +216,6 @@ public class DominatorTree {
             }
         }
         domDigraph.add("}");
-        generateDomVcgImage(fileName, domDigraph);
+        ControlFlowGraph.generateFlow(fileName, domDigraph, "DOM");
     }
-
-    private void generateDomVcgImage(String fileName, List<String> domDigraph) {
-        Writer writer = null;
-        try {
-            String newFileName = fileName.substring(0, fileName.length() - 4) + "DOM.dot";
-            String domFileName = fileName.substring(0, fileName.length() - 4) + "DOM.png";
-            writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(newFileName), "utf-8"));
-            for (String str : domDigraph) {
-                writer.write(str + "\n");
-            }
-            Runtime.getRuntime().exec("dot -Tpng " + newFileName + " -o " + domFileName);
-            System.out.println("Generated DOM Tree " + domFileName);
-            System.out.println("End basic blocks are ");
-        } catch (Exception ex) {
-            System.err.print("Error occured while writing DOM Data to file");
-        } finally {
-            try {
-                writer.close();
-            } catch (Exception ex) {
-                System.err.println("Error while closing writer and exiting");
-            }
-        }
-
-    }
-
-    public void printEndBasicBlocks(){
-        for(BasicBlock basicBlock : this.endBasicBlocks){
-            System.out.println(basicBlock);
-        }
-        System.out.println();
-    }
-
-
 }

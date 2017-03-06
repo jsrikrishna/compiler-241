@@ -18,8 +18,8 @@ public class ParserTest {
 
         try {
             //To Test one code at a time
-            String fileName = resourcePath + "/test009.txt";
-//             String fileName = resourcePath + "/big.txt";
+//            String fileName = resourcePath + "/test009.txt";
+             String fileName = resourcePath + "/big.txt";
 //            String fileName = resourcePath + "/cell.txt";
             System.out.println("File name is " + fileName);
             Parser parser_no_cp = new Parser(fileName);

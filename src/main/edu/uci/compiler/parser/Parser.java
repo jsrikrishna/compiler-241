@@ -45,7 +45,7 @@ public class Parser {
         scanner = new Scanner(fileName);
         currentToken = scanner.getToken();
         ig = new InstructionGenerator(instructionResults, allInstructions);
-        cfg = new ControlFlowGraph();
+        cfg = new ControlFlowGraph(this.endBasicBlocks);
         tracker = new Tracker();
         domTree = new DominatorTree(allRootDominatorBlocks, endBasicBlocks);
         cp = new CopyPropagator(allRootDominatorBlocks);
@@ -103,11 +103,12 @@ public class Parser {
         if (currentToken != PERIOD) generateError(PERIOD_NOT_FOUND);
         moveToNextToken();
         endBasicBlock.addInstruction(ig.generateEndInstruction());
-        cfg.setEndBasicBlock(endBasicBlock);
+        // This need not be done, have to check
+        cfg.addEndBasicBlock(endBasicBlock);
         this.endBasicBlocks.add(endBasicBlock);
 
         domTree.generateDomRelationsForProgram();
-        lra.printParentsForProgram(fileName);
+        cfg.printParentsForProgram(fileName);
     }
 
     public void doCopyPropagation() {
@@ -120,7 +121,6 @@ public class Parser {
 
     public void printDomVCG() {
         domTree.printDomVCGForProgram(fileName);
-        domTree.printEndBasicBlocks();
     }
 
     public void doCommonSubExpressionElimination(){
