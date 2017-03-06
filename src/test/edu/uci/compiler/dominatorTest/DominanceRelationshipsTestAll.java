@@ -24,7 +24,7 @@ public class DominanceRelationshipsTestAll {
                 System.out.println("fileName - " + fileName);
                 Parser parser = new Parser(fileName);
                 parser.computation();
-                parser.generateDomTree();
+                parser.printDomVCG();
                 noExceptionOccurred = true;
             } catch (IOException ex) {
                 System.out.println("Exception is " + ex.getMessage());

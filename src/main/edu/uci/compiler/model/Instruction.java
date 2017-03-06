@@ -128,6 +128,7 @@ public class Instruction {
 
     private boolean isUnaryOperand() {
         return (this.operation == Operation.BRA
+                || this.operation == Operation.LOAD
                 || this.operation == Operation.RET
                 || this.operation == Operation.PARAM
                 || this.operation == Operation.WRITE);

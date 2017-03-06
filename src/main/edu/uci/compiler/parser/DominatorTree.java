@@ -1,8 +1,10 @@
 package main.edu.uci.compiler.parser;
 
+import com.sun.org.apache.regexp.internal.RE;
 import main.edu.uci.compiler.model.BasicBlock;
 import main.edu.uci.compiler.model.DominatorBlock;
 import main.edu.uci.compiler.model.Function;
+import main.edu.uci.compiler.model.Result;
 
 import java.io.BufferedWriter;
 import java.io.FileOutputStream;
@@ -16,15 +18,17 @@ import java.util.*;
  */
 public class DominatorTree {
     private BasicBlock mainStartBasicBlock;
+    private Set<BasicBlock> endBasicBlocks;
     private Set<BasicBlock> allRootBasicBlocks;
     private Set<DominatorBlock> allRootDominatorBlocks;
     private HashMap<String, Function> functions;
     private HashMap<BasicBlock, DominatorBlock> allDominatorBlocks;
     private HashSet<Map<BasicBlock, Set<BasicBlock>>> allDomRelationsInProgram;
 
-    public DominatorTree(Set<DominatorBlock> allRootDominatorBlocks) {
+    public DominatorTree(Set<DominatorBlock> allRootDominatorBlocks, Set<BasicBlock> endBasicBlocks) {
         mainStartBasicBlock = null;
         functions = null;
+        this.endBasicBlocks = endBasicBlocks;
         allRootBasicBlocks = new HashSet<>();
         this.allRootDominatorBlocks = allRootDominatorBlocks;
         allDomRelationsInProgram = new HashSet<>();
@@ -75,8 +79,12 @@ public class DominatorTree {
         while (!frontier.isEmpty()) {
             BasicBlock currentBasicBlock = frontier.poll();
             listOfAllBasicBlocks.add(currentBasicBlock);
-            for (BasicBlock children : currentBasicBlock.getChildren()) {
-                if (!listOfAllBasicBlocks.contains(children)) frontier.add(children);
+            List<BasicBlock> children = currentBasicBlock.getChildren();
+            if(children.isEmpty() || children == null) {
+                endBasicBlocks.add(currentBasicBlock);
+            }
+            for (BasicBlock child : children) {
+                if (!listOfAllBasicBlocks.contains(child)) frontier.add(child);
             }
         }
         return listOfAllBasicBlocks;
@@ -195,7 +203,7 @@ public class DominatorTree {
         }
     }
 
-    public void generateDomVCGForProgram(String fileName) {
+    public void printDomVCGForProgram(String fileName) {
         List<String> domDigraph = new ArrayList<>();
         domDigraph.add("digraph{");
         for (Map<BasicBlock, Set<BasicBlock>> domRelations : allDomRelationsInProgram) {
@@ -221,6 +229,7 @@ public class DominatorTree {
             }
             Runtime.getRuntime().exec("dot -Tpng " + newFileName + " -o " + domFileName);
             System.out.println("Generated DOM Tree " + domFileName);
+            System.out.println("End basic blocks are ");
         } catch (Exception ex) {
             System.err.print("Error occured while writing DOM Data to file");
         } finally {
@@ -230,6 +239,14 @@ public class DominatorTree {
                 System.err.println("Error while closing writer and exiting");
             }
         }
+
+    }
+
+    public void printEndBasicBlocks(){
+        for(BasicBlock basicBlock : this.endBasicBlocks){
+            System.out.println(basicBlock);
+        }
+        System.out.println();
     }
 
 

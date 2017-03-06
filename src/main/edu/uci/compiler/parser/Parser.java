@@ -22,7 +22,9 @@ public class Parser {
     private BasicBlock startBasicBlock;
     private ControlFlowGraph cfg;
     private InstructionGenerator ig;
+    private LiveRangeAnalysis lra;
     private Set<DominatorBlock> allRootDominatorBlocks;
+    private Set<BasicBlock> endBasicBlocks;
     private HashMap<Instruction, Result> instructionResults;
     private HashMap<Integer, Instruction> allInstructions;
     private CopyPropagator cp;
@@ -36,6 +38,7 @@ public class Parser {
 
     public Parser(String fileName) throws IOException {
         this.fileName = fileName;
+        endBasicBlocks = new HashSet<>();
         allRootDominatorBlocks = new HashSet<>();
         instructionResults = new HashMap<>();
         allInstructions = new HashMap<>();
@@ -44,9 +47,10 @@ public class Parser {
         ig = new InstructionGenerator(instructionResults, allInstructions);
         cfg = new ControlFlowGraph();
         tracker = new Tracker();
-        domTree = new DominatorTree(allRootDominatorBlocks);
+        domTree = new DominatorTree(allRootDominatorBlocks, endBasicBlocks);
         cp = new CopyPropagator(allRootDominatorBlocks);
         cse = new CommonSubExpElimination(allRootDominatorBlocks, instructionResults, allInstructions);
+        lra = new LiveRangeAnalysis(this.endBasicBlocks);
 
         relOpList = new ArrayList<Token>() {{
             add(EQL);
@@ -91,28 +95,32 @@ public class Parser {
 
         if (currentToken != BEGIN) generateError(BEGIN_NOT_FOUND);
         moveToNextToken();
-        startBasicBlock = statSequence(startBasicBlock, null);
+        BasicBlock endBasicBlock = statSequence(startBasicBlock, null);
 
         if (currentToken != END) generateError(END_NOT_FOUND);
         moveToNextToken();
 
         if (currentToken != PERIOD) generateError(PERIOD_NOT_FOUND);
         moveToNextToken();
-        startBasicBlock.addInstruction(ig.generateEndInstruction());
+        endBasicBlock.addInstruction(ig.generateEndInstruction());
+        cfg.setEndBasicBlock(endBasicBlock);
+        this.endBasicBlocks.add(endBasicBlock);
 
         domTree.generateDomRelationsForProgram();
+        lra.printParentsForProgram(fileName);
     }
 
     public void doCopyPropagation() {
         cp.propagateCopiesForProgram();
     }
 
-    public void generateCFG(boolean isCP, boolean isCSE) {
-        cfg.writeToCFGFile(fileName, isCP, isCSE, cfg.getBasicBlock(), startBasicBlock.getListOfAllBasicBlocks());
+    public void printCFG(boolean isCP, boolean isCSE) {
+        cfg.writeToCFGFile(fileName, isCP, isCSE, cfg.getStartBasicBlock(), startBasicBlock.getListOfAllBasicBlocks());
     }
 
-    public void generateDomTree() {
-        domTree.generateDomVCGForProgram(fileName);
+    public void printDomVCG() {
+        domTree.printDomVCGForProgram(fileName);
+        domTree.printEndBasicBlocks();
     }
 
     public void doCommonSubExpressionElimination(){
@@ -560,13 +568,14 @@ public class Parser {
             // NEGATED Jump to ELSE BLOCK from IF_CONDITION BLOCK if not TRUE
             fixUpNegCompareInstruction(fixUpResult, elseBlock);
 
-            elseBlock.addParent(ifConditionBlock);
             ifConditionBlock.addChildrenAndUpdateChildrenTracker(elseBlock);
+            elseBlock.addParent(ifConditionBlock);
 
             joinBlock.setType(BB_IF_ELSE_JOIN);
-            joinBlock.addParent(elseBlock);
 
             elseBlock = statSequence(elseBlock, function);
+            // Need to add here, as parent relationships are used in Live Range Analysis
+            joinBlock.addParent(elseBlock);
             // Need to add here, because, last elseBlock returned should link to if-else-join
             elseBlock.addChildrenAndUpdateChildrenTracker(joinBlock);
             // BRA instruction from ELSE Block to JOIN Block
@@ -580,6 +589,7 @@ public class Parser {
         if (elseBlock == null) {
             // NEGATED Jump to JOIN BLOCK from IF_CONDITION block, if condition is NOT TRUE
             ifConditionBlock.addChildrenAndUpdateChildrenTracker(joinBlock);
+            joinBlock.addParent(ifConditionBlock);
             fixUpNegCompareInstruction(fixUpResult, joinBlock);
             insertPhiFunctionForIfStatement(ifConditionBlock, ifThenBlock, joinBlock);
         }
@@ -638,6 +648,7 @@ public class Parser {
         moveToNextToken();
         BasicBlock whileBodyBlock = new BasicBlock(BB_WHILE_BODY);
         whileConditionJoinBlock.addChildrenAndUpdateChildrenTracker(whileBodyBlock);
+        whileConditionJoinBlock.addParent(whileBodyBlock);
         whileBodyBlock.addParent(whileConditionJoinBlock);
 
 

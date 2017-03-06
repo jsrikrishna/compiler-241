@@ -18,7 +18,7 @@ public class CommonSubExpressionEliminationTest {
 
         try {
             //To Test one code at a time
-            String fileName = resourcePath + "/test025.txt";
+            String fileName = resourcePath + "/test022.txt";
 //             String fileName = resourcePath + "/big.txt";
 //            String fileName = resourcePath + "/cell.txt";
             System.out.println("File name is " + fileName);
@@ -26,8 +26,8 @@ public class CommonSubExpressionEliminationTest {
             cseParser.computation();
             cseParser.doCopyPropagation();
             cseParser.doCommonSubExpressionElimination();
-            cseParser.generateDomTree();
-            cseParser.generateCFG(true, true);
+            cseParser.printDomVCG();
+            cseParser.printCFG(true, true);
         } catch (IOException ex) {
             System.out.println("Exception is " + ex.getMessage());
             noExceptionOccurred = false;

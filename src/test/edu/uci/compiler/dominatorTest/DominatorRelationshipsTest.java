@@ -24,7 +24,7 @@ public class DominatorRelationshipsTest {
             System.out.println("File name is " + fileName);
             Parser parser = new Parser(fileName);
             parser.computation();
-            parser.generateDomTree();
+            parser.printDomVCG();
         } catch (IOException ex) {
             System.out.println("Exception is " + ex.getMessage());
             noExceptionOccurred = false;

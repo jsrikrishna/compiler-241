@@ -234,8 +234,11 @@ public class InstructionGenerator {
         Result arrayBaseAddrInstrRes = resultForInstruction(arrayBaseAddrInstr);
 
         Instruction locInArrayInstr = generateInstruction(ADDA, arrDimResult, arrayBaseAddrInstrRes);
+        Result addaResult = resultForInstruction(locInArrayInstr);
         arrayBase.instructionIds.add(locInArrayInstr.getInstructionId());
-        arrayBase.finalResult = resultForInstruction(locInArrayInstr);
+        Instruction loadInstruction = generateInstruction(LOAD, addaResult, null);
+        arrayBase.instructionIds.add(loadInstruction.getInstructionId());
+        arrayBase.finalResult = resultForInstruction(loadInstruction);
 
         // Keep the above instruction in a result
         return arrayBase;

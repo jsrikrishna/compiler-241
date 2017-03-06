@@ -26,8 +26,8 @@ public class CommonSubExpressionEliminationTestAll {
                 cseParser.computation();
                 cseParser.doCopyPropagation();
                 cseParser.doCommonSubExpressionElimination();
-                cseParser.generateDomTree();
-                cseParser.generateCFG(true, true);
+                cseParser.printDomVCG();
+                cseParser.printCFG(true, true);
             } catch (IOException ex) {
                 System.out.println("Exception is " + ex.getMessage());
                 noExceptionOccurred = false;

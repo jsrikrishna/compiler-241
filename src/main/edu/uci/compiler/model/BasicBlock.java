@@ -92,10 +92,9 @@ public class BasicBlock {
 
     public void addChildrenAndUpdateChildrenTracker(BasicBlock children) {
         this.children.add(children);
-        children.setLocalTracker(this.getCopyOfVariableTracker());
-//        if(children.getLocalTracker().isEmpty()){
-//
-//        }
+        if(children.getLocalTracker().isEmpty()){
+            children.setLocalTracker(this.getCopyOfVariableTracker());
+        }
     }
 
     public void addParent(BasicBlock parent) {

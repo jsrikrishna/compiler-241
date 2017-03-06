@@ -19,7 +19,6 @@ public class CommonSubExpElimination {
     }
 
     public void generateAnchorRelationsForProgram() {
-        System.out.println("All Root Dom Blocks " + allRootDominatorBlocks.size());
         for (DominatorBlock rootDomBlock : allRootDominatorBlocks) {
             generateAnchorRelationsForDomTree(rootDomBlock);
         }
@@ -27,7 +26,7 @@ public class CommonSubExpElimination {
 
     private void generateAnchorRelationsForDomTree(DominatorBlock rootDomBlock) {
         generateAnchorRelationsAcrossBasicBlocks(rootDomBlock);
-        printInstrcutionAndAnchorInstruction(rootDomBlock);
+//        printInstrcutionAndAnchorInstruction(rootDomBlock);
     }
 
     private void generateAnchorRelationsAcrossBasicBlocks(DominatorBlock rootDomBlock) {
