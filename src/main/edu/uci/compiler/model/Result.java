@@ -33,7 +33,7 @@ public class Result {
     }
 
 
-    public int getInstructionId() {
+    public Integer getInstructionId() {
         return instructionId;
     }
 

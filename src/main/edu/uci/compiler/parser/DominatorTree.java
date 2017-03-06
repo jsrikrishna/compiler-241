@@ -1,16 +1,10 @@
 package main.edu.uci.compiler.parser;
 
-import com.sun.org.apache.regexp.internal.RE;
 import main.edu.uci.compiler.cfg.ControlFlowGraph;
 import main.edu.uci.compiler.model.BasicBlock;
 import main.edu.uci.compiler.model.DominatorBlock;
 import main.edu.uci.compiler.model.Function;
-import main.edu.uci.compiler.model.Result;
 
-import java.io.BufferedWriter;
-import java.io.FileOutputStream;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
 import java.util.*;
 
 /**
@@ -25,13 +19,17 @@ public class DominatorTree {
     private HashMap<String, Function> functions;
     private HashMap<BasicBlock, DominatorBlock> allDominatorBlocks;
     private HashSet<Map<BasicBlock, Set<BasicBlock>>> allDomRelationsInProgram;
+    private HashMap<BasicBlock, BasicBlock> allDomParents;
 
-    public DominatorTree(Set<DominatorBlock> allRootDominatorBlocks, Set<BasicBlock> endBasicBlocks) {
+    public DominatorTree(Set<DominatorBlock> allRootDominatorBlocks,
+                         Set<BasicBlock> endBasicBlocks,
+                         HashMap<BasicBlock, BasicBlock> allDomParents) {
         mainStartBasicBlock = null;
         functions = null;
         this.endBasicBlocks = endBasicBlocks;
         allRootBasicBlocks = new HashSet<>();
         this.allRootDominatorBlocks = allRootDominatorBlocks;
+        this.allDomParents = allDomParents;
         allDomRelationsInProgram = new HashSet<>();
         allDominatorBlocks = new HashMap<>();
     }
@@ -69,6 +67,9 @@ public class DominatorTree {
         for (BasicBlock currentBlock : allBasicBlocks) {
             Set<BasicBlock> blocksDominatedByCurrentBlock = blocksDominatedByV(allBasicBlocks, root, currentBlock);
             dominatorRelationships.put(currentBlock, blocksDominatedByCurrentBlock);
+            for(BasicBlock basicBlock: blocksDominatedByCurrentBlock){
+                allDomParents.put(basicBlock, currentBlock);
+            }
         }
         return dominatorRelationships;
     }
@@ -81,7 +82,7 @@ public class DominatorTree {
             BasicBlock currentBasicBlock = frontier.poll();
             listOfAllBasicBlocks.add(currentBasicBlock);
             List<BasicBlock> children = currentBasicBlock.getChildren();
-            if(children.isEmpty() || children == null) {
+            if (children.isEmpty() || children == null) {
                 endBasicBlocks.add(currentBasicBlock);
             }
             for (BasicBlock child : children) {
@@ -97,12 +98,14 @@ public class DominatorTree {
         mainStartBasicBlock.setIsRootBasicBlock();
         Set<BasicBlock> mainBasicBlocks = basicBlockBFS(mainStartBasicBlock);
         Map<BasicBlock, Set<BasicBlock>> domRelations = generateDomRelations(mainBasicBlocks, mainStartBasicBlock);
+        allDomParents.put(mainStartBasicBlock, null);
         generateTransitiveDomDependency(domRelations);
         allDomRelationsInProgram.add(domRelations);
         for (Function function : functions) {
             BasicBlock funcBasicBlock = function.getFuncBasicBlock();
             funcBasicBlock.setIsRootBasicBlock();
             allRootBasicBlocks.add(funcBasicBlock);
+            allDomParents.put(funcBasicBlock, null);
             Set<BasicBlock> funcBasicBlocks = basicBlockBFS(funcBasicBlock);
             domRelations = generateDomRelations(funcBasicBlocks, funcBasicBlock);
             generateTransitiveDomDependency(domRelations);

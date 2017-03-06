@@ -24,6 +24,7 @@ public class Parser {
     private InstructionGenerator ig;
     private LiveRangeAnalysis lra;
     private Set<DominatorBlock> allRootDominatorBlocks;
+    private HashMap<BasicBlock, BasicBlock> allDomParents;
     private Set<BasicBlock> endBasicBlocks;
     private HashMap<Instruction, Result> instructionResults;
     private HashMap<Integer, Instruction> allInstructions;
@@ -42,15 +43,16 @@ public class Parser {
         allRootDominatorBlocks = new HashSet<>();
         instructionResults = new HashMap<>();
         allInstructions = new HashMap<>();
+        allDomParents = new HashMap<>();
         scanner = new Scanner(fileName);
         currentToken = scanner.getToken();
         ig = new InstructionGenerator(instructionResults, allInstructions);
         cfg = new ControlFlowGraph(this.endBasicBlocks);
         tracker = new Tracker();
-        domTree = new DominatorTree(allRootDominatorBlocks, endBasicBlocks);
+        domTree = new DominatorTree(allRootDominatorBlocks, endBasicBlocks, allDomParents);
         cp = new CopyPropagator(allRootDominatorBlocks);
         cse = new CommonSubExpElimination(allRootDominatorBlocks, instructionResults, allInstructions);
-        lra = new LiveRangeAnalysis(this.endBasicBlocks);
+        lra = new LiveRangeAnalysis(endBasicBlocks, allDomParents);
 
         relOpList = new ArrayList<Token>() {{
             add(EQL);
@@ -119,11 +121,15 @@ public class Parser {
         cfg.writeToCFGFile(fileName, isCP, isCSE, cfg.getStartBasicBlock(), startBasicBlock.getListOfAllBasicBlocks());
     }
 
+    public void printNumberOfInstructions() {
+        ig.printTotalNumberOfInstructions();
+    }
+
     public void printDomVCG() {
         domTree.printDomVCGForProgram(fileName);
     }
 
-    public void doCommonSubExpressionElimination(){
+    public void doCommonSubExpressionElimination() {
         cse.doCSEForProgram();
     }
 
@@ -658,7 +664,7 @@ public class Parser {
 
         BasicBlock whileBodyEndBlock = statSequence(whileBodyBlock, function);
         //Go Back to while condition -> adding instruction for that
-        if (whileBodyBlock != whileBodyEndBlock){
+        if (whileBodyBlock != whileBodyEndBlock) {
             whileBodyEndBlock.addChildrenAndUpdateChildrenTracker(whileConditionJoinBlock);
             whileConditionJoinBlock.addParent(whileBodyEndBlock);
         }
