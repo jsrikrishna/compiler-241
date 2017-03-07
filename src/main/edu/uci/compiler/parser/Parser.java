@@ -603,7 +603,7 @@ public class Parser {
             ifConditionBlock.addChildrenAndUpdateChildrenTracker(joinBlock);
             joinBlock.addParent(ifConditionBlock);
             fixUpNegCompareInstruction(fixUpResult, joinBlock);
-            insertPhiFunctionForIfStatement(ifConditionBlock, ifThenBlock, joinBlock);
+            insertPhiFunctionForIfStatement(ifThenBlock, ifConditionBlock, joinBlock);
         }
 
         return joinBlock;

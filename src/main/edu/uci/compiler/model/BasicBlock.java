@@ -72,6 +72,10 @@ public class BasicBlock {
         return this.instructions;
     }
 
+    public void reverseInstructions() {
+        Collections.reverse(this.instructions);
+    }
+
     public int getId() {
         return this.id;
     }

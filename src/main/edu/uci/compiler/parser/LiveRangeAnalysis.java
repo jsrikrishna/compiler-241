@@ -32,9 +32,9 @@ public class LiveRangeAnalysis {
         }
     }
 
-    public void generateInterferenceGraph(BasicBlock endBasicBlock,
-                                          Set<Integer> liveRangeSet,
-                                          BasicBlock domParent) {
+    private void generateInterferenceGraph(BasicBlock endBasicBlock,
+                                           Set<Integer> liveRangeSet,
+                                           BasicBlock domParent) {
         Set<BasicBlock> visited = new HashSet<>();
         Queue<BasicBlock> frontier = new LinkedList<>();
         frontier.add(endBasicBlock);
@@ -43,6 +43,7 @@ public class LiveRangeAnalysis {
             if (isIfJoin(currentBasicBlock)) {
                 LinkedList<Instruction> phiInstructions =
                         generateLiveRangesForBasicBlock(currentBasicBlock, liveRangeSet);
+
                 BasicBlock dominatingBlock = allDomParents.get(currentBasicBlock);
                 List<BasicBlock> parentBlocks = currentBasicBlock.getParents();
 
@@ -108,6 +109,8 @@ public class LiveRangeAnalysis {
                 continue;
 
             }
+            // Ignore the returned phiInstructions as there wont be any
+            generateLiveRangesForBasicBlock(currentBasicBlock, liveRangeSet);
             List<BasicBlock> parentBlocks = currentBasicBlock.getParents();
             for (BasicBlock parent : parentBlocks) {
                 if (parent != domParent && !visited.contains(parent)) frontier.add(parent);
@@ -135,9 +138,10 @@ public class LiveRangeAnalysis {
         generateInterferenceGraph(ifTypeBlock, copy, dominatingBlock);
     }
 
-    public LinkedList<Instruction> generateLiveRangesForBasicBlock(BasicBlock basicBlock,
-                                                                   Set<Integer> liveRangeSet) {
+    private LinkedList<Instruction> generateLiveRangesForBasicBlock(BasicBlock basicBlock,
+                                                                    Set<Integer> liveRangeSet) {
         LinkedList<Instruction> phiInstructions = new LinkedList<>();
+        basicBlock.reverseInstructions();
         for (Instruction instruction : basicBlock.getInstructions()) {
             Operation op = instruction.getOperation();
 
@@ -170,27 +174,32 @@ public class LiveRangeAnalysis {
             if (!adjacencyList.containsKey(instructionId)) {
                 adjacencyList.put(instructionId, new HashSet<>());
             }
+            System.out.println("liverange size is " + liveRangeSet.size() + " inst Id " + instructionId);
             for (Integer liveInstructionId : liveRangeSet) {
                 adjacencyList.get(instructionId).add(liveInstructionId);
+            }
+
+            if (adjacencyList.containsKey(instructionId) && adjacencyList.get(instructionId).isEmpty()) {
+                adjacencyList.remove(instructionId);
             }
 
             addResultToLiveRange(instruction.getOperand1(), liveRangeSet);
             addResultToLiveRange(instruction.getOperand2(), liveRangeSet);
         }
+        basicBlock.reverseInstructions();
         return phiInstructions;
 
     }
 
     private void addResultToLiveRange(Result operand, Set<Integer> liveRangeSet) {
-        if (operand != null) {
-            if (isInstructionResult(operand)) {
-                liveRangeSet.add(operand.getInstructionId());
-                return;
-            }
-            if (isVariableResult(operand)) {
-                liveRangeSet.add(operand.getSsaVersion());
-                return;
-            }
+        if (operand == null) return;
+        if (isInstructionResult(operand)) {
+            liveRangeSet.add(operand.getInstructionId());
+            return;
+        }
+        if (isVariableResult(operand)) {
+            liveRangeSet.add(operand.getSsaVersion());
+            return;
         }
     }
 
@@ -292,6 +301,10 @@ public class LiveRangeAnalysis {
             HashSet<Integer> values = entry.getValue();
             for (Integer instructionId : values) {
                 adjListDigraph.add(instructionId + " -> " + key);
+            }
+            if (values == null || values.isEmpty()) {
+                System.out.println("Found some instructions without an edge");
+                adjListDigraph.add(key.toString());
             }
         }
         adjListDigraph.add("}");

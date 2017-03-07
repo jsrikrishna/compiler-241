@@ -10,7 +10,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * Created by srikrishna on 3/7/17.
  */
-public class liveRangeTest {
+public class LiveRangeTest {
     @Test
     public void testParser() {
         String resourcePath = "resources/programs";
@@ -18,7 +18,7 @@ public class liveRangeTest {
 
         try {
             //To Test one code at a time
-            String fileName = resourcePath + "/test008.txt";
+            String fileName = resourcePath + "/test007.txt";
 //             String fileName = resourcePath + "/big.txt";
 //            String fileName = resourcePath + "/cell.txt";
             System.out.println("File name is " + fileName);
