@@ -133,6 +133,12 @@ public class Parser {
         cse.doCSEForProgram();
     }
 
+    public void doLiveRangeAnalysis(){
+        lra.generateInterferenceGraphForProgram();
+        List<String> adjListDigraph = lra.writeAdjList();
+        cfg.generateFlow(fileName, adjListDigraph, "lra");
+    }
+
     private void varDecl(Function function, BasicBlock basicBlock) throws IOException {
         ArrayList<Integer> arrayDimensions = typeDecl();
         if (currentToken != IDENTIFIER) generateError(VARIABLE_DECL_ERROR);

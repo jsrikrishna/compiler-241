@@ -80,7 +80,7 @@ public class BasicBlock {
         return children;
     }
 
-    public List<BasicBlock> getParent() {
+    public List<BasicBlock> getParents() {
         return parent;
     }
 

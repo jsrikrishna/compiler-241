@@ -1,4 +1,4 @@
-package test.edu.uci.compiler.commonSubExpressionElimination;
+package test.edu.uci.compiler.liveRangeAnalysis;
 
 import main.edu.uci.compiler.parser.Parser;
 import org.junit.Test;
@@ -8,9 +8,9 @@ import java.io.IOException;
 import static org.junit.Assert.assertTrue;
 
 /**
- * Created by srikrishna on 2/24/17.
+ * Created by srikrishna on 3/7/17.
  */
-public class CommonSubExpressionEliminationTest {
+public class liveRangeTest {
     @Test
     public void testParser() {
         String resourcePath = "resources/programs";
@@ -22,12 +22,13 @@ public class CommonSubExpressionEliminationTest {
 //             String fileName = resourcePath + "/big.txt";
 //            String fileName = resourcePath + "/cell.txt";
             System.out.println("File name is " + fileName);
-            Parser cseParser = new Parser(fileName);
-            cseParser.computation();
-            cseParser.doCopyPropagation();
-            cseParser.doCommonSubExpressionElimination();
-            cseParser.printDomVCG();
-            cseParser.printCFG(true, true);
+            Parser lraParser = new Parser(fileName);
+            lraParser.computation();
+            lraParser.doCopyPropagation();
+            lraParser.doCommonSubExpressionElimination();
+            lraParser.printDomVCG();
+            lraParser.printCFG(true, true);
+            lraParser.doLiveRangeAnalysis();
         } catch (IOException ex) {
             System.out.println("Exception is " + ex.getMessage());
             noExceptionOccurred = false;
