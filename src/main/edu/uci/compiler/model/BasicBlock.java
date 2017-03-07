@@ -102,6 +102,9 @@ public class BasicBlock {
             children.setLocalTracker(this.getCopyOfVariableTracker());
         }
     }
+    public void removeChildren(BasicBlock basicBlock){
+        if(this.children.contains(basicBlock)) this.children.remove(basicBlock);
+    }
 
     public void addParent(BasicBlock parent) {
         this.parent.add(parent);

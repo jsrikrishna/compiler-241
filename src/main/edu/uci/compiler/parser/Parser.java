@@ -673,6 +673,7 @@ public class Parser {
         if (whileBodyBlock != whileBodyEndBlock) {
             whileBodyEndBlock.addChildrenAndUpdateChildrenTracker(whileConditionJoinBlock);
             whileConditionJoinBlock.addParent(whileBodyEndBlock);
+            whileBodyBlock.removeChildren(whileConditionJoinBlock);
         }
 
 
