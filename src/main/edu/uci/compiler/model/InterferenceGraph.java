@@ -10,7 +10,7 @@ import java.util.Set;
 public class InterferenceGraph {
     private HashSet<Instruction> instructions;
     private HashSet<Instruction> phiInstructions;
-    private HashMap<Result, HashSet<Result>> adjacencyList;
+    private HashMap<Integer, HashSet<Integer>> adjacencyList;
 
 
     public void setInstructions(HashSet<Instruction> instructions){
@@ -25,10 +25,10 @@ public class InterferenceGraph {
     public HashSet<Instruction> getPhiInstructions(){
         return this.phiInstructions;
     }
-    public void setAdjacencyList(HashMap<Result, HashSet<Result>> adjacencyList){
+    public void setAdjacencyList(HashMap<Integer, HashSet<Integer>> adjacencyList){
         this.adjacencyList = adjacencyList;
     }
-    public HashMap<Result, HashSet<Result>> getAdjacencyList(){
+    public HashMap<Integer, HashSet<Integer>> getAdjacencyList(){
         return this.adjacencyList;
     }
 }

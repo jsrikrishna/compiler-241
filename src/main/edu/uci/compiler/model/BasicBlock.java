@@ -26,6 +26,7 @@ public class BasicBlock {
     HashMap<Operation, Instruction> anchor;
     boolean isRootBasicBlock; // used in dominance relationships
     boolean isVisited;
+    boolean isVisitedWhileLiveRangeAnalysis;
 
     public BasicBlock(Type type) {
         id = numBasicBlocks;
@@ -37,6 +38,7 @@ public class BasicBlock {
         localTracker = new HashMap<>();
         functionsCalled = new ArrayList<>();
         this.isRootBasicBlock = false;
+        this.isVisitedWhileLiveRangeAnalysis = false;
         this.isVisited = false;
         allBasicBlocks.add(this);
         ++numBasicBlocks;
@@ -46,11 +48,11 @@ public class BasicBlock {
         anchor.put(instruction.getOperation(), instruction);
     }
 
-    public void setAnchor(HashMap<Operation, Instruction> anchor){
+    public void setAnchor(HashMap<Operation, Instruction> anchor) {
         this.anchor = anchor;
     }
 
-    public HashMap<Operation, Instruction> getAnchor(){
+    public HashMap<Operation, Instruction> getAnchor() {
         return this.anchor;
     }
 
@@ -78,7 +80,7 @@ public class BasicBlock {
         return children;
     }
 
-    public List<BasicBlock> getParent() {
+    public List<BasicBlock> getParents() {
         return parent;
     }
 
@@ -92,7 +94,7 @@ public class BasicBlock {
 
     public void addChildrenAndUpdateChildrenTracker(BasicBlock children) {
         this.children.add(children);
-        if(children.getLocalTracker().isEmpty()){
+        if (children.getLocalTracker().isEmpty()) {
             children.setLocalTracker(this.getCopyOfVariableTracker());
         }
     }
@@ -141,10 +143,19 @@ public class BasicBlock {
         this.isVisited = true;
     }
 
-    public void setIsRootBasicBlock(){
+    public void setIsVisitedWhileLiveRangeAnalysis() {
+        this.isVisitedWhileLiveRangeAnalysis = !this.isVisitedWhileLiveRangeAnalysis;
+    }
+
+    public boolean getIsVisitedWhileLiveRangeAnalysis() {
+        return this.isVisitedWhileLiveRangeAnalysis;
+    }
+
+    public void setIsRootBasicBlock() {
         this.isRootBasicBlock = true;
     }
-    public boolean isRootBasicBlock(){
+
+    public boolean isRootBasicBlock() {
         return this.isRootBasicBlock;
     }
 

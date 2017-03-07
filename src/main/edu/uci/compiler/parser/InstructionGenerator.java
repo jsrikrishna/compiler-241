@@ -61,6 +61,11 @@ public class InstructionGenerator {
         return instructions.get(instructionId);
     }
 
+    public void printTotalNumberOfInstructions() {
+        System.out.println("Total Number of Instructions are " + instructions.size());
+        System.out.println("Total Number of Instruction Results are " + instructionResults.size());
+    }
+
     private Instruction generateInstruction(Operation operation, Result r1, Result r2) {
         Instruction instruction = new Instruction();
         instruction.setOperation(operation);
@@ -297,7 +302,7 @@ public class InstructionGenerator {
         return null;
     }
 
-    public Instruction generateInstructionToInitVar(String identifier){
+    public Instruction generateInstructionToInitVar(String identifier) {
         Result zero = new Result();
         zero.setKind(CONSTANT);
         zero.setValue(0);
@@ -307,19 +312,19 @@ public class InstructionGenerator {
         return generateInstruction(MOVE, zero, varResult);
     }
 
-    public Instruction generatePhiInstruction(Result lhs, Result rhs){
+    public Instruction generatePhiInstruction(Result lhs, Result rhs) {
         Instruction phiInstruction = generateInstruction(PHI, lhs, rhs);
         Result phiResult = resultForVariable(lhs.getIdentifierName(), phiInstruction.getInstructionId());
         phiInstruction.setOperand3(phiResult);
         return phiInstruction;
     }
 
-    public Result resultForVariable(String identifier, Integer ssaVersion){
+    public Result resultForVariable(String identifier, Integer ssaVersion) {
         Result result = new Result();
         result.setKind(VARIABLE);
         result.setIdentifierName(identifier);
         result.setSsaVersion(ssaVersion);
-        return  result;
+        return result;
     }
 
     public void generateError(String message) {
