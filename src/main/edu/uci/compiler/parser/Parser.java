@@ -571,6 +571,7 @@ public class Parser {
         BasicBlock joinBlock = new BasicBlock(BB_IF_THEN_JOIN);
         ifThenBlock.addChildrenAndUpdateChildrenTracker(joinBlock);
         joinBlock.addParent(ifThenBlock);
+        joinBlock.setLeftParent(ifThenBlock);
         // BRA instruction from IF Block to JOIN Block
         addBranchInstruction(ifThenBlock, joinBlock);
 
@@ -588,6 +589,7 @@ public class Parser {
             elseBlock = statSequence(elseBlock, function);
             // Need to add here, as parent relationships are used in Live Range Analysis
             joinBlock.addParent(elseBlock);
+            joinBlock.setRightParent(elseBlock);
             // Need to add here, because, last elseBlock returned should link to if-else-join
             elseBlock.addChildrenAndUpdateChildrenTracker(joinBlock);
             // BRA instruction from ELSE Block to JOIN Block
@@ -602,6 +604,7 @@ public class Parser {
             // NEGATED Jump to JOIN BLOCK from IF_CONDITION block, if condition is NOT TRUE
             ifConditionBlock.addChildrenAndUpdateChildrenTracker(joinBlock);
             joinBlock.addParent(ifConditionBlock);
+            joinBlock.setRightParent(ifConditionBlock);
             fixUpNegCompareInstruction(fixUpResult, joinBlock);
             insertPhiFunctionForIfStatement(ifThenBlock, ifConditionBlock, joinBlock);
         }
