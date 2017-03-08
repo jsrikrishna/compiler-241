@@ -171,7 +171,7 @@ public class Result {
                 & this.ssaVersion.equals(result.getSsaVersion())
                 & this.regNo == result.getRegNo()
                 & this.fixUpInstructionId == result.getFixUpInstructionId()
-                & this.instructionId.equals(result.getInstructionId())
+                & this.instructionId == result.getInstructionId()
                 & this.basicBlockId == result.getBasicBlockId()
                 & this.funcBasicBlockId.equals(result.getFuncBasicBlockId())
                 & this.parameterCount.equals(result.getParameterCount())
