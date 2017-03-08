@@ -67,9 +67,6 @@ public class DominatorTree {
         for (BasicBlock currentBlock : allBasicBlocks) {
             Set<BasicBlock> blocksDominatedByCurrentBlock = blocksDominatedByV(allBasicBlocks, root, currentBlock);
             dominatorRelationships.put(currentBlock, blocksDominatedByCurrentBlock);
-            for(BasicBlock basicBlock: blocksDominatedByCurrentBlock){
-                allDomParents.put(basicBlock, currentBlock);
-            }
         }
         return dominatorRelationships;
     }
@@ -98,14 +95,12 @@ public class DominatorTree {
         mainStartBasicBlock.setIsRootBasicBlock();
         Set<BasicBlock> mainBasicBlocks = basicBlockBFS(mainStartBasicBlock);
         Map<BasicBlock, Set<BasicBlock>> domRelations = generateDomRelations(mainBasicBlocks, mainStartBasicBlock);
-        allDomParents.put(mainStartBasicBlock, null);
         generateTransitiveDomDependency(domRelations);
         allDomRelationsInProgram.add(domRelations);
         for (Function function : functions) {
             BasicBlock funcBasicBlock = function.getFuncBasicBlock();
             funcBasicBlock.setIsRootBasicBlock();
             allRootBasicBlocks.add(funcBasicBlock);
-            allDomParents.put(funcBasicBlock, null);
             Set<BasicBlock> funcBasicBlocks = basicBlockBFS(funcBasicBlock);
             domRelations = generateDomRelations(funcBasicBlocks, funcBasicBlock);
             generateTransitiveDomDependency(domRelations);
@@ -126,7 +121,11 @@ public class DominatorTree {
                 childrenOfChildren.addAll(domRelationships.get(child));
             }
             dominanceChilds.removeAll(childrenOfChildren);
+            for(BasicBlock basicBlock : dominanceChilds){
+                allDomParents.put(basicBlock, entry.getKey());
+            }
         }
+
 
     }
 

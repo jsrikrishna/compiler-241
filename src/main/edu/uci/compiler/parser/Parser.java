@@ -614,14 +614,14 @@ public class Parser {
         Result condition = relOp();
         Result rhs = expression(basicBlock, function);
         RelationResult res = ig.computeRelation(condition, lhs, rhs);
-        setSSAForVariableResult(lhs, function);
-        setSSAForVariableResult(rhs, function);
+        setSSAForVariableResult(basicBlock, lhs, function);
+        setSSAForVariableResult(basicBlock, rhs, function);
         basicBlock.addInstruction(res.compareInstruction);
         basicBlock.addInstruction(res.negCompareInstruction);
         return res.fixUpResult;
     }
 
-    private void setSSAForVariableResult(Result res, Function function) {
+    private void setSSAForVariableResult(BasicBlock basicBlock, Result res, Function function) {
         if (res.getKind() == VARIABLE) {
             if (function != null) {
                 Integer ssaVersion = function.getSSAForVariable(res.getIdentifierName());
@@ -631,8 +631,11 @@ public class Parser {
                 }
                 res.setSsaVersion(ssaVersion);
             } else {
-                Integer ssaVersion = tracker.getSSAVersion(res.getIdentifierName());
-                if (ssaVersion == null) generateError(VARIABLE_NOT_DECLARED);
+                Integer ssaVersion = basicBlock.getSSAVersion(res.getIdentifierName());
+                if(ssaVersion == null){
+                    ssaVersion = tracker.getSSAVersion(res.getIdentifierName());
+                    if (ssaVersion == null) generateError(VARIABLE_NOT_DECLARED);
+                }
                 res.setSsaVersion(ssaVersion);
             }
         }
@@ -660,7 +663,6 @@ public class Parser {
         moveToNextToken();
         BasicBlock whileBodyBlock = new BasicBlock(BB_WHILE_BODY);
         whileConditionJoinBlock.addChildrenAndUpdateChildrenTracker(whileBodyBlock);
-        whileConditionJoinBlock.addParent(whileBodyBlock);
         whileBodyBlock.addParent(whileConditionJoinBlock);
 
 
@@ -674,6 +676,8 @@ public class Parser {
             whileBodyEndBlock.addChildrenAndUpdateChildrenTracker(whileConditionJoinBlock);
             whileConditionJoinBlock.addParent(whileBodyEndBlock);
             whileBodyBlock.removeChildren(whileConditionJoinBlock);
+        } else {
+            whileConditionJoinBlock.addParent(whileBodyBlock);
         }
 
 
