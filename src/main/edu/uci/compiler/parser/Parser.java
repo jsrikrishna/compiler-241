@@ -136,7 +136,6 @@ public class Parser {
     public void doLiveRangeAnalysis(){
         lra.generateInterferenceGraphForProgram();
         List<String> adjListDigraph = lra.writeAdjList();
-        System.out.println("Done with LRA in Parser, Generating the LRA graph");
         cfg.generateFlow(fileName, adjListDigraph, "lra");
     }
 
