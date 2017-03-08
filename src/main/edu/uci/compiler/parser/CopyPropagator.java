@@ -9,9 +9,15 @@ import java.util.*;
  */
 public class CopyPropagator {
     Set<DominatorBlock> allRootDominatorBlocks;
+    InstructionGenerator ig;
+    HashMap<Instruction, Result> instructionResults;
 
-    public CopyPropagator(Set<DominatorBlock> allRootDominatorBlocks) {
+    public CopyPropagator(Set<DominatorBlock> allRootDominatorBlocks,
+                          InstructionGenerator ig,
+                          HashMap<Instruction, Result> instructionResults) {
         this.allRootDominatorBlocks = allRootDominatorBlocks;
+        this.ig = ig;
+        this.instructionResults = instructionResults;
     }
 
     public void propagateCopiesForProgram() {
@@ -65,6 +71,15 @@ public class CopyPropagator {
                 if (operand2 != null && copies.containsKey(operand2)) {
                     instruction.setOperand2(copies.get(operand2));
                 }
+                if (isConstantInstruction(instruction)) {
+                    Result constResult = generateConstantResult(instruction);
+                    toBeDeletedInstruction.add(instruction);
+                    if (!instructionResults.containsKey(instruction)) {
+                        System.out.println("Should contain constant instruction result");
+                        System.exit(44);
+                    }
+                    copies.put(instructionResults.get(instruction), constResult);
+                }
             }
         }
         instructions.removeAll(new LinkedList<>(toBeDeletedInstruction));
@@ -89,6 +104,27 @@ public class CopyPropagator {
     private Result getFinalCopy(Result operand, HashMap<Result, Result> copies) {
         if (!copies.containsKey(operand)) return operand;
         return getFinalCopy(copies.get(operand), copies);
+    }
+
+    private boolean isConstantInstruction(Instruction instruction) {
+        Operation operation = instruction.getOperation();
+        Result operand1 = instruction.getOperand1();
+        Result operand2 = instruction.getOperand2();
+        if (operand1 == null || operand2 == null) return false;
+        if (!isMathOperator(operation)) return false;
+        if(operation == Operation.DIV && operand2.getValue() == 0) return false;
+        return operand1.getKind() == Result.KIND.CONSTANT && operand2.getKind() == Result.KIND.CONSTANT;
+    }
+
+    private Result generateConstantResult(Instruction constantInstruction) {
+        return ig.computeConstantResult(constantInstruction);
+    }
+
+    private boolean isMathOperator(Operation operation) {
+        return operation == Operation.ADD
+                || operation == Operation.SUB
+                || operation == Operation.MUL
+                || operation == Operation.DIV;
     }
 
 

@@ -50,7 +50,7 @@ public class Parser {
         cfg = new ControlFlowGraph(this.endBasicBlocks);
         tracker = new Tracker();
         domTree = new DominatorTree(allRootDominatorBlocks, endBasicBlocks, allDomParents);
-        cp = new CopyPropagator(allRootDominatorBlocks);
+        cp = new CopyPropagator(allRootDominatorBlocks, ig, instructionResults);
         cse = new CommonSubExpElimination(allRootDominatorBlocks, instructionResults, allInstructions);
         lra = new LiveRangeAnalysis(endBasicBlocks, allDomParents);
 
