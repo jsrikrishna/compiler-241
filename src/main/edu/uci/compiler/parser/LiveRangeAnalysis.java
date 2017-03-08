@@ -40,35 +40,44 @@ public class LiveRangeAnalysis {
         while (!frontier.isEmpty()) {
             BasicBlock currentBasicBlock = frontier.poll();
             if (isIfJoin(currentBasicBlock)) {
-                LinkedList<Instruction> phiInstructions =
-                        liveRangesForABlock(currentBasicBlock, liveRangeSet);
+                LinkedList<Instruction> phiInstructions = liveRangesForABlock(currentBasicBlock, liveRangeSet);
 
-                BasicBlock dominatingBlock = allDomParents.get(currentBasicBlock);
-                List<BasicBlock> parentBlocks = currentBasicBlock.getParents();
+                BasicBlock joinDOMParent = allDomParents.get(currentBasicBlock);
+                BasicBlock rightParent = currentBasicBlock.getRightParent();
+                BasicBlock leftParent = currentBasicBlock.getLeftParent();
 
-                BasicBlock ifElseBlock = getIfElse(parentBlocks, dominatingBlock);
-                BasicBlock ifThenBlock = getIfThenBlock(parentBlocks);
+                Set<Integer> rightCopy = makeCopy(liveRangeSet);
+                Set<Integer> leftCopy = makeCopy(liveRangeSet);
 
-                HashSet<Integer> ifElseCopy = makeCopy(liveRangeSet);
-                if (ifElseBlock != null) {
-                    generateForIfRelatedBlocks(ifElseCopy, phiInstructions, dominatingBlock, ifElseBlock);
-                } else {
+                if (rightParent != null) {
                     for (Instruction phi : phiInstructions) {
-                        if (ifElseCopy.contains(phi.getInstructionId())) {
-                            ifElseCopy.remove(phi.getInstructionId());
+                        if (rightCopy.contains(phi.getInstructionId())) {
+                            rightCopy.remove(phi.getInstructionId());
                         }
-                        addResultToLiveRange(phi.getOperand2(), ifElseCopy);
+                        addResultToLiveRange(phi.getOperand2(), rightCopy);
                     }
                 }
-
-                HashSet<Integer> ifThenCopy = makeCopy(liveRangeSet);
-                if (ifThenBlock != null && ifThenBlock != dominatingBlock) {
-                    generateForIfRelatedBlocks(ifThenCopy, phiInstructions, dominatingBlock, ifThenBlock);
+                if (rightParent != null && rightParent != joinDOMParent) {
+                    rightCopy = generateInterferenceGraph(rightParent, rightCopy, joinDOMParent);
                 }
 
-                liveRangeSet = add2Sets(ifElseCopy, ifThenCopy);
-                frontier.add(dominatingBlock);
+                if (leftParent != null) {
+                    for (Instruction phi : phiInstructions) {
+                        if (leftCopy.contains(phi.getInstructionId())) {
+                            leftCopy.remove(phi.getInstructionId());
+                        }
+                        addResultToLiveRange(phi.getOperand1(), leftCopy);
+                    }
+                }
+                if (leftParent != null && leftParent != joinDOMParent) {
+                    leftCopy = generateInterferenceGraph(leftParent, leftCopy, joinDOMParent);
+                }
+
+                liveRangeSet = add2Sets(rightCopy, leftCopy);
+                frontier.add(joinDOMParent);
                 visited.add(currentBasicBlock);
+                visited.add(rightParent);
+                visited.add(leftParent);
                 continue;
             }
             if (isWhileHeaderBlock(currentBasicBlock)) {
@@ -111,25 +120,6 @@ public class LiveRangeAnalysis {
             }
         }
         return liveRangeSet;
-    }
-
-    private void generateForIfRelatedBlocks(Set<Integer> copy,
-                                            LinkedList<Instruction> phiInstructions,
-                                            BasicBlock dominatingBlock,
-                                            BasicBlock ifTypeBlock) {
-        for (Instruction phi : phiInstructions) {
-            if (copy.contains(phi.getInstructionId())) {
-                copy.remove(phi.getInstructionId());
-            }
-            if (isElseBlock(ifTypeBlock)) {
-                addResultToLiveRange(phi.getOperand2(), copy);
-            }
-            if (isIfThenBlock(ifTypeBlock)) {
-                addResultToLiveRange(phi.getOperand1(), copy);
-            }
-
-        }
-        generateInterferenceGraph(ifTypeBlock, copy, dominatingBlock);
     }
 
     private LinkedList<Instruction> liveRangesForABlock(BasicBlock basicBlock,
@@ -257,21 +247,6 @@ public class LiveRangeAnalysis {
         return res;
     }
 
-    private BasicBlock getIfElse(List<BasicBlock> basicBlocks, BasicBlock dominatingBlock) {
-//        System.out.println("Parents for IF-JOIN " + basicBlocks.size());
-        for (BasicBlock basicBlock : basicBlocks) {
-            if (isElseBlock(basicBlock) && basicBlock != dominatingBlock) return basicBlock;
-        }
-        return null;
-    }
-
-    private BasicBlock getIfThenBlock(List<BasicBlock> basicBlocks) {
-//        System.out.println("Parents for IF-JOIN " + basicBlocks.size());
-        for (BasicBlock basicBlock : basicBlocks) {
-            if (isIfThenBlock(basicBlock)) return basicBlock;
-        }
-        return null;
-    }
 
     private BasicBlock getWhileBody(List<BasicBlock> basicBlocks, BasicBlock dominatingBlock) {
 //        System.out.println("Parents for WHILE-HEADER " + basicBlocks.size());

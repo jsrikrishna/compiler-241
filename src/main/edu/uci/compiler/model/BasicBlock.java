@@ -27,6 +27,8 @@ public class BasicBlock {
     boolean isRootBasicBlock; // used in dominance relationships
     boolean isVisited;
     boolean isVisitedWhileLiveRangeAnalysis;
+    BasicBlock leftParent; // This will be used only for if join blocks
+    BasicBlock rightParent; // This will be used only if join blocks
 
     public BasicBlock(Type type) {
         id = numBasicBlocks;
@@ -109,6 +111,20 @@ public class BasicBlock {
     public void addParent(BasicBlock parent) {
         this.parent.add(parent);
     }
+
+    public void setLeftParent(BasicBlock basicBlock){
+        this.leftParent = basicBlock;
+    }
+    public BasicBlock getLeftParent(){
+        return this.leftParent;
+    }
+    public void setRightParent(BasicBlock basicBlock){
+        this.rightParent = basicBlock;
+    }
+    public BasicBlock getRightParent(){
+        return this.rightParent;
+    }
+
 
     public void setType(Type type) {
         this.type = type;
