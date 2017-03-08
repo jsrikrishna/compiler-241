@@ -105,6 +105,17 @@ public class InstructionGenerator {
         else return r2;
     }
 
+    public Result computeConstantResult(Instruction constantInstruction) {
+        Operation operation = constantInstruction.getOperation();
+        Result operand1 = constantInstruction.getOperand1();
+        Result operand2 = constantInstruction.getOperand2();
+        if (operation == ADD) return resultForConstant(operand1.getValue() + operand2.getValue());
+        if (operation == SUB) return resultForConstant(operand1.getValue() - operand2.getValue());
+        if (operation == Operation.DIV) return resultForConstant(operand1.getValue() / operand2.getValue());
+        if (operation == MUL) return resultForConstant(operand1.getValue() * operand2.getValue());
+        return null;
+    }
+
     public Instruction generateInstructionForAssignment(Result r1, Result r2) {
         if (r1.getKind() == VARIABLE) {
             // Here it is MOVE, so move y x => assign x:= y
@@ -324,6 +335,13 @@ public class InstructionGenerator {
         result.setKind(VARIABLE);
         result.setIdentifierName(identifier);
         result.setSsaVersion(ssaVersion);
+        return result;
+    }
+
+    public Result resultForConstant(Integer value) {
+        Result result = new Result();
+        result.setKind(CONSTANT);
+        result.setValue(value);
         return result;
     }
 

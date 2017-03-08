@@ -50,7 +50,7 @@ public class Parser {
         cfg = new ControlFlowGraph(this.endBasicBlocks);
         tracker = new Tracker();
         domTree = new DominatorTree(allRootDominatorBlocks, endBasicBlocks, allDomParents);
-        cp = new CopyPropagator(allRootDominatorBlocks);
+        cp = new CopyPropagator(allRootDominatorBlocks, ig, instructionResults);
         cse = new CommonSubExpElimination(allRootDominatorBlocks, instructionResults, allInstructions);
         lra = new LiveRangeAnalysis(endBasicBlocks, allDomParents);
 
@@ -136,6 +136,7 @@ public class Parser {
     public void doLiveRangeAnalysis(){
         lra.generateInterferenceGraphForProgram();
         List<String> adjListDigraph = lra.writeAdjList();
+        System.out.println("Done with LRA in Parser, Generating the LRA graph");
         cfg.generateFlow(fileName, adjListDigraph, "lra");
     }
 
