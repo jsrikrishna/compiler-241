@@ -46,30 +46,27 @@ public class LiveRangeAnalysis {
                 BasicBlock dominatingBlock = allDomParents.get(currentBasicBlock);
                 List<BasicBlock> parentBlocks = currentBasicBlock.getParents();
 
-                BasicBlock ifElseOrConditionBlock = getIfElseOrConditionBlock(parentBlocks);
+                BasicBlock ifElseBlock = getIfElse(parentBlocks, dominatingBlock);
                 BasicBlock ifThenBlock = getIfThenBlock(parentBlocks);
 
-                HashSet<Integer> ifElseOrConditionCopy = makeCopy(liveRangeSet);
-                if (ifElseOrConditionBlock != null && ifElseOrConditionBlock != dominatingBlock) {
-
-                    generateForIfRelatedBlocks(
-                            ifElseOrConditionCopy,
-                            phiInstructions,
-                            dominatingBlock,
-                            ifElseOrConditionBlock);
+                HashSet<Integer> ifElseCopy = makeCopy(liveRangeSet);
+                if (ifElseBlock != null) {
+                    generateForIfRelatedBlocks(ifElseCopy, phiInstructions, dominatingBlock, ifElseBlock);
+                } else {
+                    for (Instruction phi : phiInstructions) {
+                        if (ifElseCopy.contains(phi.getInstructionId())) {
+                            ifElseCopy.remove(phi.getInstructionId());
+                        }
+                        addResultToLiveRange(phi.getOperand2(), ifElseCopy);
+                    }
                 }
 
                 HashSet<Integer> ifThenCopy = makeCopy(liveRangeSet);
                 if (ifThenBlock != null && ifThenBlock != dominatingBlock) {
-
-                    generateForIfRelatedBlocks(
-                            ifThenCopy,
-                            phiInstructions,
-                            dominatingBlock,
-                            ifThenBlock);
+                    generateForIfRelatedBlocks(ifThenCopy, phiInstructions, dominatingBlock, ifThenBlock);
                 }
 
-                liveRangeSet = add2Sets(ifElseOrConditionCopy, ifThenCopy);
+                liveRangeSet = add2Sets(ifElseCopy, ifThenCopy);
                 frontier.add(dominatingBlock);
                 visited.add(currentBasicBlock);
                 continue;
@@ -129,7 +126,7 @@ public class LiveRangeAnalysis {
             if (copy.contains(phi.getInstructionId())) {
                 copy.remove(phi.getInstructionId());
             }
-            if (isIfConditionBlock(ifTypeBlock) || isElseBlock(ifTypeBlock)) {
+            if (isElseBlock(ifTypeBlock)) {
                 addResultToLiveRange(phi.getOperand2(), copy);
             }
             if (isIfThenBlock(ifTypeBlock)) {
@@ -265,10 +262,10 @@ public class LiveRangeAnalysis {
         return res;
     }
 
-    private BasicBlock getIfElseOrConditionBlock(List<BasicBlock> basicBlocks) {
+    private BasicBlock getIfElse(List<BasicBlock> basicBlocks, BasicBlock dominatingBlock) {
         System.out.println("Parents for IF-JOIN " + basicBlocks.size());
         for (BasicBlock basicBlock : basicBlocks) {
-            if (isElseBlock(basicBlock) || isIfConditionBlock(basicBlock)) return basicBlock;
+            if (isElseBlock(basicBlock) && basicBlock != dominatingBlock) return basicBlock;
         }
         return null;
     }
@@ -308,7 +305,11 @@ public class LiveRangeAnalysis {
     }
 
     private boolean canBeInLiveRangeGraph(Operation operation) {
-        return !(operation == END || operation == PHI || operation == BRA);
+        return !(operation == END
+                || operation == PHI
+                || operation == BRA
+                || operation == WRITE
+                || operation == WRITENL);
     }
 
 
