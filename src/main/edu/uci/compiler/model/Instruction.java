@@ -65,17 +65,17 @@ public class Instruction {
         return this.anchorInstruction;
     }
 
-    public void setAnchorInstruction(Instruction anchorInstruction){
+    public void setAnchorInstruction(Instruction anchorInstruction) {
         this.anchorInstruction = anchorInstruction;
     }
 
     @Override
-    public boolean equals(Object object){
+    public boolean equals(Object object) {
         Instruction instruction = (Instruction) object;
         boolean isSameOperation = this.operation.equals(instruction.getOperation());
         boolean isSameOperand1 = areSameOperands(operand1, instruction.getOperand1());
         boolean isSameOperand2 = areSameOperands(operand2, instruction.getOperand2());
-        if(!isSameOperand1 && !isSameOperand2){
+        if (!isSameOperand1 && !isSameOperand2) {
             isSameOperand1 = areSameOperands(operand1, instruction.getOperand2());
             isSameOperand2 = areSameOperands(operand2, instruction.getOperand1());
         }
@@ -84,9 +84,9 @@ public class Instruction {
         return isSameOperation && isSameOperand1 && isSameOperand2 && isSameOperand3;
     }
 
-    private boolean areSameOperands(Result operand, Result targetOperand){
-        if(operand == null && targetOperand == null) return true;
-        if(operand == null || targetOperand == null) return false;
+    private boolean areSameOperands(Result operand, Result targetOperand) {
+        if (operand == null && targetOperand == null) return true;
+        if (operand == null || targetOperand == null) return false;
         return operand.equals(targetOperand);
     }
 
@@ -96,10 +96,6 @@ public class Instruction {
         if (this.isBinaryOperand()) return forTwoOperands();
         if (this.isUnaryOperand()) return forOneOperand();
         if (this.noOperand()) return forNoOperand();
-        if (this.operation == Operation.MOVE || this.operation == Operation.STORE)
-            return this.operation
-                    + " " + this.operand1.toString()
-                    + " " + this.operand2.toString();
         if (this.operation == Operation.PHI) {
             return this.operation
                     + " " + this.operand1.toString()
@@ -123,7 +119,9 @@ public class Instruction {
                 || this.operation == Operation.BGE
                 || this.operation == Operation.BGT
                 || this.operation == Operation.BLE
-                || this.operation == Operation.BLT);
+                || this.operation == Operation.BLT
+                || this.operation == Operation.MOVE
+                || this.operation == Operation.STORE);
     }
 
     private boolean isUnaryOperand() {

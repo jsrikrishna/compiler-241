@@ -12,12 +12,10 @@ import java.util.*;
 public class LiveRangeAnalysis {
     private Set<BasicBlock> endBasicBlocks;
     private InterferenceGraph interferenceGraph;
-    private Set<Result> liveRangeSet;
     private HashMap<Integer, HashSet<Integer>> adjacencyList;
     private HashMap<BasicBlock, BasicBlock> allDomParents;
 
     public LiveRangeAnalysis(Set<BasicBlock> endBasicBlocks, HashMap<BasicBlock, BasicBlock> allDomParents) {
-        this.liveRangeSet = new HashSet<>();
         this.endBasicBlocks = endBasicBlocks;
         this.interferenceGraph = new InterferenceGraph();
         this.allDomParents = allDomParents;
@@ -35,6 +33,7 @@ public class LiveRangeAnalysis {
     private void generateInterferenceGraph(BasicBlock endBasicBlock,
                                            Set<Integer> liveRangeSet,
                                            BasicBlock domParent) {
+
         Set<BasicBlock> visited = new HashSet<>();
         Queue<BasicBlock> frontier = new LinkedList<>();
         frontier.add(endBasicBlock);
@@ -83,14 +82,18 @@ public class LiveRangeAnalysis {
 
                 BasicBlock dominatingBlock = allDomParents.get(currentBasicBlock);
                 List<BasicBlock> parentBlocks = currentBasicBlock.getParents();
-                BasicBlock whileBodyBlock = getWhileBody(parentBlocks);
-
+                BasicBlock whileHeaderParentApartFromDominator = getWhileBody(parentBlocks, dominatingBlock);
                 HashSet<Integer> whileBodyCopy = makeCopy(liveRangeSet);
+                if (whileHeaderParentApartFromDominator == null) {
+                    System.err.println("While Body Block is null in live range analysis");
+                    System.exit(45);
+
+                }
 
                 for (Instruction phi : phiInstructions) {
                     addResultToLiveRange(phi.getOperand2(), whileBodyCopy);
                 }
-                generateInterferenceGraph(whileBodyBlock, whileBodyCopy, currentBasicBlock);
+                generateInterferenceGraph(whileHeaderParentApartFromDominator, whileBodyCopy, currentBasicBlock);
 
                 liveRangeSet = add2Sets(liveRangeSetBeforeWhileHeader, whileBodyCopy);
 
@@ -100,7 +103,6 @@ public class LiveRangeAnalysis {
                 for (Instruction phi : phiInstructions2ndPass) {
                     addResultToLiveRange(phi.getOperand1(), liveRangeSet);
                     if (liveRangeSet.contains(phi.getInstructionId())) {
-                        // Need to check here for adding to adjacency list phiInstructionId -> {id's in live range set}
                         liveRangeSet.remove(phi.getInstructionId());
                     }
                 }
@@ -148,7 +150,7 @@ public class LiveRangeAnalysis {
             if (isCondBranchInstruction(op)) {
                 Result result = instruction.getOperand1();
                 if (!isInstructionResult(result)) {
-                    System.out.println("First Operand of COND.BRANCH Result should be of type Instruction");
+                    System.err.println("First Operand of COND.BRANCH Result should be of type Instruction");
                     System.exit(43);
                 }
                 liveRangeSet.add(result.getInstructionId());
@@ -171,16 +173,14 @@ public class LiveRangeAnalysis {
             if (liveRangeSet.contains(instructionId)) {
                 liveRangeSet.remove(instructionId);
             }
-            if (!adjacencyList.containsKey(instructionId)) {
+            if (canBeInLiveRangeGraph(op)) {
                 adjacencyList.put(instructionId, new HashSet<>());
             }
-            System.out.println("liverange size is " + liveRangeSet.size() + " inst Id " + instructionId);
-            for (Integer liveInstructionId : liveRangeSet) {
-                adjacencyList.get(instructionId).add(liveInstructionId);
-            }
 
-            if (adjacencyList.containsKey(instructionId) && adjacencyList.get(instructionId).isEmpty()) {
-                adjacencyList.remove(instructionId);
+            for (Integer liveInstructionId : liveRangeSet) {
+                if (adjacencyList.containsKey(instructionId)) {
+                    adjacencyList.get(instructionId).add(liveInstructionId);
+                }
             }
 
             addResultToLiveRange(instruction.getOperand1(), liveRangeSet);
@@ -244,10 +244,6 @@ public class LiveRangeAnalysis {
         return basicBlock.getType() == BasicBlock.Type.BB_IF_THEN;
     }
 
-    private boolean isWhileBodyBlock(BasicBlock basicBlock) {
-        return basicBlock.getType() == BasicBlock.Type.BB_WHILE_BODY;
-    }
-
     private boolean isPhiInstruction(Instruction instruction) {
         return instruction.getOperation() == PHI;
     }
@@ -285,10 +281,10 @@ public class LiveRangeAnalysis {
         return null;
     }
 
-    private BasicBlock getWhileBody(List<BasicBlock> basicBlocks) {
-        System.out.println("Parent for WHILE-HEADER " + basicBlocks.size());
+    private BasicBlock getWhileBody(List<BasicBlock> basicBlocks, BasicBlock dominatingBlock) {
+        System.out.println("Parents for WHILE-HEADER " + basicBlocks.size());
         for (BasicBlock basicBlock : basicBlocks) {
-            if (isWhileBodyBlock(basicBlock)) return basicBlock;
+            if (dominatingBlock != basicBlock) return basicBlock;
         }
         return null;
     }
@@ -303,12 +299,16 @@ public class LiveRangeAnalysis {
                 adjListDigraph.add(instructionId + " -> " + key);
             }
             if (values == null || values.isEmpty()) {
-                System.out.println("Found some instructions without an edge");
-                adjListDigraph.add(key.toString());
+                System.err.println(key + " has no edges");
+//                adjListDigraph.add(key.toString());
             }
         }
         adjListDigraph.add("}");
         return adjListDigraph;
+    }
+
+    private boolean canBeInLiveRangeGraph(Operation operation) {
+        return !(operation == END || operation == PHI || operation == BRA);
     }
 
 
