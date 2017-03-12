@@ -158,7 +158,6 @@ public class LiveRangeAnalysis {
             if (canBeInLiveRangeGraph(op)) {
                 adjacencyList.put(instructionId, new HashSet<>());
             }
-
             for (Integer liveInstructionId : liveRangeSet) {
                 if (adjacencyList.containsKey(instructionId)) {
                     adjacencyList.get(instructionId).add(liveInstructionId);
@@ -278,7 +277,6 @@ public class LiveRangeAnalysis {
         return !(operation == END
                 || operation == PHI
                 || operation == BRA
-                || operation == WRITE
                 || operation == WRITENL);
     }
 
