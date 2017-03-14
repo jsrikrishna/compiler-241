@@ -42,8 +42,11 @@ BasicBlock4[shape="box", label="BasicBlock4
 32: PHI 0 0 f_32
 33: PHI 1 0 h_33
 36: WRITE 0
+37: WRITE 0
 38: WRITE c_31
+39: WRITE 0
 40: WRITE f_32
+41: WRITE 0
 42: WRITE h_33
 "]
 BasicBlock5[shape="box", label="BasicBlock5

@@ -103,7 +103,7 @@ public class CommonSubExpElimination {
 
     private void checkForDuplicateInstruction(Instruction toBeCheckedInstruction,
                                               HashMap<Instruction, Result> toBeRemovedInstruction) {
-
+        if (needNotDoCSE(toBeCheckedInstruction)) return;
         Instruction anchorInstruction = toBeCheckedInstruction.getAnchorInstruction();
         while (anchorInstruction != null) {
             if (toBeCheckedInstruction.equals(anchorInstruction)) {
@@ -185,5 +185,10 @@ public class CommonSubExpElimination {
             System.out.println(entry.getKey().getInstructionId()
                     + ": " + entry.getKey() + " -> " + entry.getValue());
         }
+    }
+
+    public boolean needNotDoCSE(Instruction instruction) {
+        Operation op = instruction.getOperation();
+        return (op == Operation.WRITE || op == Operation.WRITENL || op == Operation.ADDA);
     }
 }

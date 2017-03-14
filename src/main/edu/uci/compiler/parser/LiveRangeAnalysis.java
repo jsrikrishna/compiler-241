@@ -104,6 +104,7 @@ public class LiveRangeAnalysis {
                 HashSet<Integer> liveRangeSetBeforeWhileHeader = makeCopy(liveRangeSet);
                 LinkedList<Instruction> phiInstructions = liveRangesForABlock(currentBasicBlock, liveRangeSet);
                 this.phiInstructions.addAll(phiInstructions);
+                // Don't remove and add edge to [phi and live range] for first time traversal of phi instructions
                 for (Instruction phi : phiInstructions) {
                     addResultToLiveRange(phi.getOperand2(), liveRangeSet);
                 }
@@ -128,6 +129,8 @@ public class LiveRangeAnalysis {
                 liveRangeSet = add2Sets(liveRangeSetBeforeWhileHeader, whileBodyCopy);
 
                 LinkedList<Instruction> phiInstructions2ndPass = liveRangesForABlock(currentBasicBlock, liveRangeSet);
+                // Now to remove phi instructions from live range if present and add edges between phi instructions and
+                // live ranges
                 for (Instruction phi : phiInstructions2ndPass) {
                     if (liveRangeSet.contains(phi.getInstructionId())) {
                         liveRangeSet.remove(phi.getInstructionId());
@@ -177,9 +180,6 @@ public class LiveRangeAnalysis {
             if (isWhileHeaderBlock(basicBlock) && !isVisited(basicBlock)) {
                 basicBlock.setIsVisitedWhileLiveRangeAnalysis();
             }
-            if (liveRangeSet.contains(instructionId) && !isPhiInstruction(instruction)) {
-                liveRangeSet.remove(instructionId);
-            }
             if (isPhiInstruction(instruction)) {
                 phiInstructions.add(instruction);
             }
@@ -194,6 +194,9 @@ public class LiveRangeAnalysis {
                 }
             }
             if (!isPhiInstruction(instruction)) {
+                if (liveRangeSet.contains(instructionId)) {
+                    liveRangeSet.remove(instructionId);
+                }
                 for (Integer liveInstructionId : liveRangeSet) {
                     if (adjacencyList.containsKey(instructionId)) {
                         adjacencyList.get(instructionId).add(liveInstructionId);

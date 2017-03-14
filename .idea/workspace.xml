@@ -2,16 +2,57 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="041f4e25-14ad-471f-a8ac-246afcecba0a" name="Default" comment="">
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/resources/programs/storekills.txt" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/src/main/edu/uci/compiler/parser/RegisterAllocator.java" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/src/test/edu/uci/compiler/registerAllocation/RegisterAllocationTest.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/main/edu/uci/compiler/model/Instruction.java" afterPath="$PROJECT_DIR$/src/main/edu/uci/compiler/model/Instruction.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/main/edu/uci/compiler/model/InterferenceGraph.java" afterPath="$PROJECT_DIR$/src/main/edu/uci/compiler/model/InterferenceGraph.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/main/edu/uci/compiler/model/Operation.java" afterPath="$PROJECT_DIR$/src/main/edu/uci/compiler/model/Operation.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/main/edu/uci/compiler/model/Result.java" afterPath="$PROJECT_DIR$/src/main/edu/uci/compiler/model/Result.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/main/edu/uci/compiler/parser/InstructionGenerator.java" afterPath="$PROJECT_DIR$/src/main/edu/uci/compiler/parser/InstructionGenerator.java" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/out/production/compiler-241/main/edu/uci/compiler/Main.class" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/out/production/compiler-241/main/edu/uci/compiler/cfg/ControlFlowGraph.class" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/out/production/compiler-241/main/edu/uci/compiler/dlx/DLX.class" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/out/production/compiler-241/main/edu/uci/compiler/model/BasicBlock$Type.class" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/out/production/compiler-241/main/edu/uci/compiler/model/BasicBlock.class" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/out/production/compiler-241/main/edu/uci/compiler/model/DominatorBlock.class" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/out/production/compiler-241/main/edu/uci/compiler/model/ErrorMessage.class" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/out/production/compiler-241/main/edu/uci/compiler/model/Function.class" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/out/production/compiler-241/main/edu/uci/compiler/model/Instruction.class" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/out/production/compiler-241/main/edu/uci/compiler/model/InterferenceGraph.class" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/out/production/compiler-241/main/edu/uci/compiler/model/Operation.class" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/out/production/compiler-241/main/edu/uci/compiler/model/Result$KIND.class" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/out/production/compiler-241/main/edu/uci/compiler/model/Result.class" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/out/production/compiler-241/main/edu/uci/compiler/model/Token.class" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/out/production/compiler-241/main/edu/uci/compiler/parser/CommonSubExpElimination.class" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/out/production/compiler-241/main/edu/uci/compiler/parser/CopyPropagator.class" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/out/production/compiler-241/main/edu/uci/compiler/parser/DominatorTree.class" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/out/production/compiler-241/main/edu/uci/compiler/parser/InstructionGenerator$ArrayBase.class" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/out/production/compiler-241/main/edu/uci/compiler/parser/InstructionGenerator$RelationResult.class" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/out/production/compiler-241/main/edu/uci/compiler/parser/InstructionGenerator.class" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/out/production/compiler-241/main/edu/uci/compiler/parser/LiveRangeAnalysis.class" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/out/production/compiler-241/main/edu/uci/compiler/parser/Parser$1.class" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/out/production/compiler-241/main/edu/uci/compiler/parser/Parser$2.class" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/out/production/compiler-241/main/edu/uci/compiler/parser/Parser.class" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/out/production/compiler-241/main/edu/uci/compiler/parser/Reader.class" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/out/production/compiler-241/main/edu/uci/compiler/parser/RegisterAllocator.class" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/out/production/compiler-241/main/edu/uci/compiler/parser/Scanner$1.class" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/out/production/compiler-241/main/edu/uci/compiler/parser/Scanner$2.class" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/out/production/compiler-241/main/edu/uci/compiler/parser/Scanner.class" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/out/production/compiler-241/main/edu/uci/compiler/parser/Tracker.class" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/out/production/compiler-241/test/edu/uci/compiler/Parser/NumberOfInstructionsTest.class" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/out/production/compiler-241/test/edu/uci/compiler/Parser/ParserTest.class" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/out/production/compiler-241/test/edu/uci/compiler/Parser/ParserTestAll.class" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/out/production/compiler-241/test/edu/uci/compiler/commonSubExpressionElimination/CommonSubExpressionEliminationTest.class" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/out/production/compiler-241/test/edu/uci/compiler/commonSubExpressionElimination/CommonSubExpressionEliminationTestAll.class" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/out/production/compiler-241/test/edu/uci/compiler/copyPropagation/CopyPropagationTest.class" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/out/production/compiler-241/test/edu/uci/compiler/copyPropagation/CopyPropagationTestAll.class" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/out/production/compiler-241/test/edu/uci/compiler/dominatorTest/DominanceRelationshipsTestAll.class" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/out/production/compiler-241/test/edu/uci/compiler/dominatorTest/DominatorRelationshipsTest.class" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/out/production/compiler-241/test/edu/uci/compiler/liveRangeAnalysis/LiveRangeTest.class" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/out/production/compiler-241/test/edu/uci/compiler/liveRangeAnalysis/LiveRangeTestAll.class" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/out/production/compiler-241/test/edu/uci/compiler/model/TokenizeException.class" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/out/production/compiler-241/test/edu/uci/compiler/registerAllocation/RegisterAllocationTest.class" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/out/production/compiler-241/test/edu/uci/compiler/scanner/ScannerTest.class" afterPath="" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/resources/programs/test018CFG_CP_CSE.png" afterPath="$PROJECT_DIR$/resources/programs/test018CFG_CP_CSE.png" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/resources/programs/test018lra.png" afterPath="$PROJECT_DIR$/resources/programs/test018lra.png" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/resources/programs/test018CFG_CP_CSE.dot" afterPath="$PROJECT_DIR$/resources/programs/test018CFG_CP_CSE.dot" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/resources/programs/test018lra.dot" afterPath="$PROJECT_DIR$/resources/programs/test018lra.dot" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/main/edu/uci/compiler/parser/CommonSubExpElimination.java" afterPath="$PROJECT_DIR$/src/main/edu/uci/compiler/parser/CommonSubExpElimination.java" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/main/edu/uci/compiler/parser/LiveRangeAnalysis.java" afterPath="$PROJECT_DIR$/src/main/edu/uci/compiler/parser/LiveRangeAnalysis.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/main/edu/uci/compiler/parser/Parser.java" afterPath="$PROJECT_DIR$/src/main/edu/uci/compiler/parser/Parser.java" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/test/edu/uci/compiler/liveRangeAnalysis/LiveRangeTest.java" afterPath="$PROJECT_DIR$/src/test/edu/uci/compiler/liveRangeAnalysis/LiveRangeTest.java" />
     </list>
     <ignored path="compiler-241.iws" />
@@ -34,37 +75,12 @@
   </component>
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
-      <file leaf-file-name="Parser.java" pinned="false" current-in-tab="false">
+      <file leaf-file-name="Parser.java" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/src/main/edu/uci/compiler/parser/Parser.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="450">
-              <caret line="143" column="48" selection-start-line="143" selection-start-column="48" selection-end-line="143" selection-end-column="48" />
+            <state relative-caret-position="135">
+              <caret line="112" column="0" selection-start-line="112" selection-start-column="0" selection-end-line="112" selection-end-column="0" />
               <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="LiveRangeAnalysis.java" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/src/main/edu/uci/compiler/parser/LiveRangeAnalysis.java">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="330">
-              <caret line="189" column="38" selection-start-line="189" selection-start-column="38" selection-end-line="189" selection-end-column="38" />
-              <folding>
-                <element signature="e#10546#10547#0" expanded="true" />
-                <element signature="e#10578#10579#0" expanded="true" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="LiveRangeTest.java" pinned="false" current-in-tab="true">
-        <entry file="file://$PROJECT_DIR$/src/test/edu/uci/compiler/liveRangeAnalysis/LiveRangeTest.java">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="420">
-              <caret line="35" column="40" selection-start-line="35" selection-start-column="40" selection-end-line="35" selection-end-column="40" />
-              <folding>
-                <element signature="docComment;class#LiveRangeTest#0" expanded="false" />
-              </folding>
             </state>
           </provider>
         </entry>
@@ -136,7 +152,6 @@
         <option value="$PROJECT_DIR$/src/main/edu/uci/compiler/model/BasicBlock.java" />
         <option value="$PROJECT_DIR$/resources/programs/storekills.txt" />
         <option value="$PROJECT_DIR$/src/main/edu/uci/compiler/model/Operation.java" />
-        <option value="$PROJECT_DIR$/src/main/edu/uci/compiler/parser/CommonSubExpElimination.java" />
         <option value="$PROJECT_DIR$/src/main/edu/uci/compiler/parser/GraphColoring.java" />
         <option value="$PROJECT_DIR$/src/main/edu/uci/compiler/model/Instruction.java" />
         <option value="$PROJECT_DIR$/src/main/edu/uci/compiler/model/Result.java" />
@@ -146,6 +161,7 @@
         <option value="$PROJECT_DIR$/src/main/edu/uci/compiler/parser/InstructionGenerator.java" />
         <option value="$PROJECT_DIR$/src/main/edu/uci/compiler/parser/Parser.java" />
         <option value="$PROJECT_DIR$/src/main/edu/uci/compiler/parser/LiveRangeAnalysis.java" />
+        <option value="$PROJECT_DIR$/src/main/edu/uci/compiler/parser/CommonSubExpElimination.java" />
         <option value="$PROJECT_DIR$/src/test/edu/uci/compiler/liveRangeAnalysis/LiveRangeTest.java" />
       </list>
     </option>
@@ -198,7 +214,38 @@
       <pane id="Scratches" />
       <pane id="PackagesPane" />
       <pane id="ProjectPane">
-        <subPane />
+        <subPane>
+          <PATH>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="compiler-241" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
+            </PATH_ELEMENT>
+          </PATH>
+          <PATH>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="compiler-241" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="compiler-241" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+          </PATH>
+          <PATH>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="compiler-241" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="compiler-241" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="resources" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+          </PATH>
+        </subPane>
       </pane>
     </panes>
   </component>
@@ -209,7 +256,7 @@
     <property name="WebServerToolWindowFactoryState" value="false" />
     <property name="js-jscs-nodeInterpreter" value="$USER_HOME$/.nvm/versions/node/v7.0.0/bin/node" />
     <property name="last_opened_file_path" value="$PROJECT_DIR$" />
-    <property name="SearchEverywhereHistoryKey" value="test015&#9;FILE&#9;file:///Users/srikrishna/compiler-241/resources/programs/test015.txt&#10;Liv&#9;FILE&#9;file:///Users/srikrishna/compiler-241/src/test/edu/uci/compiler/liveRangeAnalysis/LiveRangeTest.java&#10;LiveRa&#9;FILE&#9;file:///Users/srikrishna/compiler-241/src/main/edu/uci/compiler/parser/LiveRangeAnalysis.java&#10;Live&#9;FILE&#9;file:///Users/srikrishna/compiler-241/src/test/edu/uci/compiler/liveRangeAnalysis/LiveRangeTest.java&#10;test027&#9;FILE&#9;file:///Users/srikrishna/compiler-241/resources/programs/test027.txt&#10;Re&#9;FILE&#9;file:///Users/srikrishna/compiler-241/src/test/edu/uci/compiler/registerAllocation/RegisterAllocationTest.java&#10;Res&#9;FILE&#9;file:///Users/srikrishna/compiler-241/src/main/edu/uci/compiler/model/Result.java&#10;In&#9;FILE&#9;file:///Users/srikrishna/compiler-241/src/main/edu/uci/compiler/parser/InstructionGenerator.java&#10;Ins&#9;FILE&#9;file:///Users/srikrishna/compiler-241/src/main/edu/uci/compiler/model/Instruction.java&#10;IN&#9;FILE&#9;file:///Users/srikrishna/compiler-241/src/main/edu/uci/compiler/model/InterferenceGraph.java&#10;REs&#9;FILE&#9;file:///Users/srikrishna/compiler-241/src/main/edu/uci/compiler/model/Result.java&#10;Resul&#9;FILE&#9;file:///Users/srikrishna/compiler-241/src/main/edu/uci/compiler/model/Result.java&#10;Liver&#9;FILE&#9;file:///Users/srikrishna/compiler-241/src/test/edu/uci/compiler/liveRangeAnalysis/LiveRangeTestAll.java&#10;Instr&#9;FILE&#9;file:///Users/srikrishna/compiler-241/src/main/edu/uci/compiler/model/Instruction.java&#10;INs&#9;FILE&#9;file:///Users/srikrishna/compiler-241/src/main/edu/uci/compiler/parser/InstructionGenerator.java&#10;test007&#9;FILE&#9;file:///Users/srikrishna/compiler-241/resources/programs/test007.txt&#10;test009&#9;FILE&#9;file:///Users/srikrishna/compiler-241/resources/programs/test009.txt&#10;Li&#9;FILE&#9;file:///Users/srikrishna/compiler-241/src/test/edu/uci/compiler/liveRangeAnalysis/LiveRangeTest.java&#10;test009lra&#9;FILE&#9;file:///Users/srikrishna/compiler-241/resources/programs/test009lra.dot&#10;Dom&#9;FILE&#9;file:///Users/srikrishna/compiler-241/src/main/edu/uci/compiler/parser/DominatorTree.java&#10;co&#9;FILE&#9;file:///Users/srikrishna/compiler-241/src/main/edu/uci/compiler/parser/CommonSubExpElimination.java&#10;test&#9;FILE&#9;file:///Users/srikrishna/compiler-241/resources/programs/test002.txt&#10;test002&#9;FILE&#9;file:///Users/srikrishna/compiler-241/resources/programs/test002.txt&#10;Bas&#9;FILE&#9;file:///Users/srikrishna/compiler-241/src/main/edu/uci/compiler/model/BasicBlock.java&#10;test010p&#9;FILE&#9;file:///Users/srikrishna/compiler-241/resources/programs/test010parent.dot&#10;test010&#9;FILE&#9;file:///Users/srikrishna/compiler-241/resources/programs/test010.txt&#10;Inst&#9;FILE&#9;file:///Users/srikrishna/compiler-241/src/main/edu/uci/compiler/model/Instruction.java&#10;Parse&#9;FILE&#9;file:///Users/srikrishna/compiler-241/src/main/edu/uci/compiler/parser/Parser.java&#10;Par&#9;FILE&#9;file:///Users/srikrishna/compiler-241/src/main/edu/uci/compiler/parser/Parser.java&#10;l&#9;FILE&#9;file:///Users/srikrishna/compiler-241/src/test/edu/uci/compiler/liveRangeAnalysis/LiveRangeTest.java&#10;Common&#9;FILE&#9;file:///Users/srikrishna/compiler-241/src/main/edu/uci/compiler/parser/CommonSubExpElimination.java&#10;test011&#9;FILE&#9;file:///Users/srikrishna/compiler-241/resources/programs/test011.txt&#10;Operat&#9;FILE&#9;file:///Users/srikrishna/compiler-241/src/main/edu/uci/compiler/model/Operation.java&#10;Parser&#9;FILE&#9;file:///Users/srikrishna/compiler-241/src/main/edu/uci/compiler/parser/Parser.java&#10;Pare&#9;PSI&#9;JAVA://com.sun.tools.javac.parser.JavacParser.ParensResult&#10;par&#9;FILE&#9;file:///Users/srikrishna/compiler-241/src/main/edu/uci/compiler/parser/Parser.java&#10;Con&#9;FILE&#9;file:///Users/srikrishna/compiler-241/src/main/edu/uci/compiler/cfg/ControlFlowGraph.java&#10;bigCFG&#9;FILE&#9;file:///Users/srikrishna/compiler-241/resources/programs/bigCFG.dot&#10;Pars&#9;FILE&#9;file:///Users/srikrishna/compiler-241/src/main/edu/uci/compiler/parser/Parser.java&#10;Com&#9;FILE&#9;file:///Users/srikrishna/compiler-241/src/test/edu/uci/compiler/commonSubExpressionElimination/CommonSubExpressionEliminationTest.java&#10;test017pa&#9;FILE&#9;file:///Users/srikrishna/compiler-241/resources/programs/test017parent.dot&#10;test017&#9;FILE&#9;file:///Users/srikrishna/compiler-241/resources/programs/test017DOM.dot&#10;COn&#9;FILE&#9;file:///Users/srikrishna/compiler-241/src/main/edu/uci/compiler/cfg/ControlFlowGraph.java&#10;Comm&#9;FILE&#9;file:///Users/srikrishna/compiler-241/src/test/edu/uci/compiler/commonSubExpressionElimination/CommonSubExpressionEliminationTest.java&#10;COm&#9;FILE&#9;file:///Users/srikrishna/compiler-241/src/main/edu/uci/compiler/parser/CommonSubExpElimination.java&#10;test004&#9;FILE&#9;file:///Users/srikrishna/compiler-241/resources/programs/test004.txt&#10;Ope&#9;FILE&#9;file:///Users/srikrishna/compiler-241/src/main/edu/uci/compiler/model/Operation.java&#10;Func&#9;PSI&#9;JAVA://main.edu.uci.compiler.model.Function&#10;Instru&#9;FILE&#9;file:///Users/srikrishna/compiler-241/src/main/edu/uci/compiler/parser/InstructionGenerator.java&#10;com&#9;FILE&#9;file:///Users/srikrishna/compiler-241/src/test/edu/uci/compiler/commonSubExpressionElimination/CommonSubExpressionEliminationTest.java" />
+    <property name="SearchEverywhereHistoryKey" value="LiveRan&#9;FILE&#9;file:///Users/srikrishna/compiler-241/src/test/edu/uci/compiler/liveRangeAnalysis/LiveRangeTest.java&#10;Common&#9;FILE&#9;file:///Users/srikrishna/compiler-241/src/main/edu/uci/compiler/parser/CommonSubExpElimination.java&#10;test015&#9;FILE&#9;file:///Users/srikrishna/compiler-241/resources/programs/test015.txt&#10;Liv&#9;FILE&#9;file:///Users/srikrishna/compiler-241/src/test/edu/uci/compiler/liveRangeAnalysis/LiveRangeTest.java&#10;LiveRa&#9;FILE&#9;file:///Users/srikrishna/compiler-241/src/main/edu/uci/compiler/parser/LiveRangeAnalysis.java&#10;Live&#9;FILE&#9;file:///Users/srikrishna/compiler-241/src/test/edu/uci/compiler/liveRangeAnalysis/LiveRangeTest.java&#10;test027&#9;FILE&#9;file:///Users/srikrishna/compiler-241/resources/programs/test027.txt&#10;Re&#9;FILE&#9;file:///Users/srikrishna/compiler-241/src/test/edu/uci/compiler/registerAllocation/RegisterAllocationTest.java&#10;Res&#9;FILE&#9;file:///Users/srikrishna/compiler-241/src/main/edu/uci/compiler/model/Result.java&#10;In&#9;FILE&#9;file:///Users/srikrishna/compiler-241/src/main/edu/uci/compiler/parser/InstructionGenerator.java&#10;Ins&#9;FILE&#9;file:///Users/srikrishna/compiler-241/src/main/edu/uci/compiler/model/Instruction.java&#10;IN&#9;FILE&#9;file:///Users/srikrishna/compiler-241/src/main/edu/uci/compiler/model/InterferenceGraph.java&#10;REs&#9;FILE&#9;file:///Users/srikrishna/compiler-241/src/main/edu/uci/compiler/model/Result.java&#10;Resul&#9;FILE&#9;file:///Users/srikrishna/compiler-241/src/main/edu/uci/compiler/model/Result.java&#10;Liver&#9;FILE&#9;file:///Users/srikrishna/compiler-241/src/test/edu/uci/compiler/liveRangeAnalysis/LiveRangeTestAll.java&#10;Instr&#9;FILE&#9;file:///Users/srikrishna/compiler-241/src/main/edu/uci/compiler/model/Instruction.java&#10;INs&#9;FILE&#9;file:///Users/srikrishna/compiler-241/src/main/edu/uci/compiler/parser/InstructionGenerator.java&#10;test007&#9;FILE&#9;file:///Users/srikrishna/compiler-241/resources/programs/test007.txt&#10;test009&#9;FILE&#9;file:///Users/srikrishna/compiler-241/resources/programs/test009.txt&#10;Li&#9;FILE&#9;file:///Users/srikrishna/compiler-241/src/test/edu/uci/compiler/liveRangeAnalysis/LiveRangeTest.java&#10;test009lra&#9;FILE&#9;file:///Users/srikrishna/compiler-241/resources/programs/test009lra.dot&#10;Dom&#9;FILE&#9;file:///Users/srikrishna/compiler-241/src/main/edu/uci/compiler/parser/DominatorTree.java&#10;co&#9;FILE&#9;file:///Users/srikrishna/compiler-241/src/main/edu/uci/compiler/parser/CommonSubExpElimination.java&#10;test&#9;FILE&#9;file:///Users/srikrishna/compiler-241/resources/programs/test002.txt&#10;test002&#9;FILE&#9;file:///Users/srikrishna/compiler-241/resources/programs/test002.txt&#10;Bas&#9;FILE&#9;file:///Users/srikrishna/compiler-241/src/main/edu/uci/compiler/model/BasicBlock.java&#10;test010p&#9;FILE&#9;file:///Users/srikrishna/compiler-241/resources/programs/test010parent.dot&#10;test010&#9;FILE&#9;file:///Users/srikrishna/compiler-241/resources/programs/test010.txt&#10;Inst&#9;FILE&#9;file:///Users/srikrishna/compiler-241/src/main/edu/uci/compiler/model/Instruction.java&#10;Parse&#9;FILE&#9;file:///Users/srikrishna/compiler-241/src/main/edu/uci/compiler/parser/Parser.java&#10;Par&#9;FILE&#9;file:///Users/srikrishna/compiler-241/src/main/edu/uci/compiler/parser/Parser.java&#10;l&#9;FILE&#9;file:///Users/srikrishna/compiler-241/src/test/edu/uci/compiler/liveRangeAnalysis/LiveRangeTest.java&#10;test011&#9;FILE&#9;file:///Users/srikrishna/compiler-241/resources/programs/test011.txt&#10;Operat&#9;FILE&#9;file:///Users/srikrishna/compiler-241/src/main/edu/uci/compiler/model/Operation.java&#10;Parser&#9;FILE&#9;file:///Users/srikrishna/compiler-241/src/main/edu/uci/compiler/parser/Parser.java&#10;Pare&#9;PSI&#9;JAVA://com.sun.tools.javac.parser.JavacParser.ParensResult&#10;par&#9;FILE&#9;file:///Users/srikrishna/compiler-241/src/main/edu/uci/compiler/parser/Parser.java&#10;Con&#9;FILE&#9;file:///Users/srikrishna/compiler-241/src/main/edu/uci/compiler/cfg/ControlFlowGraph.java&#10;bigCFG&#9;FILE&#9;file:///Users/srikrishna/compiler-241/resources/programs/bigCFG.dot&#10;Pars&#9;FILE&#9;file:///Users/srikrishna/compiler-241/src/main/edu/uci/compiler/parser/Parser.java&#10;Com&#9;FILE&#9;file:///Users/srikrishna/compiler-241/src/test/edu/uci/compiler/commonSubExpressionElimination/CommonSubExpressionEliminationTest.java&#10;test017pa&#9;FILE&#9;file:///Users/srikrishna/compiler-241/resources/programs/test017parent.dot&#10;test017&#9;FILE&#9;file:///Users/srikrishna/compiler-241/resources/programs/test017DOM.dot&#10;COn&#9;FILE&#9;file:///Users/srikrishna/compiler-241/src/main/edu/uci/compiler/cfg/ControlFlowGraph.java&#10;Comm&#9;FILE&#9;file:///Users/srikrishna/compiler-241/src/test/edu/uci/compiler/commonSubExpressionElimination/CommonSubExpressionEliminationTest.java&#10;COm&#9;FILE&#9;file:///Users/srikrishna/compiler-241/src/main/edu/uci/compiler/parser/CommonSubExpElimination.java&#10;test004&#9;FILE&#9;file:///Users/srikrishna/compiler-241/resources/programs/test004.txt&#10;Ope&#9;FILE&#9;file:///Users/srikrishna/compiler-241/src/main/edu/uci/compiler/model/Operation.java&#10;Func&#9;PSI&#9;JAVA://main.edu.uci.compiler.model.Function&#10;Instru&#9;FILE&#9;file:///Users/srikrishna/compiler-241/src/main/edu/uci/compiler/parser/InstructionGenerator.java" />
     <property name="extract.method.default.visibility" value="private" />
     <property name="project.structure.last.edited" value="Project" />
     <property name="project.structure.proportion" value="0.15" />
@@ -858,26 +905,11 @@
       <workItem from="1488913927587" duration="34522000" />
       <workItem from="1489194542982" duration="1161000" />
       <workItem from="1489335353307" duration="32963000" />
-      <workItem from="1489516247824" duration="10211000" />
+      <workItem from="1489516247824" duration="12982000" />
     </task>
     <servers />
   </component>
   <component name="TestHistory">
-    <history-entry file="LiveRangeTest_testParser - 2017.03.14 at 14h 50m 38s.xml">
-      <configuration name="LiveRangeTest.testParser" configurationId="JUnit" />
-    </history-entry>
-    <history-entry file="LiveRangeTest_testParser - 2017.03.14 at 14h 51m 18s.xml">
-      <configuration name="LiveRangeTest.testParser" configurationId="JUnit" />
-    </history-entry>
-    <history-entry file="LiveRangeTest_testParser - 2017.03.14 at 14h 51m 29s.xml">
-      <configuration name="LiveRangeTest.testParser" configurationId="JUnit" />
-    </history-entry>
-    <history-entry file="LiveRangeTest_testParser - 2017.03.14 at 14h 51m 49s.xml">
-      <configuration name="LiveRangeTest.testParser" configurationId="JUnit" />
-    </history-entry>
-    <history-entry file="LiveRangeTest_testParser - 2017.03.14 at 14h 52m 01s.xml">
-      <configuration name="LiveRangeTest.testParser" configurationId="JUnit" />
-    </history-entry>
     <history-entry file="LiveRangeTest_testParser - 2017.03.14 at 14h 52m 09s.xml">
       <configuration name="LiveRangeTest.testParser" configurationId="JUnit" />
     </history-entry>
@@ -893,13 +925,28 @@
     <history-entry file="LiveRangeTest_testParser - 2017.03.14 at 14h 53m 04s.xml">
       <configuration name="LiveRangeTest.testParser" configurationId="JUnit" />
     </history-entry>
+    <history-entry file="LiveRangeTest_testParser - 2017.03.14 at 14h 59m 04s.xml">
+      <configuration name="LiveRangeTest.testParser" configurationId="JUnit" />
+    </history-entry>
+    <history-entry file="LiveRangeTest_testParser - 2017.03.14 at 14h 59m 14s.xml">
+      <configuration name="LiveRangeTest.testParser" configurationId="JUnit" />
+    </history-entry>
+    <history-entry file="LiveRangeTest_testParser - 2017.03.14 at 14h 59m 25s.xml">
+      <configuration name="LiveRangeTest.testParser" configurationId="JUnit" />
+    </history-entry>
+    <history-entry file="LiveRangeTest_testParser - 2017.03.14 at 14h 59m 37s.xml">
+      <configuration name="LiveRangeTest.testParser" configurationId="JUnit" />
+    </history-entry>
+    <history-entry file="LiveRangeTest_testParser - 2017.03.14 at 15h 48m 19s.xml">
+      <configuration name="LiveRangeTest.testParser" configurationId="JUnit" />
+    </history-entry>
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="475185000" />
+    <option name="totallyTimeSpent" value="477956000" />
   </component>
   <component name="ToolWindowManager">
     <frame x="1" y="23" width="1439" height="816" extended-state="6" />
-    <editor active="true" />
+    <editor active="false" />
     <layout>
       <window_info id="Palette" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="4" side_tool="false" content_ui="tabs" />
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="5" side_tool="false" content_ui="tabs" />
@@ -908,12 +955,12 @@
       <window_info id="Capture Analysis" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="5" side_tool="false" content_ui="tabs" />
       <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32965517" sideWeight="0.5" order="7" side_tool="true" content_ui="tabs" />
       <window_info id="Maven Projects" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
-      <window_info id="Run" active="true" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.3507516" sideWeight="0.5" order="9" side_tool="false" content_ui="tabs" x="83" y="56" width="1351" height="633" />
+      <window_info id="Run" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.3507516" sideWeight="0.5" order="9" side_tool="false" content_ui="tabs" x="83" y="56" width="1351" height="633" />
       <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="8" side_tool="false" content_ui="tabs" />
       <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="9" side_tool="false" content_ui="tabs" />
       <window_info id="Capture Tool" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
       <window_info id="Designer" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
-      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.2412312" sideWeight="0.49468085" order="0" side_tool="false" content_ui="combo" />
+      <window_info id="Project" active="true" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.2118826" sideWeight="0.49468085" order="0" side_tool="false" content_ui="combo" />
       <window_info id="Database" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="8" side_tool="false" content_ui="tabs" />
       <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32872927" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.24964234" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
@@ -954,12 +1001,6 @@
     <option name="FILTER_TARGETS" value="false" />
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$PROJECT_DIR$/resources/programs/test016DOM.dot" />
-    <entry file="file://$PROJECT_DIR$/resources/programs/test016CFG_CP_CSE.dot" />
-    <entry file="file://$PROJECT_DIR$/resources/programs/test017DOM.dot" />
-    <entry file="file://$PROJECT_DIR$/resources/programs/test017parent.dot" />
-    <entry file="file://$PROJECT_DIR$/resources/programs/test017DOM.png" />
-    <entry file="file://$PROJECT_DIR$/resources/programs/bigCFG.dot" />
     <entry file="jar:///Library/Java/JavaVirtualMachines/jdk1.8.0_101.jdk/Contents/Home/lib/tools.jar!/com/sun/tools/javac/parser/JavacParser.class">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="380">
@@ -1106,14 +1147,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/main/edu/uci/compiler/parser/CommonSubExpElimination.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="180">
-          <caret line="26" column="81" selection-start-line="26" selection-start-column="81" selection-end-line="26" selection-end-column="81" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/src/main/edu/uci/compiler/parser/GraphColoring.java" />
     <entry file="jar:///Library/Java/JavaVirtualMachines/jdk1.8.0_101.jdk/Contents/Home/src.zip!/java/util/Set.java">
       <provider selected="true" editor-type-id="text-editor">
@@ -1209,19 +1242,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/main/edu/uci/compiler/model/InterferenceGraph.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="344">
-          <caret line="57" column="19" selection-start-line="57" selection-start-column="19" selection-end-line="57" selection-end-column="19" />
-          <folding>
-            <element signature="e#1377#1378#0" expanded="false" />
-            <element signature="e#1423#1424#0" expanded="false" />
-            <element signature="e#1843#1844#0" expanded="false" />
-            <element signature="e#1889#1890#0" expanded="false" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/src/test/edu/uci/compiler/liveRangeAnalysis/LiveRangeTestAll.java">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="300">
@@ -1267,25 +1287,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/main/edu/uci/compiler/parser/Parser.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="450">
-          <caret line="143" column="48" selection-start-line="143" selection-start-column="48" selection-end-line="143" selection-end-column="48" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/main/edu/uci/compiler/parser/LiveRangeAnalysis.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="330">
-          <caret line="189" column="38" selection-start-line="189" selection-start-column="38" selection-end-line="189" selection-end-column="38" />
-          <folding>
-            <element signature="e#10546#10547#0" expanded="true" />
-            <element signature="e#10578#10579#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/resources/programs/test015.txt">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="300">
@@ -1294,13 +1295,78 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/src/main/edu/uci/compiler/model/InterferenceGraph.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="195">
+          <caret line="15" column="28" selection-start-line="15" selection-start-column="11" selection-end-line="15" selection-end-column="28" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/main/edu/uci/compiler/parser/LiveRangeAnalysis.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="375">
+          <caret line="33" column="34" selection-start-line="33" selection-start-column="34" selection-end-line="33" selection-end-column="34" />
+          <folding>
+            <element signature="e#10789#10790#0" expanded="true" />
+            <element signature="e#10821#10822#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/resources/programs/test024lra.png">
+      <provider selected="true" editor-type-id="images">
+        <state />
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/resources/programs/test018lra.png">
+      <provider selected="true" editor-type-id="images">
+        <state />
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/resources/programs/test020lra.png">
+      <provider selected="true" editor-type-id="images">
+        <state />
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/resources/programs/test019lra.png">
+      <provider selected="true" editor-type-id="images">
+        <state />
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/resources/programs/test015lra.png">
+      <provider selected="true" editor-type-id="images">
+        <state />
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/resources/programs/test010lra.png">
+      <provider selected="true" editor-type-id="images">
+        <state />
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/main/edu/uci/compiler/parser/CommonSubExpElimination.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="480">
+          <caret line="189" column="27" selection-start-line="189" selection-start-column="27" selection-end-line="189" selection-end-column="27" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/src/test/edu/uci/compiler/liveRangeAnalysis/LiveRangeTest.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="420">
-          <caret line="35" column="40" selection-start-line="35" selection-start-column="40" selection-end-line="35" selection-end-column="40" />
+        <state relative-caret-position="195">
+          <caret line="20" column="54" selection-start-line="20" selection-start-column="54" selection-end-line="20" selection-end-column="54" />
           <folding>
             <element signature="docComment;class#LiveRangeTest#0" expanded="false" />
           </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/main/edu/uci/compiler/parser/Parser.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="135">
+          <caret line="112" column="0" selection-start-line="112" selection-start-column="0" selection-end-line="112" selection-end-column="0" />
+          <folding />
         </state>
       </provider>
     </entry>
