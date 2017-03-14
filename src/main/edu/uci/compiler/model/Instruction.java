@@ -12,12 +12,18 @@ public class Instruction {
     Result operand1;
     Result operand2;
     Result operand3; // Used for PHI FUNCTIONS
+    Result arrayVariable; // Used for Array Variable kill instructions
     private int instructionId;
     private Instruction anchorInstruction;
+    private Integer registerNumber;
 
     public Instruction() {
         this.instructionId = numberOfInstructions;
         anchorInstruction = null;
+        operand1 = null;
+        operand2 = null;
+        operand3 = null;
+        arrayVariable = null;
         ++numberOfInstructions;
     }
 
@@ -53,6 +59,14 @@ public class Instruction {
         this.operand3 = operand3;
     }
 
+    public void setArrayVariable(Result arrayVariable) {
+        this.arrayVariable = arrayVariable;
+    }
+
+    public Result getArrayVariable() {
+        return this.arrayVariable;
+    }
+
     public int getInstructionId() {
         return instructionId;
     }
@@ -69,6 +83,13 @@ public class Instruction {
         this.anchorInstruction = anchorInstruction;
     }
 
+    public void setRegisterNumber(Integer registerNumber){
+        this.registerNumber = registerNumber;
+    }
+    public Integer getRegisterNumber(){
+        return this.registerNumber;
+    }
+
     @Override
     public boolean equals(Object object) {
         Instruction instruction = (Instruction) object;
@@ -80,8 +101,9 @@ public class Instruction {
             isSameOperand2 = areSameOperands(operand2, instruction.getOperand1());
         }
         boolean isSameOperand3 = areSameOperands(operand3, instruction.getOperand3());
+        boolean isSameArrayVariables = areSameOperands(arrayVariable, instruction.getArrayVariable());
 
-        return isSameOperation && isSameOperand1 && isSameOperand2 && isSameOperand3;
+        return isSameOperation && isSameOperand1 && isSameOperand2 && isSameOperand3 && isSameArrayVariables;
     }
 
     private boolean areSameOperands(Result operand, Result targetOperand) {
@@ -93,6 +115,8 @@ public class Instruction {
     @Override
     public String toString() {
         if (this.operation == null) return null;
+        if(isKillInstruction()) return forKill();
+        if (this.isLoadStore()) return forLoadStore();
         if (this.isBinaryOperand()) return forTwoOperands();
         if (this.isUnaryOperand()) return forOneOperand();
         if (this.noOperand()) return forNoOperand();
@@ -103,6 +127,10 @@ public class Instruction {
                     + " " + this.operand3.toString();
         }
         return "";
+    }
+
+    private boolean isKillInstruction(){
+        return this.operation == Operation.KILL;
     }
 
     private boolean isBinaryOperand() {
@@ -120,16 +148,19 @@ public class Instruction {
                 || this.operation == Operation.BGT
                 || this.operation == Operation.BLE
                 || this.operation == Operation.BLT
-                || this.operation == Operation.MOVE
-                || this.operation == Operation.STORE);
+                || this.operation == Operation.MOVE);
     }
 
     private boolean isUnaryOperand() {
         return (this.operation == Operation.BRA
-                || this.operation == Operation.LOAD
                 || this.operation == Operation.RET
                 || this.operation == Operation.PARAM
                 || this.operation == Operation.WRITE);
+    }
+
+    private boolean isLoadStore() {
+        return (this.operation == Operation.LOAD
+                || this.operation == Operation.STORE);
     }
 
     private boolean noOperand() {
@@ -149,6 +180,17 @@ public class Instruction {
 
     private String forNoOperand() {
         return this.operation.toString();
+    }
+
+    private String forLoadStore() {
+        String instructionString = this.operation.toString() + " " + this.operand1.toString();
+        if (operation == Operation.STORE) {
+            instructionString += " " + operand2.toString();
+        }
+        return instructionString + " {" + arrayVariable.getIdentifierName() + "}";
+    }
+    private String forKill(){
+        return this.operation.toString() + " " + this.arrayVariable.toString();
     }
 
 

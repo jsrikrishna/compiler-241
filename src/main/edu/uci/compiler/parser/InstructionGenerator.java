@@ -253,9 +253,15 @@ public class InstructionGenerator {
         Result addaResult = resultForInstruction(locInArrayInstr);
         arrayBase.instructionIds.add(locInArrayInstr.getInstructionId());
         Instruction loadInstruction = generateInstruction(LOAD, addaResult, null);
+
+        Result arrayVariable = new Result();
+        arrayVariable.setKind(ARRAY_VARIABLE);
+        arrayVariable.setIdentifierName(arrayIdentifier);
+
+        loadInstruction.setArrayVariable(arrayVariable);
         arrayBase.instructionIds.add(loadInstruction.getInstructionId());
         arrayBase.finalResult = resultForInstruction(loadInstruction);
-
+        arrayBase.finalResult.setIdentifierName(arrayIdentifier);
         // Keep the above instruction in a result
         return arrayBase;
 
@@ -323,11 +329,17 @@ public class InstructionGenerator {
         return generateInstruction(MOVE, zero, varResult);
     }
 
-    public Instruction generatePhiInstruction(Result lhs, Result rhs) {
+    public Result generatePhiInstruction(Result lhs, Result rhs) {
         Instruction phiInstruction = generateInstruction(PHI, lhs, rhs);
         Result phiResult = resultForVariable(lhs.getIdentifierName(), phiInstruction.getInstructionId());
         phiInstruction.setOperand3(phiResult);
-        return phiInstruction;
+        return resultForInstruction(phiInstruction);
+    }
+
+    public Instruction generateKillInstruction(Result arrayVariable){
+        Instruction killInstruction =  generateInstruction(KILL, null, null);
+        killInstruction.setArrayVariable(arrayVariable);
+        return killInstruction;
     }
 
     public Result resultForVariable(String identifier, Integer ssaVersion) {

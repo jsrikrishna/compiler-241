@@ -8,27 +8,66 @@ import java.util.Set;
  * Created by srikrishna on 3/5/17.
  */
 public class InterferenceGraph {
-    private HashSet<Instruction> instructions;
-    private HashSet<Instruction> phiInstructions;
     private HashMap<Integer, HashSet<Integer>> adjacencyList;
+    private HashMap<Integer, Result> liveRangeNumberToResult;
+    private Set<Instruction> phiInstructions;
+    private Set<Instruction> allInstructions;
 
-
-    public void setInstructions(HashSet<Instruction> instructions){
-        this.instructions = instructions;
-    }
-    public HashSet<Instruction> getInstructions(){
-        return this.instructions;
-    }
-    public void setPhiInstructions(HashSet<Instruction> phiInstructions){
+    public InterferenceGraph(HashMap<Integer, HashSet<Integer>> adjacencyList,
+                             HashMap<Integer, Result> liveRangeNumberToResult,
+                             Set<Instruction> phiInstructions,
+                             Set<Instruction> allInstructions) {
+        this.adjacencyList = adjacencyList;
+        this.liveRangeNumberToResult = liveRangeNumberToResult;
         this.phiInstructions = phiInstructions;
+        this.allInstructions = allInstructions;
     }
-    public HashSet<Instruction> getPhiInstructions(){
+
+    public HashMap<Integer, Result> getLiveRangeNumberToResult() {
+        return this.liveRangeNumberToResult;
+    }
+
+    public HashMap<Integer, HashSet<Integer>> getAdjacencyList() {
+        return this.adjacencyList;
+    }
+
+    public Set<Instruction> getPhiInstructions() {
         return this.phiInstructions;
     }
-    public void setAdjacencyList(HashMap<Integer, HashSet<Integer>> adjacencyList){
-        this.adjacencyList = adjacencyList;
+
+    public Set<Instruction> getAllInstructions() {
+        return this.allInstructions;
     }
-    public HashMap<Integer, HashSet<Integer>> getAdjacencyList(){
-        return this.adjacencyList;
+
+    public HashSet<Integer> getNeighbors(Integer node) {
+        return adjacencyList.get(node);
+    }
+
+    public void removeNode(Integer node) {
+        HashSet<Integer> neighbors = getNeighbors(node);
+        if (neighbors != null) {
+            for (Integer neighbor : neighbors) {
+                if (adjacencyList.containsKey(neighbor)) {
+                    adjacencyList.get(neighbor).remove(node);
+                }
+            }
+        }
+        adjacencyList.remove(node);
+    }
+
+    public boolean isEmpty() {
+        return adjacencyList.isEmpty();
+    }
+
+    public void addNodeBack(Integer node, HashSet<Integer> neighbors) {
+        if(neighbors != null){
+            for (Integer neighbor : neighbors) {
+                if (adjacencyList.containsKey(neighbor)) {
+                    adjacencyList.get(neighbor).add(node);
+                }
+            }
+            adjacencyList.put(node, neighbors);
+        }
+
     }
 }

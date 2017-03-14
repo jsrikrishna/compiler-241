@@ -1,0 +1,5 @@
+digraph{
+BasicBlock1 -> BasicBlock2
+BasicBlock1 -> BasicBlock3
+BasicBlock0 -> BasicBlock1
+}

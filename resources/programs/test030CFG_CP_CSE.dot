@@ -1,0 +1,86 @@
+digraph{
+BasicBlock0 -> BasicBlock1
+BasicBlock1 -> BasicBlock2
+BasicBlock1 -> BasicBlock9
+BasicBlock2 -> BasicBlock3
+BasicBlock3 -> BasicBlock4
+BasicBlock3 -> BasicBlock5
+BasicBlock4 -> BasicBlock9
+BasicBlock5 -> BasicBlock6
+BasicBlock6 -> BasicBlock7
+BasicBlock6 -> BasicBlock8
+BasicBlock7 -> BasicBlock3
+BasicBlock8 -> BasicBlock6
+BasicBlock0[shape="box", label="BasicBlock0
+
+ Type is BB_MAIN
+
+No Instructions in this basic block
+"]
+BasicBlock1[shape="box", label="BasicBlock1
+
+ Type is BB_IF_CONDITION
+
+6: CMP 2 3
+7: BGE (6) [9]
+"]
+BasicBlock2[shape="box", label="BasicBlock2
+
+ Type is BB_IF_THEN
+
+No Instructions in this basic block
+"]
+BasicBlock3[shape="box", label="BasicBlock3
+
+ Type is BB_WHILE_CONDITION_AND_JOIN
+
+22: PHI 2 b_19 b_22
+21: PHI 1 (11) a_21
+8: ADD b_22 1
+9: CMP (8) 3
+10: BGE (9) [4]
+"]
+BasicBlock4[shape="box", label="BasicBlock4
+
+ Type is BB_WHILE_FALL_THROUGH
+
+23: BRA [9]
+"]
+BasicBlock9[shape="box", label="BasicBlock9
+
+ Type is BB_IF_THEN_JOIN
+
+24: PHI a_21 1 a_24
+25: PHI b_22 2 b_25
+28: END
+"]
+BasicBlock5[shape="box", label="BasicBlock5
+
+ Type is BB_WHILE_BODY
+
+11: ADD a_21 1
+20: BRA [3]
+"]
+BasicBlock6[shape="box", label="BasicBlock6
+
+ Type is BB_WHILE_CONDITION_AND_JOIN
+
+19: PHI b_22 (16) b_19
+13: ADD b_19 2
+14: CMP (13) 3
+15: BGE (14) [7]
+"]
+BasicBlock7[shape="box", label="BasicBlock7
+
+ Type is BB_WHILE_FALL_THROUGH
+
+No Instructions in this basic block
+"]
+BasicBlock8[shape="box", label="BasicBlock8
+
+ Type is BB_WHILE_BODY
+
+16: ADD b_19 1
+18: BRA [6]
+"]
+}

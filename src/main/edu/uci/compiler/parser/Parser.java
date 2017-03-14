@@ -31,6 +31,7 @@ public class Parser {
     private CopyPropagator cp;
     private CommonSubExpElimination cse;
     private DominatorTree domTree;
+    private RegisterAllocator ra;
     private ArrayList<Token> relOpList;
     private ArrayList<Token> statSeqList;
     private Tracker tracker;
@@ -52,7 +53,8 @@ public class Parser {
         domTree = new DominatorTree(allRootDominatorBlocks, endBasicBlocks, allDomParents);
         cp = new CopyPropagator(allRootDominatorBlocks, ig, instructionResults);
         cse = new CommonSubExpElimination(allRootDominatorBlocks, instructionResults, allInstructions);
-        lra = new LiveRangeAnalysis(endBasicBlocks, allDomParents);
+        lra = new LiveRangeAnalysis(endBasicBlocks, allDomParents, instructionResults);
+        ra = new RegisterAllocator(lra.getInterferenceGraph());
 
         relOpList = new ArrayList<Token>() {{
             add(EQL);
@@ -97,7 +99,7 @@ public class Parser {
 
         if (currentToken != BEGIN) generateError(BEGIN_NOT_FOUND);
         moveToNextToken();
-        BasicBlock endBasicBlock = statSequence(startBasicBlock, null);
+        BasicBlock endBasicBlock = statSequence(startBasicBlock, null, null);
 
         if (currentToken != END) generateError(END_NOT_FOUND);
         moveToNextToken();
@@ -133,7 +135,11 @@ public class Parser {
         cse.doCSEForProgram();
     }
 
-    public void doLiveRangeAnalysis(){
+    public void doRegisterAllocation(){
+        ra.allocateRegister();
+    }
+
+    public void doLiveRangeAnalysis() {
         lra.generateInterferenceGraphForProgram();
         List<String> adjListDigraph = lra.writeAdjList();
         cfg.generateFlow(fileName, adjListDigraph, "lra");
@@ -266,31 +272,36 @@ public class Parser {
         while (currentToken == VAR || currentToken == ARRAY) varDecl(function, function.getFuncBasicBlock());
         if (currentToken != BEGIN) generateError(BEGIN_NOT_FOUND);
         moveToNextToken();
-        BasicBlock finalBlock = statSequence(function.getFuncBasicBlock(), function);
+        BasicBlock finalBlock = statSequence(function.getFuncBasicBlock(), function, null);
         if (currentToken != END) generateError(END_NOT_FOUND);
         moveToNextToken();
     }
 
-    private BasicBlock statSequence(BasicBlock basicBlock, Function function) throws IOException {
-        basicBlock = statement(basicBlock, function);
+    private BasicBlock statSequence(BasicBlock basicBlock,
+                                    Function function,
+                                    List<Instruction> killInstructions) throws IOException {
+        basicBlock = statement(basicBlock, function, killInstructions);
         while (currentToken == SEMICOLON) {
             moveToNextToken();
-            basicBlock = statement(basicBlock, function);
+            basicBlock = statement(basicBlock, function, killInstructions);
         }
         return basicBlock;
     }
 
-    private BasicBlock statement(BasicBlock basicBlock, Function function) throws IOException {
+    private BasicBlock statement(BasicBlock basicBlock,
+                                 Function function,
+                                 List<Instruction> toBeKilledInstructions) throws IOException {
+
         if (!(statSeqList.contains(currentToken))) generateError(KEYWORD_EXPECTED);
 
         if (currentToken == IF) {
-            return ifStatement(basicBlock, function);
+            return ifStatement(basicBlock, function, toBeKilledInstructions);
         }
         if (currentToken == WHILE) {
-            return whileStatement(basicBlock, function);
+            return whileStatement(basicBlock, function, toBeKilledInstructions);
         }
         if (currentToken == LET) {
-            assignment(basicBlock, function);
+            assignment(basicBlock, function, toBeKilledInstructions);
         } else if (currentToken == CALL) {
             funcCall(basicBlock);
         } else if (currentToken == RETURN) {
@@ -300,7 +311,9 @@ public class Parser {
 
     }
 
-    private Result assignment(BasicBlock basicBlock, Function function) throws IOException {
+    private Result assignment(BasicBlock basicBlock,
+                              Function function,
+                              List<Instruction> killInstructions) throws IOException {
         if (currentToken != LET) generateError(ASSIGNMENT_ERROR);
         moveToNextToken();
         Result lhs = designator(basicBlock, function);
@@ -308,6 +321,9 @@ public class Parser {
         moveToNextToken();
         Result rhs = expression(basicBlock, function);
         Instruction instruction = ig.generateInstructionForAssignment(lhs, rhs);
+        if (instruction.getOperation() == Operation.STORE && killInstructions != null) {
+            killInstructions.add(instruction);
+        }
         /*
         Update lhs result with SSA Version
         Update Tracker for local result, both basic block level and global level
@@ -324,6 +340,14 @@ public class Parser {
                 // Tag:  FUNC_BASIC_BLOCK_VS_NORMAL_BASIC_BLOCK_CHECK
             }
         }
+        if (lhs.getKind() == INSTRUCTION) {
+            System.out.println("Might be a array variable" + lhs.getInstructionId());
+            Result arrayVariable = new Result();
+            arrayVariable.setKind(ARRAY_VARIABLE);
+            arrayVariable.setIdentifierName(lhs.getIdentifierName());
+            instruction.setArrayVariable(arrayVariable);
+        }
+
         /*
         Update rhs result with SSA Version
          */
@@ -550,7 +574,9 @@ public class Parser {
         return result;
     }
 
-    private BasicBlock ifStatement(BasicBlock basicBlock, Function function) throws IOException {
+    private BasicBlock ifStatement(BasicBlock basicBlock,
+                                   Function function,
+                                   List<Instruction> toBeKilledInstructions) throws IOException {
         if (currentToken != IF) generateError(IF_STATEMENT_ERROR);
         moveToNextToken();
 
@@ -564,9 +590,11 @@ public class Parser {
 
         BasicBlock elseBlock = null;
         Result fixUpResult = relation(ifConditionBlock, function);
+        List<Instruction> ifKillInstructions = new LinkedList<>();
+        List<Instruction> elseKillInstructions = new LinkedList<>();
         if (currentToken != THEN) generateError(THEN_STATEMENT_ERROR);
         moveToNextToken();
-        ifThenBlock = statSequence(ifThenBlock, function);
+        ifThenBlock = statSequence(ifThenBlock, function, ifKillInstructions);
 
         BasicBlock joinBlock = new BasicBlock(BB_IF_THEN_JOIN);
         ifThenBlock.addChildrenAndUpdateChildrenTracker(joinBlock);
@@ -586,7 +614,7 @@ public class Parser {
 
             joinBlock.setType(BB_IF_ELSE_JOIN);
 
-            elseBlock = statSequence(elseBlock, function);
+            elseBlock = statSequence(elseBlock, function, elseKillInstructions);
             // Need to add here, as parent relationships are used in Live Range Analysis
             joinBlock.addParent(elseBlock);
             joinBlock.setRightParent(elseBlock);
@@ -594,6 +622,7 @@ public class Parser {
             elseBlock.addChildrenAndUpdateChildrenTracker(joinBlock);
             // BRA instruction from ELSE Block to JOIN Block
             addBranchInstruction(elseBlock, joinBlock);
+            insertKillInstructionsForIfStatement(joinBlock, ifKillInstructions, elseKillInstructions);
             insertPhiFunctionForIfStatement(ifThenBlock, elseBlock, joinBlock);
         }
 
@@ -606,7 +635,13 @@ public class Parser {
             joinBlock.addParent(ifConditionBlock);
             joinBlock.setRightParent(ifConditionBlock);
             fixUpNegCompareInstruction(fixUpResult, joinBlock);
+            insertKillInstructionsForIfStatement(joinBlock, ifKillInstructions, null);
             insertPhiFunctionForIfStatement(ifThenBlock, ifConditionBlock, joinBlock);
+        }
+
+        if(toBeKilledInstructions != null){
+            toBeKilledInstructions.addAll(ifKillInstructions);
+            toBeKilledInstructions.addAll(elseKillInstructions);
         }
 
         return joinBlock;
@@ -635,7 +670,7 @@ public class Parser {
                 res.setSsaVersion(ssaVersion);
             } else {
                 Integer ssaVersion = basicBlock.getSSAVersion(res.getIdentifierName());
-                if(ssaVersion == null){
+                if (ssaVersion == null) {
                     ssaVersion = tracker.getSSAVersion(res.getIdentifierName());
                     if (ssaVersion == null) generateError(VARIABLE_NOT_DECLARED);
                 }
@@ -644,7 +679,9 @@ public class Parser {
         }
     }
 
-    private BasicBlock whileStatement(BasicBlock basicBlock, Function function) throws IOException {
+    private BasicBlock whileStatement(BasicBlock basicBlock,
+                                      Function function,
+                                      List<Instruction> toBeKilledInstructions) throws IOException {
         if (currentToken != WHILE) generateError(WHILE_STATEMENT_ERROR);
         moveToNextToken();
 
@@ -673,7 +710,7 @@ public class Parser {
         whileBodyBlock.addChildrenAndUpdateChildrenTracker(whileConditionJoinBlock);
 
 
-        BasicBlock whileBodyEndBlock = statSequence(whileBodyBlock, function);
+        BasicBlock whileBodyEndBlock = statSequence(whileBodyBlock, function, toBeKilledInstructions);
         //Go Back to while condition -> adding instruction for that
         if (whileBodyBlock != whileBodyEndBlock) {
             whileBodyEndBlock.addChildrenAndUpdateChildrenTracker(whileConditionJoinBlock);
@@ -742,7 +779,8 @@ public class Parser {
                 Result leftResult = ig.resultForVariable(identifier, leftSSAVersion);
                 Result rightResult = ig.resultForVariable(identifier, rightSSAVersion);
 
-                Instruction phiInstruction = ig.generatePhiInstruction(leftResult, rightResult);
+                Result phiInstructionResult = ig.generatePhiInstruction(leftResult, rightResult);
+                Instruction phiInstruction = allInstructions.get(phiInstructionResult.getInstructionId());
 
                 joinBlock.addInstruction(phiInstruction);
                 // Same as phiInstruction.getInstructionId() instead of phiInstruction.getOperand3().getSsaVersion()
@@ -753,6 +791,23 @@ public class Parser {
         }
         putRemainingTrackerEntries(leftTracker, rightTracker, joinTracker);
         joinBlock.setLocalTracker(joinTracker);
+    }
+
+    private void insertKillInstructionsForIfStatement(BasicBlock basicBlock,
+                                                      List<Instruction> leftKill,
+                                                      List<Instruction> rightKill) {
+        Set<Result> killResults = new HashSet<>();
+        if (leftKill != null) {
+            for (Instruction kill : leftKill) killResults.add(kill.getArrayVariable());
+        }
+        if (rightKill != null) {
+            for (Instruction kill : rightKill) killResults.add(kill.getArrayVariable());
+        }
+        // Generate Kill Instructions
+        for (Result killResult : killResults) {
+            Instruction killInstruction = ig.generateKillInstruction(killResult);
+            basicBlock.addInstructionAtStart(killInstruction);
+        }
     }
 
     private void insertPhiFunctionForWhileStatement(BasicBlock parentBasicBlock,
@@ -778,7 +833,8 @@ public class Parser {
                 Result parentResult = ig.resultForVariable(identifier, parentSSAVersion);
 
                 // First Operand of Phi Instruction should be parent always for while phi instructions
-                Instruction phiInstruction = ig.generatePhiInstruction(parentResult, whileBodyResult);
+                Result phiInstructionResult = ig.generatePhiInstruction(parentResult, whileBodyResult);
+                Instruction phiInstruction = allInstructions.get(phiInstructionResult.getInstructionId());
                 phiInstructionList.add(phiInstruction);
                 Integer phiInstructionId = phiInstruction.getInstructionId();
 

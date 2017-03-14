@@ -1,0 +1,58 @@
+digraph{
+BasicBlock0 -> BasicBlock1
+BasicBlock1 -> BasicBlock2
+BasicBlock1 -> BasicBlock3
+BasicBlock3 -> BasicBlock1
+BasicBlock0[shape="box", label="BasicBlock0
+
+ Type is BB_MAIN
+
+7: MULI 0 4
+8: ADD FRAME_POINTER a_baseAddress
+9: ADDA (7) (8)
+10: LOAD (9) {a}
+14: ADDA (7) (8)
+15: LOAD (14) {a}
+"]
+BasicBlock1[shape="box", label="BasicBlock1
+
+ Type is BB_WHILE_CONDITION_AND_JOIN
+
+55: PHI 0 (50) z_55
+54: PHI 0 (35) y_54
+53: PHI (10) (30) x_53
+19: ADDA (7) (8)
+20: LOAD (19) {a}
+22: ADD FRAME_POINTER b_baseAddress
+23: ADDA (7) (22)
+24: LOAD (23) {b}
+25: CMP (20) (24)
+26: BGE (25) [2]
+"]
+BasicBlock2[shape="box", label="BasicBlock2
+
+ Type is BB_WHILE_FALL_THROUGH
+
+58: ADDA (7) (8)
+59: LOAD (58) {a}
+61: END
+"]
+BasicBlock3[shape="box", label="BasicBlock3
+
+ Type is BB_WHILE_BODY
+
+29: ADDA (7) (8)
+30: LOAD (29) {a}
+34: ADDA (7) (8)
+35: LOAD (34) {a}
+37: MULI (15) 4
+39: ADDA (37) (8)
+40: LOAD (39) {a}
+41: STORE z_55 (40) {a}
+44: ADDA (7) (22)
+45: LOAD (44) {b}
+49: ADDA (7) (8)
+50: LOAD (49) {a}
+52: BRA [1]
+"]
+}

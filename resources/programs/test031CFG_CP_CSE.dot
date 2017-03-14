@@ -1,0 +1,39 @@
+digraph{
+BasicBlock0 -> BasicBlock1
+BasicBlock1 -> BasicBlock2
+BasicBlock1 -> BasicBlock3
+BasicBlock3 -> BasicBlock1
+BasicBlock0[shape="box", label="BasicBlock0
+
+ Type is BB_MAIN
+
+4: READ
+6: WRITE (4)
+7: WRITENL
+"]
+BasicBlock1[shape="box", label="BasicBlock1
+
+ Type is BB_WHILE_CONDITION_AND_JOIN
+
+21: PHI 0 (4) d_21
+20: PHI 0 (12) c_20
+19: PHI 0 (16) b_19
+8: CMP b_19 c_20
+9: BLE (8) [2]
+"]
+BasicBlock2[shape="box", label="BasicBlock2
+
+ Type is BB_WHILE_FALL_THROUGH
+
+22: END
+"]
+BasicBlock3[shape="box", label="BasicBlock3
+
+ Type is BB_WHILE_BODY
+
+12: ADD c_20 1
+14: WRITE (4)
+16: ADD b_19 1
+18: BRA [1]
+"]
+}

@@ -23,10 +23,12 @@ public class Result {
     private Integer ssaVersion; // Tracker Version for a variable
     private Integer funcBasicBlockId;
     private Integer parameterCount;
+    private Integer registerNumber;
 
     public Result() {
         kind = KIND.INIT;
         value = address = regNo = fixUpInstructionId = -1;
+        registerNumber = -1;
         instructionId = basicBlockId = ssaVersion = funcBasicBlockId = parameterCount = -1;
         condition = Token.INIT;
         identifierName = "";
@@ -129,6 +131,14 @@ public class Result {
         return this.parameterCount;
     }
 
+    public void setRegisterNumber(Integer color) {
+        this.registerNumber = color;
+    }
+
+    public Integer getRegisterNumber() {
+        return this.registerNumber;
+    }
+
 
     @Override
     public String toString() {
@@ -144,6 +154,7 @@ public class Result {
         if (kind == KIND.FRAME_POINTER) return "FRAME_POINTER";
         if (kind == KIND.FUNCTION) return "[" + this.funcBasicBlockId + "]";
         if (kind == KIND.PARAMETER_COUNT) return "parameter_count " + this.parameterCount;
+        if (kind == KIND.REGISTER) return "r" + registerNumber;
         return super.toString();
     }
 
@@ -157,14 +168,14 @@ public class Result {
                 + this.instructionId
                 + this.basicBlockId
                 + this.funcBasicBlockId
-                + this.parameterCount)
+                + this.parameterCount
+                + this.registerNumber)
                 + identifierName.length();
     }
 
     @Override
     public boolean equals(Object obj) {
         Result result = (Result) obj;
-
         return this.kind == result.getKind()
                 & this.value == result.getValue()
                 & this.address == result.getAddress()
@@ -176,6 +187,7 @@ public class Result {
                 & this.funcBasicBlockId.equals(result.getFuncBasicBlockId())
                 & this.parameterCount.equals(result.getParameterCount())
                 & this.identifierName.equals(result.getIdentifierName())
-                & this.condition == result.getCondition();
+                & this.condition == result.getCondition()
+                & this.registerNumber.equals(result.getRegisterNumber());
     }
 }
