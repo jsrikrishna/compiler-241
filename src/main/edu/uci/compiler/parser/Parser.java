@@ -54,7 +54,7 @@ public class Parser {
         cp = new CopyPropagator(allRootDominatorBlocks, ig, instructionResults);
         cse = new CommonSubExpElimination(allRootDominatorBlocks, instructionResults, allInstructions);
         lra = new LiveRangeAnalysis(endBasicBlocks, allDomParents, instructionResults);
-        ra = new RegisterAllocator(lra.getInterferenceGraph());
+        ra = new RegisterAllocator(lra.getInterferenceGraph(), cfg);
 
         relOpList = new ArrayList<Token>() {{
             add(EQL);
@@ -135,14 +135,14 @@ public class Parser {
         cse.doCSEForProgram();
     }
 
-    public void doRegisterAllocation(){
-        ra.allocateRegister();
-    }
-
     public void doLiveRangeAnalysis() {
         lra.generateInterferenceGraphForProgram();
-        List<String> adjListDigraph = lra.writeAdjList();
-        cfg.generateFlow(fileName, adjListDigraph, "lra");
+        List<String> adjListStrictGraph = lra.getInterferenceGraph().writeAdjList();
+        cfg.generateFlow(fileName, adjListStrictGraph, "lra");
+    }
+
+    public void doRegisterAllocation(String fileName){
+        ra.allocateRegister(fileName);
     }
 
     private void varDecl(Function function, BasicBlock basicBlock) throws IOException {

@@ -18,7 +18,7 @@ public class RegisterAllocationTest {
 
         try {
             //To Test one code at a time
-            String fileName = resourcePath + "/test009.txt";
+            String fileName = resourcePath + "/test031.txt";
 //             String fileName = resourcePath + "/big.txt";
 //            String fileName = resourcePath + "/cell.txt";
             System.out.println("File name is " + fileName);
@@ -29,7 +29,7 @@ public class RegisterAllocationTest {
             ra.printDomVCG();
             ra.printCFG(true, true);
             ra.doLiveRangeAnalysis();
-            ra.doRegisterAllocation();
+            ra.doRegisterAllocation(fileName);
         } catch (IOException ex) {
             System.out.println("Exception is " + ex.getMessage());
             noExceptionOccurred = false;

@@ -15,7 +15,7 @@ public class LiveRangeAnalysis {
     private HashMap<Integer, HashSet<Integer>> adjacencyList;
     private HashMap<BasicBlock, BasicBlock> allDomParents;
     private HashMap<Integer, Result> liveRangeNumberToResult;
-    private Set<Instruction> phiInstructions;
+    private LinkedList<Instruction> phiInstructions;
     private Set<Instruction> allInstructions;
     private HashMap<Instruction, Result> instructionResults;
 
@@ -27,7 +27,7 @@ public class LiveRangeAnalysis {
         this.allDomParents = allDomParents;
         this.adjacencyList = new HashMap<>();
         this.liveRangeNumberToResult = new HashMap<>();
-        this.phiInstructions = new HashSet<>();
+        this.phiInstructions = new LinkedList<>();
         this.allInstructions = new HashSet<>();
         this.instructionResults = instructionResults;
         this.interferenceGraph =
@@ -70,6 +70,13 @@ public class LiveRangeAnalysis {
                         }
                         for (Integer liveInstructionId : rightCopy) {
                             adjacencyList.get(phi.getInstructionId()).add(liveInstructionId);
+                            if(adjacencyList.containsKey(liveInstructionId)){
+                                adjacencyList.get(liveInstructionId).add(phi.getInstructionId());
+                            } else {
+                                HashSet<Integer> edges = new HashSet<>(Arrays.asList(phi.getInstructionId()));
+                                adjacencyList.put(liveInstructionId, edges);
+                            }
+
                         }
                         addResultToLiveRange(phi.getOperand2(), rightCopy);
                     }
@@ -84,6 +91,12 @@ public class LiveRangeAnalysis {
                         }
                         for (Integer liveInstructionId : leftCopy) {
                             adjacencyList.get(phi.getInstructionId()).add(liveInstructionId);
+                            if(adjacencyList.containsKey(liveInstructionId)){
+                                adjacencyList.get(liveInstructionId).add(phi.getInstructionId());
+                            } else {
+                                HashSet<Integer> edges = new HashSet<>(Arrays.asList(phi.getInstructionId()));
+                                adjacencyList.put(liveInstructionId, edges);
+                            }
                         }
                         addResultToLiveRange(phi.getOperand1(), leftCopy);
 
@@ -137,6 +150,12 @@ public class LiveRangeAnalysis {
                     }
                     for (Integer liveInstructionId : liveRangeSet) {
                         adjacencyList.get(phi.getInstructionId()).add(liveInstructionId);
+                        if(adjacencyList.containsKey(liveInstructionId)){
+                            adjacencyList.get(liveInstructionId).add(phi.getInstructionId());
+                        } else {
+                            HashSet<Integer> edges = new HashSet<>(Arrays.asList(phi.getInstructionId()));
+                            adjacencyList.put(liveInstructionId, edges);
+                        }
                     }
                     addResultToLiveRange(phi.getOperand1(), liveRangeSet);
                 }
@@ -200,6 +219,12 @@ public class LiveRangeAnalysis {
                 for (Integer liveInstructionId : liveRangeSet) {
                     if (adjacencyList.containsKey(instructionId)) {
                         adjacencyList.get(instructionId).add(liveInstructionId);
+                        if(adjacencyList.containsKey(liveInstructionId)){
+                            adjacencyList.get(liveInstructionId).add(instructionId);
+                        } else {
+                            HashSet<Integer> edges = new HashSet<>(Arrays.asList(instructionId));
+                            adjacencyList.put(liveInstructionId, edges);
+                        }
                     }
                 }
                 addResultToLiveRange(instruction.getOperand1(), liveRangeSet);
@@ -293,28 +318,8 @@ public class LiveRangeAnalysis {
         return null;
     }
 
-    public List<String> writeAdjList() {
-        List<String> adjListDigraph = new ArrayList<>();
-        adjListDigraph.add("strict graph{");
-        for (Map.Entry<Integer, HashSet<Integer>> entry : this.adjacencyList.entrySet()) {
-            Integer key = entry.getKey();
-            HashSet<Integer> values = entry.getValue();
-            for (Integer instructionId : values) {
-                adjListDigraph.add(instructionId + " -- " + key);
-            }
-            if (values == null || values.isEmpty()) {
-                System.err.println(key + " has no edges");
-//                adjListDigraph.add(key.toString());
-            }
-        }
-        adjListDigraph.add("}");
-        return adjListDigraph;
-    }
-
     private boolean canBeInLiveRangeGraph(Operation operation) {
-        return !(operation == END
-                || operation == BRA
-                || operation == WRITENL);
+        return !(operation == END || operation == BRA);
     }
 
 

@@ -1,5 +1,6 @@
 package main.edu.uci.compiler.parser;
 
+import main.edu.uci.compiler.cfg.ControlFlowGraph;
 import main.edu.uci.compiler.model.Instruction;
 import main.edu.uci.compiler.model.InterferenceGraph;
 import main.edu.uci.compiler.model.Result;
@@ -18,9 +19,11 @@ public class RegisterAllocator {
     private HashMap<Result, Integer> registerForResults;
     private HashMap<Integer, HashSet<Integer>> adjacencyList;
     private HashMap<Integer, List<Integer>> clusterResults;
+    private ControlFlowGraph cfg;
 
-    public RegisterAllocator(InterferenceGraph interferenceGraph) {
+    public RegisterAllocator(InterferenceGraph interferenceGraph, ControlFlowGraph cfg) {
         this.interferenceGraph = interferenceGraph;
+        this.cfg = cfg;
         this.adjacencyList = interferenceGraph.getAdjacencyList();
         colors = new HashMap<>();
         registerForResults = new HashMap<>();
@@ -36,11 +39,18 @@ public class RegisterAllocator {
         return this.clusterResults;
     }
 
-    public void allocateRegister() {
+    public void allocateRegister(String fileName) {
         preProcessAdjacencyList();
         clusterPhiInstructions();
         colorInterferenceGraph();
+        generateClusteredGraph(fileName);
         mapToRegisters();
+
+    }
+
+    private void generateClusteredGraph(String fileName) {
+        List<String> adjListStrictGraph = interferenceGraph.writeAdjListWithCluster(getClusterResults(), registerForResults);
+        cfg.generateFlow(fileName, adjListStrictGraph, "cluster");
     }
 
     private void preProcessAdjacencyList() {
@@ -52,7 +62,6 @@ public class RegisterAllocator {
     }
 
     private void colorInterferenceGraph() {
-        System.out.println("list is " + adjacencyList);
         if (interferenceGraph.isEmpty()) return;
         Integer node = getNode();
         HashSet<Integer> neighbors = interferenceGraph.getNeighbors(node);
@@ -66,9 +75,7 @@ public class RegisterAllocator {
 
     private Integer getNode() {
         int minNeighbors = RegisterCount + 1;
-        System.out.println("adj list is " + adjacencyList);
         for (Map.Entry<Integer, HashSet<Integer>> entry : adjacencyList.entrySet()) {
-            System.out.println("Entry Size is " + entry.getValue().size());
             if (minNeighbors > entry.getValue().size()) {
                 Integer node = entry.getKey();
                 minNeighbors = entry.getValue().size();
@@ -111,7 +118,10 @@ public class RegisterAllocator {
     }
 
     private void clusterPhiInstructions() {
-        Set<Instruction> phiInstructions = interferenceGraph.getPhiInstructions();
+        // Need to reverse,
+        // because phi instructions are added in reverse in LiveRangeAnalysis, as it performed in reverse order
+        interferenceGraph.reversePhiInstructions();
+        LinkedList<Instruction> phiInstructions = interferenceGraph.getPhiInstructions();
         for (Instruction phi : phiInstructions) {
             Result phiResult = phi.getOperand3();
             Result leftResult = phi.getOperand1();
@@ -132,14 +142,15 @@ public class RegisterAllocator {
                 }
             }
         }
+        System.out.println("Clusters Are " + clusterResults);
         updateAdjacencyList();
     }
 
-    private void checkAndAddToCluster(Result rightResult, List<Integer> cluster) {
-        if (rightResult.getKind() != Result.KIND.CONSTANT) {
-            Integer lrNumber = getLiveRangeNumber(rightResult);
+    private void checkAndAddToCluster(Result phiOperandResult, List<Integer> cluster) {
+        if (phiOperandResult.getKind() != Result.KIND.CONSTANT) {
+            Integer lrNumber = getLiveRangeNumber(phiOperandResult);
             HashSet<Integer> neighbors = adjacencyList.get(lrNumber);
-            boolean isInterfereRight = false;
+            boolean doesInterfere = false;
             if (neighbors == null) {
                 cluster.add(lrNumber);
                 return;
@@ -147,11 +158,11 @@ public class RegisterAllocator {
             for (Integer clusterNode : cluster) {
 
                 if (neighbors.contains(clusterNode)) {
-                    isInterfereRight = true;
+                    doesInterfere = true;
                     break;
                 }
             }
-            if (!isInterfereRight) {
+            if (!doesInterfere) {
                 cluster.add(lrNumber);
             }
         }
@@ -168,14 +179,24 @@ public class RegisterAllocator {
     }
 
     private void updateAdjacencyList() {
-        for (Map.Entry<Integer, HashSet<Integer>> entry : adjacencyList.entrySet()) {
-            entry.getValue().remove(entry.getKey());
-        }
         unionFind();
+        System.out.println("Cluster Results After Union Find " + clusterResults);
         HashMap<Integer, List<Integer>> newClusterResult = getClusterResults();
+        HashMap<Set<Integer>, Set<Integer>> updatedAdjListForPrinting = new HashMap<>();
         for (Map.Entry<Integer, List<Integer>> entry : newClusterResult.entrySet()) {
             List<Integer> clusteredResults = entry.getValue();
             for (Integer clusterResult : clusteredResults) {
+                HashSet<Integer> neighbors = adjacencyList.get(clusterResult);
+                if (neighbors != null) {
+                    if (adjacencyList.containsKey(entry.getKey())) {
+                        adjacencyList.get(entry.getKey()).addAll(neighbors);
+                    } else {
+                        adjacencyList.put(entry.getKey(), new HashSet<>(neighbors));
+                    }
+                    for (Integer neighbor : neighbors) {
+                        adjacencyList.get(neighbor).add(entry.getKey());
+                    }
+                }
                 adjacencyList.remove(clusterResult);
                 for (Map.Entry<Integer, HashSet<Integer>> adjEntry : adjacencyList.entrySet()) {
                     adjEntry.getValue().remove(clusterResult);
@@ -187,10 +208,13 @@ public class RegisterAllocator {
     private void unionFind() {
         Map<Integer, List<Integer>> union = new HashMap<>();
         Map<Integer, Integer> find = new HashMap<>();
-        int groupId = 1;
+        int groupId = 1; // Represent set id
+
         for (Map.Entry<Integer, List<Integer>> entry : clusterResults.entrySet()) {
+
             Integer node = entry.getKey();
             List<Integer> clusteredNodes = entry.getValue();
+
             if (clusteredNodes.size() == 1) {
                 Integer clusteredNode = clusteredNodes.get(0);
                 Integer setId1 = find.get(node);
@@ -325,6 +349,7 @@ public class RegisterAllocator {
     }
 
     private void mapToRegisters() {
+        System.out.println(registerForResults);
         for (Instruction instruction : interferenceGraph.getAllInstructions()) {
             Integer instructionId = instruction.getInstructionId();
             Result operand1 = instruction.getOperand1();

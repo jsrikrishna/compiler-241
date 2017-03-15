@@ -189,6 +189,6 @@ public class CommonSubExpElimination {
 
     public boolean needNotDoCSE(Instruction instruction) {
         Operation op = instruction.getOperation();
-        return (op == Operation.WRITE || op == Operation.WRITENL || op == Operation.ADDA);
+        return (op == Operation.WRITE || op == Operation.WRITENL || op == Operation.ADDA || op == Operation.READ);
     }
 }
