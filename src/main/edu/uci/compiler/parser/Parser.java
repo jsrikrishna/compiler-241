@@ -320,7 +320,8 @@ public class Parser {
         if (currentToken != BECOMES) generateError(BECOMES_NOT_FOUND);
         moveToNextToken();
         Result rhs = expression(basicBlock, function);
-        Instruction instruction = ig.generateInstructionForAssignment(lhs, rhs);
+        Result assignmentResult = ig.generateInstructionForAssignment(lhs, rhs);
+        Instruction instruction = allInstructions.get(assignmentResult.getInstructionId());
         if (instruction.getOperation() == Operation.STORE && killInstructions != null) {
             killInstructions.add(instruction);
         }
@@ -739,8 +740,8 @@ public class Parser {
         moveToNextToken();
         if (currentToken != END) {
             Result expResult = expression(basicBlock, function);
-            Instruction instruction = ig.generateInstructionForReturn(expResult);
-            basicBlock.addInstruction(instruction);
+            Result endResult = ig.generateInstructionForReturn(expResult);
+            basicBlock.addInstruction(allInstructions.get(endResult.getInstructionId()));
         }
     }
 

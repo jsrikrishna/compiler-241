@@ -116,13 +116,15 @@ public class InstructionGenerator {
         return null;
     }
 
-    public Instruction generateInstructionForAssignment(Result r1, Result r2) {
+    public Result generateInstructionForAssignment(Result r1, Result r2) {
         if (r1.getKind() == VARIABLE) {
             // Here it is MOVE, so move y x => assign x:= y
-            return generateInstruction(MOVE, r2, r1);
+            Instruction moveInstruction = generateInstruction(MOVE, r2, r1);
+            return resultForInstruction(moveInstruction);
         }
         // Else it is a array variable
-        return generateInstruction(STORE, r2, r1);
+        Instruction storeInstruction = generateInstruction(STORE, r2, r1);
+        return resultForInstruction(storeInstruction);
 
     }
 
@@ -267,8 +269,8 @@ public class InstructionGenerator {
 
     }
 
-    public Instruction generateInstructionForReturn(Result result) {
-        return generateInstruction(RET, result, null);
+    public Result generateInstructionForReturn(Result result) {
+        return resultForInstruction(generateInstruction(RET, result, null));
     }
 
     private Result resultForInstruction(Instruction instruction) {
