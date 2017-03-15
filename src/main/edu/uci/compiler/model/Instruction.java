@@ -16,6 +16,7 @@ public class Instruction {
     private int instructionId;
     private Instruction anchorInstruction;
     private Integer registerNumber;
+    private BasicBlock basicBlock;
 
     public Instruction() {
         this.instructionId = numberOfInstructions;
@@ -71,6 +72,14 @@ public class Instruction {
         return instructionId;
     }
 
+    public void setBasicBlock(BasicBlock basicBlock) {
+        this.basicBlock = basicBlock;
+    }
+
+    public BasicBlock getBasicBlock() {
+        return this.basicBlock;
+    }
+
     public void setInstructionId(int instructionId) {
         this.instructionId = instructionId;
     }
@@ -83,10 +92,11 @@ public class Instruction {
         this.anchorInstruction = anchorInstruction;
     }
 
-    public void setRegisterNumber(Integer registerNumber){
+    public void setRegisterNumber(Integer registerNumber) {
         this.registerNumber = registerNumber;
     }
-    public Integer getRegisterNumber(){
+
+    public Integer getRegisterNumber() {
         return this.registerNumber;
     }
 
@@ -115,7 +125,7 @@ public class Instruction {
     @Override
     public String toString() {
         if (this.operation == null) return null;
-        if(isKillInstruction()) return forKill();
+        if (isKillInstruction()) return forKill();
         if (this.isLoadStore()) return forLoadStore();
         if (this.isBinaryOperand()) return forTwoOperands();
         if (this.isUnaryOperand()) return forOneOperand();
@@ -129,7 +139,7 @@ public class Instruction {
         return "";
     }
 
-    private boolean isKillInstruction(){
+    private boolean isKillInstruction() {
         return this.operation == Operation.KILL;
     }
 
@@ -189,7 +199,8 @@ public class Instruction {
         }
         return instructionString + " {" + arrayVariable.getIdentifierName() + "}";
     }
-    private String forKill(){
+
+    private String forKill() {
         return this.operation.toString() + " " + this.arrayVariable.toString();
     }
 

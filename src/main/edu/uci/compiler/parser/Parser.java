@@ -28,6 +28,7 @@ public class Parser {
     private Set<BasicBlock> endBasicBlocks;
     private HashMap<Instruction, Result> instructionResults;
     private HashMap<Integer, Instruction> allInstructions;
+    private LinkedList<Instruction> phiInstructions;
     private CopyPropagator cp;
     private CommonSubExpElimination cse;
     private DominatorTree domTree;
@@ -44,6 +45,7 @@ public class Parser {
         allRootDominatorBlocks = new HashSet<>();
         instructionResults = new HashMap<>();
         allInstructions = new HashMap<>();
+        phiInstructions = new LinkedList<>();
         allDomParents = new HashMap<>();
         scanner = new Scanner(fileName);
         currentToken = scanner.getToken();
@@ -53,7 +55,7 @@ public class Parser {
         domTree = new DominatorTree(allRootDominatorBlocks, endBasicBlocks, allDomParents);
         cp = new CopyPropagator(allRootDominatorBlocks, ig, instructionResults);
         cse = new CommonSubExpElimination(allRootDominatorBlocks, instructionResults, allInstructions);
-        lra = new LiveRangeAnalysis(endBasicBlocks, allDomParents, instructionResults);
+        lra = new LiveRangeAnalysis(endBasicBlocks, allDomParents, phiInstructions, instructionResults);
         ra = new RegisterAllocator(lra.getInterferenceGraph(), cfg);
 
         relOpList = new ArrayList<Token>() {{
@@ -106,7 +108,9 @@ public class Parser {
 
         if (currentToken != PERIOD) generateError(PERIOD_NOT_FOUND);
         moveToNextToken();
-        endBasicBlock.addInstruction(ig.generateEndInstruction());
+        Instruction endInstruction = ig.generateEndInstruction();
+        endInstruction.setBasicBlock(endBasicBlock);
+        endBasicBlock.addInstruction(endInstruction);
         // This need not be done, have to check
         cfg.addEndBasicBlock(endBasicBlock);
         this.endBasicBlocks.add(endBasicBlock);
@@ -119,7 +123,12 @@ public class Parser {
         cp.propagateCopiesForProgram();
     }
 
-    public void printCFG(boolean isCP, boolean isCSE) {
+    public void printCFG(boolean isCP, boolean isCSE, boolean isPhiRemoved) {
+        if (isPhiRemoved) {
+            System.out.println("Yes Phi Removed");
+            cfg.writeToCFGAfterPhiRemoval(fileName, cfg.getStartBasicBlock(), startBasicBlock.getListOfAllBasicBlocks());
+            return;
+        }
         cfg.writeToCFGFile(fileName, isCP, isCSE, cfg.getStartBasicBlock(), startBasicBlock.getListOfAllBasicBlocks());
     }
 
@@ -141,8 +150,9 @@ public class Parser {
         cfg.generateFlow(fileName, adjListStrictGraph, "lra");
     }
 
-    public void doRegisterAllocation(String fileName){
+    public void doRegisterAllocation(String fileName) {
         ra.allocateRegister(fileName);
+        removePhiInstructions();
     }
 
     private void varDecl(Function function, BasicBlock basicBlock) throws IOException {
@@ -171,7 +181,9 @@ public class Parser {
                 function.updateSSAVariable(identifier, instruction.getInstructionId());
                 // Here for sure, code will have the instruction id, so updating in basic block copy as well
                 basicBlock.updateSSAVersion(identifier, instruction.getInstructionId());
-                // May be normal block as well, need to check -> checked, need not do, it will be either func or non-func
+                // May be normal block as well,
+                // need to check -> checked, need not do, it will be either func or non-func
+                instruction.setBasicBlock(basicBlock);
                 basicBlock.addInstruction(instruction);
             }
 
@@ -182,6 +194,7 @@ public class Parser {
                 Instruction instruction = ig.generateInstructionToInitVar(identifier);
                 tracker.updateSSAForVariable(identifier, instruction.getInstructionId());
                 instruction.getOperand2().setSsaVersion(tracker.getSSAVersion(identifier));
+                instruction.setBasicBlock(basicBlock);
                 basicBlock.addInstruction(instruction);
             }
         }
@@ -241,7 +254,8 @@ public class Parser {
                 while (currentToken == COMMA) {
                     moveToNextToken();
                     if (currentToken != IDENTIFIER) generateError(FORMAL_PARAM_DECL_ERROR);
-                    //TODO: need to store the variable at common place - Done i guess, but still keeping for validate check
+                    //TODO: need to store the variable at common place -
+                    //TODO: Done i guess, but still keeping for validate check
                     addFunctionParameters(function);
                     moveToNextToken();
                 }
@@ -366,6 +380,7 @@ public class Parser {
                 rhs.setSsaVersion(basicBlockSSAVersion);
             }
         }
+        instruction.setBasicBlock(basicBlock);
         basicBlock.addInstruction(instruction);
         return lhs;
     }
@@ -430,15 +445,25 @@ public class Parser {
         return res;
     }
 
-    private Result handleArrayDimInstructions(ArrayList<Result> dimExp, ArrayList<Integer> dims, BasicBlock basicBlock) {
+    private Result handleArrayDimInstructions(ArrayList<Result> dimExp,
+                                              ArrayList<Integer> dims,
+                                              BasicBlock basicBlock) {
         ArrayBase res = ig.generateInstructionsForArrDim(dimExp, dims);
-        for (Integer instrId : res.instructionIds) basicBlock.addInstruction(ig.getInstruction(instrId));
+        for (Integer instrId : res.instructionIds) {
+            Instruction arrDimInstruction = ig.getInstruction(instrId);
+            arrDimInstruction.setBasicBlock(basicBlock);
+            basicBlock.addInstruction(arrDimInstruction);
+        }
         return res.finalResult;
     }
 
     private Result handleArrayDesignator(Result dimResult, String identifier, BasicBlock basicBlock) {
         ArrayBase res = ig.computeArrayDesignator(dimResult, identifier);
-        for (Integer instrId : res.instructionIds) basicBlock.addInstruction(ig.getInstruction(instrId));
+        for (Integer instrId : res.instructionIds) {
+            Instruction arrDesigInstruction = ig.getInstruction(instrId);
+            arrDesigInstruction.setBasicBlock(basicBlock);
+            basicBlock.addInstruction(arrDesigInstruction);
+        }
         return res.finalResult;
     }
 
@@ -450,7 +475,9 @@ public class Parser {
             Result rhs = term(basicBlock, function);
             lhs = ig.computeExpression(prevToken, lhs, rhs);
             if (lhs.getKind() == INSTRUCTION) {
-                basicBlock.addInstruction(ig.getInstruction(lhs.getInstructionId()));
+                Instruction lhsInstruction = ig.getInstruction(lhs.getInstructionId());
+                lhsInstruction.setBasicBlock(basicBlock);
+                basicBlock.addInstruction(lhsInstruction);
                 lhs.setBasicBlockId(basicBlock.getId());
             }
         }
@@ -465,7 +492,9 @@ public class Parser {
             Result rhs = factor(basicBlock, function);
             lhs = ig.computeExpression(prevToken, lhs, rhs);
             if (lhs.getKind() == INSTRUCTION) {
-                basicBlock.addInstruction(ig.getInstruction(lhs.getInstructionId()));
+                Instruction lhsInstruction = ig.getInstruction(lhs.getInstructionId());
+                lhsInstruction.setBasicBlock(basicBlock);
+                basicBlock.addInstruction(lhsInstruction);
                 lhs.setBasicBlockId(basicBlock.getId());
             }
         }
@@ -517,7 +546,9 @@ public class Parser {
                 moveToNextToken();
                 Result paramResult = getParametersForSpecialFunctions(basicBlock);
                 res = ig.generateInstructionForPreDefinedFunctions(identifier, paramResult);
-                basicBlock.addInstruction(ig.getInstruction(res.getInstructionId()));
+                Instruction preDefinedInstruction = ig.getInstruction(res.getInstructionId());
+                preDefinedInstruction.setBasicBlock(basicBlock);
+                basicBlock.addInstruction(preDefinedInstruction);
             } else {
                 Function function = tracker.getFunction(identifier);
                 basicBlock.addFunctionCalled(function);
@@ -535,13 +566,18 @@ public class Parser {
                             parameters.add(param);
                         }
                         ArrayList<Instruction> instructions = ig.generateInstructionForParams(parameters);
-                        for (Instruction instruction : instructions) basicBlock.addInstruction(instruction);
+                        for (Instruction instruction : instructions) {
+                            instruction.setBasicBlock(basicBlock);
+                            basicBlock.addInstruction(instruction);
+                        }
                     }
                     if (currentToken != CLOSEPAREN) generateError(CLOSE_PAREN_NOT_FOUND);
                     moveToNextToken();
                 }
                 res = ig.generateInstructionForFunctionCall(parameters.size(), basicBlock.getId());
-                basicBlock.addInstruction(ig.getInstruction(res.getInstructionId()));
+                Instruction funcCallInstruction = ig.getInstruction(res.getInstructionId());
+                funcCallInstruction.setBasicBlock(basicBlock);
+                basicBlock.addInstruction(funcCallInstruction);
             }
         }
         return res;
@@ -640,7 +676,7 @@ public class Parser {
             insertPhiFunctionForIfStatement(ifThenBlock, ifConditionBlock, joinBlock);
         }
 
-        if(toBeKilledInstructions != null){
+        if (toBeKilledInstructions != null) {
             toBeKilledInstructions.addAll(ifKillInstructions);
             toBeKilledInstructions.addAll(elseKillInstructions);
         }
@@ -657,6 +693,8 @@ public class Parser {
         setSSAForVariableResult(basicBlock, rhs, function);
         basicBlock.addInstruction(res.compareInstruction);
         basicBlock.addInstruction(res.negCompareInstruction);
+        res.compareInstruction.setBasicBlock(basicBlock);
+        res.negCompareInstruction.setBasicBlock(basicBlock);
         return res.fixUpResult;
     }
 
@@ -741,7 +779,9 @@ public class Parser {
         if (currentToken != END) {
             Result expResult = expression(basicBlock, function);
             Result endResult = ig.generateInstructionForReturn(expResult);
-            basicBlock.addInstruction(allInstructions.get(endResult.getInstructionId()));
+            Instruction endInstruction = allInstructions.get(endResult.getInstructionId());
+            endInstruction.setBasicBlock(basicBlock);
+            basicBlock.addInstruction(endInstruction);
         }
     }
 
@@ -761,6 +801,7 @@ public class Parser {
     private void addBranchInstruction(BasicBlock fromBlock, BasicBlock toBlock) {
         Instruction branchInstruction = ig.generateBranchInstruction();
         branchInstruction.getOperand1().setBasicBlockId(toBlock.getId());
+        branchInstruction.setBasicBlock(fromBlock);
         fromBlock.addInstruction(branchInstruction);
     }
 
@@ -783,6 +824,7 @@ public class Parser {
                 Result phiInstructionResult = ig.generatePhiInstruction(leftResult, rightResult);
                 Instruction phiInstruction = allInstructions.get(phiInstructionResult.getInstructionId());
 
+                phiInstruction.setBasicBlock(joinBlock);
                 joinBlock.addInstruction(phiInstruction);
                 // Same as phiInstruction.getInstructionId() instead of phiInstruction.getOperand3().getSsaVersion()
 
@@ -807,6 +849,7 @@ public class Parser {
         // Generate Kill Instructions
         for (Result killResult : killResults) {
             Instruction killInstruction = ig.generateKillInstruction(killResult);
+            killInstruction.setBasicBlock(basicBlock);
             basicBlock.addInstructionAtStart(killInstruction);
         }
     }
@@ -856,8 +899,11 @@ public class Parser {
         updatePhiVariablesInWhileBodyBlock(whileBodyBlock, phiInstructionList);
 
         // Insert phi instructions into WHILE_CONDITION_BLOCK at the START
-        for (Instruction phiInstruction : phiInstructionList)
+        for (Instruction phiInstruction : phiInstructionList) {
+            phiInstruction.setBasicBlock(whileConditionBlock);
             whileConditionBlock.addInstructionAtStart(phiInstruction);
+        }
+
 
         // Update SSA Tracker of whileJoinBlock
         whileJoinBlock.setLocalTracker(whileJoinTracker);
@@ -957,6 +1003,52 @@ public class Parser {
         return operand != null
                 && operand.getKind() == VARIABLE
                 && operand.getIdentifierName().equals(phiIdentifier);
+    }
+
+    private void removePhiInstructions() {
+        for (Instruction phi : phiInstructions) {
+            BasicBlock phiBasicBlock = phi.getBasicBlock();
+            Result phiOperand = phi.getOperand3();
+            Result leftOperand = phi.getOperand1();
+            Result rightOperand = phi.getOperand2();
+            Integer phiRegisterNumber = phi.getRegisterNumber();
+            Integer leftRegisterNumber = leftOperand.getRegisterNumber();
+            Integer rightRegisterNumber = rightOperand.getRegisterNumber();
+
+            if (phiBasicBlock.getType() == BB_IF_ELSE_JOIN || phiBasicBlock.getType() == BB_IF_THEN_JOIN) {
+                if (leftOperand.getKind() != CONSTANT && !phiRegisterNumber.equals(leftRegisterNumber)) {
+                    addMoveInstruction(phiBasicBlock, phiBasicBlock.getLeftParent(), phiOperand, leftOperand);
+                }
+                if (rightOperand.getKind() != CONSTANT && !phiRegisterNumber.equals(rightRegisterNumber)) {
+                    addMoveInstruction(phiBasicBlock, phiBasicBlock.getRightParent(), phiOperand, rightOperand);
+                }
+                phiBasicBlock.removeInstruction(phi);
+                continue;
+            }
+            if (phiBasicBlock.getType() == BB_WHILE_CONDITION_AND_JOIN) {
+                BasicBlock dominatingBlock = allDomParents.get(phiBasicBlock);
+                List<BasicBlock> parentBlocks = phiBasicBlock.getParents();
+                BasicBlock whileHeaderParentApartFromDominator = lra.getWhileBody(parentBlocks, dominatingBlock);
+
+                if (leftOperand.getKind() != CONSTANT && !phiRegisterNumber.equals(leftOperand.getRegisterNumber())) {
+                    addMoveInstruction(phiBasicBlock, dominatingBlock, phiOperand, leftOperand);
+                }
+                if (rightOperand.getKind() != CONSTANT && !phiRegisterNumber.equals(rightRegisterNumber)) {
+                    addMoveInstruction(phiBasicBlock, whileHeaderParentApartFromDominator, phiOperand, rightOperand);
+                }
+                phiBasicBlock.removeInstruction(phi);
+            }
+        }
+    }
+
+    private void addMoveInstruction(BasicBlock phiBasicBlock,
+                                    BasicBlock parentBasicBlock,
+                                    Result phiOperand,
+                                    Result operand) {
+        Result moveResult = ig.generateMoveInstructionForPhi(operand, phiOperand);
+        Instruction moveInstruction = ig.getInstruction(moveResult.getInstructionId());
+        moveInstruction.setBasicBlock(phiBasicBlock);
+        parentBasicBlock.addInstruction(moveInstruction);
     }
 
     private void generateError(ErrorMessage message) {

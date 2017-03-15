@@ -40,16 +40,16 @@ public class RegisterAllocator {
     }
 
     public void allocateRegister(String fileName) {
-        preProcessAdjacencyList();
+//        preProcessAdjacencyList();
         clusterPhiInstructions();
         colorInterferenceGraph();
         generateClusteredGraph(fileName);
         mapToRegisters();
-
     }
 
     private void generateClusteredGraph(String fileName) {
-        List<String> adjListStrictGraph = interferenceGraph.writeAdjListWithCluster(getClusterResults(), registerForResults);
+        List<String> adjListStrictGraph =
+                interferenceGraph.writeAdjListWithCluster(getClusterResults(), registerForResults);
         cfg.generateFlow(fileName, adjListStrictGraph, "cluster");
     }
 
@@ -383,29 +383,35 @@ public class RegisterAllocator {
                     instRes.setRegisterNumber(keyVal.getValue());
                     instRes.setKind(Result.KIND.REGISTER);
                     instruction.setRegisterNumber(keyVal.getValue());
+                    System.out.println(instRes);
                     instResDone = true;
                 }
                 if (!op1Done && operand1.equals(key)) {
+                    System.out.println(operand1 + operand1.getKind().toString());
                     operand1.setRegisterNumber(keyVal.getValue());
                     operand1.setKind(Result.KIND.REGISTER);
                     instruction.setOperand1(operand1);
+                    System.out.println(operand1);
                     op1Done = true;
                 }
                 if (!op2Done && operand2.equals(key)) {
+                    System.out.println(operand2  + operand2.getKind().toString());
                     operand2.setRegisterNumber(keyVal.getValue());
                     operand2.setKind(Result.KIND.REGISTER);
                     instruction.setOperand2(operand2);
+                    System.out.println(operand2);
                     op2Done = true;
                 }
                 if (!op3Done && operand3.equals(key)) {
+                    System.out.println(operand3 + operand3.getKind().toString());
                     operand3.setRegisterNumber(keyVal.getValue());
                     operand3.setKind(Result.KIND.REGISTER);
                     instruction.setOperand3(operand3);
+                    System.out.println(operand3);
                     op3Done = true;
                 }
                 if (instResDone && op1Done && op2Done && op3Done) break;
             }
         }
     }
-
 }

@@ -344,6 +344,11 @@ public class InstructionGenerator {
         return killInstruction;
     }
 
+    public Result generateMoveInstructionForPhi(Result from, Result to){
+        Instruction moveInstruction = generateInstruction(MOVE, from, to);
+        return resultForInstruction(moveInstruction);
+    }
+
     public Result resultForVariable(String identifier, Integer ssaVersion) {
         Result result = new Result();
         result.setKind(VARIABLE);

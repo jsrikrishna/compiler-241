@@ -27,7 +27,7 @@ public class LiveRangeTestAll {
                 lraParser.doCopyPropagation();
                 lraParser.doCommonSubExpressionElimination();
                 lraParser.printDomVCG();
-                lraParser.printCFG(true, true);
+                lraParser.printCFG(true, true, false);
                 lraParser.doLiveRangeAnalysis();
             } catch (IOException ex) {
                 System.out.println("Exception is " + ex.getMessage());

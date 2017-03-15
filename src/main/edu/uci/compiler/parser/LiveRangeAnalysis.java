@@ -15,19 +15,20 @@ public class LiveRangeAnalysis {
     private HashMap<Integer, HashSet<Integer>> adjacencyList;
     private HashMap<BasicBlock, BasicBlock> allDomParents;
     private HashMap<Integer, Result> liveRangeNumberToResult;
-    private LinkedList<Instruction> phiInstructions;
     private Set<Instruction> allInstructions;
+    private LinkedList<Instruction> phiInstructions;
     private HashMap<Instruction, Result> instructionResults;
 
     public LiveRangeAnalysis(Set<BasicBlock> endBasicBlocks,
                              HashMap<BasicBlock, BasicBlock> allDomParents,
+                             LinkedList<Instruction> phiInstructions,
                              HashMap<Instruction, Result> instructionResults) {
 
         this.endBasicBlocks = endBasicBlocks;
         this.allDomParents = allDomParents;
         this.adjacencyList = new HashMap<>();
         this.liveRangeNumberToResult = new HashMap<>();
-        this.phiInstructions = new LinkedList<>();
+        this.phiInstructions = phiInstructions;
         this.allInstructions = new HashSet<>();
         this.instructionResults = instructionResults;
         this.interferenceGraph =
@@ -310,7 +311,7 @@ public class LiveRangeAnalysis {
     }
 
 
-    private BasicBlock getWhileBody(List<BasicBlock> basicBlocks, BasicBlock dominatingBlock) {
+    public BasicBlock getWhileBody(List<BasicBlock> basicBlocks, BasicBlock dominatingBlock) {
 //        System.out.println("Parents for WHILE-HEADER " + basicBlocks.size());
         for (BasicBlock basicBlock : basicBlocks) {
             if (dominatingBlock != basicBlock) return basicBlock;
@@ -319,7 +320,7 @@ public class LiveRangeAnalysis {
     }
 
     private boolean canBeInLiveRangeGraph(Operation operation) {
-        return !(operation == END || operation == BRA);
+        return !(operation == END || operation == BRA || operation == WRITENL || operation == WRITE);
     }
 
 

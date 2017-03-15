@@ -26,6 +26,7 @@ public class BasicBlock {
     HashMap<Operation, Instruction> anchor;
     boolean isRootBasicBlock; // used in dominance relationships
     boolean isVisited;
+    boolean isVisitedAfterPhiRemoval;
     boolean isVisitedWhileLiveRangeAnalysis;
     BasicBlock leftParent; // This will be used only for if join blocks
     BasicBlock rightParent; // This will be used only if join blocks
@@ -42,6 +43,7 @@ public class BasicBlock {
         this.isRootBasicBlock = false;
         this.isVisitedWhileLiveRangeAnalysis = false;
         this.isVisited = false;
+        this.isVisitedAfterPhiRemoval = false;
         allBasicBlocks.add(this);
         ++numBasicBlocks;
     }
@@ -64,6 +66,10 @@ public class BasicBlock {
 
     public void addInstructionAtStart(Instruction instruction) {
         this.instructions.add(0, instruction);
+    }
+
+    public void removeInstruction(Instruction instruction) {
+        this.instructions.remove(instruction);
     }
 
     public void setInstructions(LinkedList<Instruction> instructions) {
@@ -104,24 +110,28 @@ public class BasicBlock {
             children.setLocalTracker(this.getCopyOfVariableTracker());
         }
     }
-    public void removeChildren(BasicBlock basicBlock){
-        if(this.children.contains(basicBlock)) this.children.remove(basicBlock);
+
+    public void removeChildren(BasicBlock basicBlock) {
+        if (this.children.contains(basicBlock)) this.children.remove(basicBlock);
     }
 
     public void addParent(BasicBlock parent) {
         this.parent.add(parent);
     }
 
-    public void setLeftParent(BasicBlock basicBlock){
+    public void setLeftParent(BasicBlock basicBlock) {
         this.leftParent = basicBlock;
     }
-    public BasicBlock getLeftParent(){
+
+    public BasicBlock getLeftParent() {
         return this.leftParent;
     }
-    public void setRightParent(BasicBlock basicBlock){
+
+    public void setRightParent(BasicBlock basicBlock) {
         this.rightParent = basicBlock;
     }
-    public BasicBlock getRightParent(){
+
+    public BasicBlock getRightParent() {
         return this.rightParent;
     }
 
@@ -164,6 +174,14 @@ public class BasicBlock {
 
     public void setIsVisited() {
         this.isVisited = true;
+    }
+
+    public void setIsVisitedAfterPhiRemoval() {
+        this.isVisitedAfterPhiRemoval = true;
+    }
+
+    public boolean isVisitedAfterPhiRemoval() {
+        return this.isVisitedAfterPhiRemoval;
     }
 
     public void setIsVisitedWhileLiveRangeAnalysis() {
