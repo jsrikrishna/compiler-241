@@ -64,6 +64,15 @@ public class BasicBlock {
         this.instructions.add(instruction);
     }
 
+    public void addInstructionAtLastButOne(Instruction instruction) {
+        if(instructions.size() > 1){
+            this.instructions.add(instructions.size() - 1, instruction);
+        } else {
+            this.instructions.add(instruction);
+        }
+
+    }
+
     public void addInstructionAtStart(Instruction instruction) {
         this.instructions.add(0, instruction);
     }

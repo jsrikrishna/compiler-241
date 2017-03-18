@@ -5,6 +5,8 @@ import main.edu.uci.compiler.model.Instruction;
 import main.edu.uci.compiler.model.InterferenceGraph;
 import main.edu.uci.compiler.model.Result;
 
+import static main.edu.uci.compiler.model.Result.KIND.*;
+
 import java.util.*;
 
 /**
@@ -15,20 +17,20 @@ public class RegisterAllocator {
     private static final int RegisterCount = 8; // Architecture Dependent
     private static final int MaxRegisters = 65536;
     public HashMap<Integer, Integer> colors; // colors map to register numbers
-    private HashMap<Integer, Result> liveRangeNumberToResult;
-    private HashMap<Result, Integer> registerForResults;
+    private HashMap<Integer, Integer> registerForResults;
     private HashMap<Integer, HashSet<Integer>> adjacencyList;
     private HashMap<Integer, List<Integer>> clusterResults;
     private ControlFlowGraph cfg;
 
-    public RegisterAllocator(InterferenceGraph interferenceGraph, ControlFlowGraph cfg) {
+    public RegisterAllocator(InterferenceGraph interferenceGraph,
+                             ControlFlowGraph cfg,
+                             HashMap<Integer, Integer> registerForResults) {
         this.interferenceGraph = interferenceGraph;
         this.cfg = cfg;
         this.adjacencyList = interferenceGraph.getAdjacencyList();
         colors = new HashMap<>();
-        registerForResults = new HashMap<>();
+        this.registerForResults = registerForResults;
         clusterResults = new HashMap<>();
-        liveRangeNumberToResult = interferenceGraph.getLiveRangeNumberToResult();
     }
 
     private void setClusterResults(HashMap<Integer, List<Integer>> clusterResults) {
@@ -44,7 +46,6 @@ public class RegisterAllocator {
         clusterPhiInstructions();
         colorInterferenceGraph();
         generateClusteredGraph(fileName);
-        mapToRegisters();
     }
 
     private void generateClusteredGraph(String fileName) {
@@ -99,17 +100,16 @@ public class RegisterAllocator {
         Set<Integer> colorsUsed = new HashSet<>();
         colorsUsed.add(0);
         for (Integer neighborNode : neighbors) {
-            Integer regNo = registerForResults.get(liveRangeNumberToResult.get(neighborNode));
+            Integer regNo = registerForResults.get(neighborNode);
             colorsUsed.add(regNo);
         }
         for (Integer color = 0; color < MaxRegisters; color++) {
             if (!colorsUsed.contains(color)) {
-                Result result = liveRangeNumberToResult.get(node);
-                registerForResults.put(result, color);
+                registerForResults.put(node, color);
                 List<Integer> cluster = clusterResults.get(node);
                 if (cluster != null && cluster.size() > 0) {
                     for (Integer clusterNodes : cluster) {
-                        registerForResults.put(liveRangeNumberToResult.get(clusterNodes), color);
+                        registerForResults.put(clusterNodes, color);
                     }
                 }
                 break;
@@ -142,7 +142,6 @@ public class RegisterAllocator {
                 }
             }
         }
-        System.out.println("Clusters Are " + clusterResults);
         updateAdjacencyList();
     }
 
@@ -180,9 +179,7 @@ public class RegisterAllocator {
 
     private void updateAdjacencyList() {
         unionFind();
-        System.out.println("Cluster Results After Union Find " + clusterResults);
         HashMap<Integer, List<Integer>> newClusterResult = getClusterResults();
-        HashMap<Set<Integer>, Set<Integer>> updatedAdjListForPrinting = new HashMap<>();
         for (Map.Entry<Integer, List<Integer>> entry : newClusterResult.entrySet()) {
             List<Integer> clusteredResults = entry.getValue();
             for (Integer clusterResult : clusteredResults) {
@@ -237,7 +234,7 @@ public class RegisterAllocator {
                     find.put(clusteredNode, setId1);
                     continue;
                 }
-                if (!setId1.equals(setId2)) {
+                if (!(setId1.intValue() == setId2.intValue())) {
                     merge(setId1, setId1, groupId, union, find);
                     ++groupId;
                 }
@@ -275,7 +272,7 @@ public class RegisterAllocator {
                 if (set1Id == null) {
                     union.get(set2Id).add(node);
                     find.put(node, set2Id);
-                    if (!set2Id.equals(set3Id)) {
+                    if (!(set2Id.intValue() == set3Id.intValue())) {
                         merge(set2Id, set3Id, groupId, union, find);
                         ++groupId;
                     }
@@ -292,7 +289,7 @@ public class RegisterAllocator {
                 if (set2Id == null) {
                     union.get(set1Id).add(clusteredNode1);
                     find.put(clusteredNode1, set1Id);
-                    if (!set1Id.equals(set3Id)) {
+                    if (!(set1Id.intValue() == set3Id.intValue())) {
                         merge(set1Id, set3Id, groupId, union, find);
                         ++groupId;
                     }
@@ -301,18 +298,18 @@ public class RegisterAllocator {
                 if (set3Id == null) {
                     union.get(set1Id).add(clusteredNode2);
                     find.put(clusteredNode2, set1Id);
-                    if (!set1Id.equals(set2Id)) {
+                    if (!(set1Id.intValue() == set2Id.intValue())) {
                         merge(set1Id, set2Id, groupId, union, find);
                         ++groupId;
                     }
                     continue;
                 }
-                if (!set1Id.equals(set2Id)) {
+                if (!(set1Id.intValue() == set2Id.intValue())) {
                     merge(set1Id, set2Id, groupId, union, find);
                     ++groupId;
                 }
                 Integer updatedGroupId = find.get(node);
-                if (!updatedGroupId.equals(set3Id)) {
+                if (!(updatedGroupId.intValue() == set3Id.intValue())) {
                     merge(updatedGroupId, set3Id, groupId, union, find);
                     ++groupId;
                 }
@@ -348,69 +345,26 @@ public class RegisterAllocator {
         }
     }
 
-    private void mapToRegisters() {
-        System.out.println(registerForResults);
+    public void mapToRegisters() {
         for (Instruction instruction : interferenceGraph.getAllInstructions()) {
-            Integer instructionId = instruction.getInstructionId();
             Result operand1 = instruction.getOperand1();
             Result operand2 = instruction.getOperand2();
             Result operand3 = instruction.getOperand3();
+            mapResultToRegister(operand1);
+            mapResultToRegister(operand2);
+            mapResultToRegister(operand3);
+        }
+    }
 
-            Result instRes = new Result();
-            instRes.setKind(Result.KIND.INSTRUCTION);
-            instRes.setInstructionId(instructionId);
-            boolean instResDone = false, op1Done = false, op2Done = false, op3Done = false;
-            if (operand1 == null) op1Done = true;
-            if (operand2 == null) op2Done = true;
-            if (operand3 == null) op3Done = true;
-
-            if (!op1Done && operand1.getRegisterNumber() != -1) {
-                op1Done = true;
-                operand1.setKind(Result.KIND.REGISTER);
+    private void mapResultToRegister(Result result) {
+        if (result != null && result.getKind() != CONSTANT) {
+            if (result.getKind() == VARIABLE) {
+                result.setRegisterNumber(registerForResults.get(result.getSsaVersion()));
+                result.setKind(REGISTER);
             }
-            if (!op2Done && operand2.getRegisterNumber() != -1) {
-                op2Done = true;
-                operand2.setKind(Result.KIND.REGISTER);
-            }
-            if (!op3Done && operand3.getRegisterNumber() != -1) {
-                op3Done = true;
-                operand3.setKind(Result.KIND.REGISTER);
-            }
-
-            for (Map.Entry<Result, Integer> keyVal : registerForResults.entrySet()) {
-                Result key = keyVal.getKey();
-                if (!instResDone && instRes.equals(key)) {
-                    instRes.setRegisterNumber(keyVal.getValue());
-                    instRes.setKind(Result.KIND.REGISTER);
-                    instruction.setRegisterNumber(keyVal.getValue());
-                    System.out.println(instRes);
-                    instResDone = true;
-                }
-                if (!op1Done && operand1.equals(key)) {
-                    System.out.println(operand1 + operand1.getKind().toString());
-                    operand1.setRegisterNumber(keyVal.getValue());
-                    operand1.setKind(Result.KIND.REGISTER);
-                    instruction.setOperand1(operand1);
-                    System.out.println(operand1);
-                    op1Done = true;
-                }
-                if (!op2Done && operand2.equals(key)) {
-                    System.out.println(operand2  + operand2.getKind().toString());
-                    operand2.setRegisterNumber(keyVal.getValue());
-                    operand2.setKind(Result.KIND.REGISTER);
-                    instruction.setOperand2(operand2);
-                    System.out.println(operand2);
-                    op2Done = true;
-                }
-                if (!op3Done && operand3.equals(key)) {
-                    System.out.println(operand3 + operand3.getKind().toString());
-                    operand3.setRegisterNumber(keyVal.getValue());
-                    operand3.setKind(Result.KIND.REGISTER);
-                    instruction.setOperand3(operand3);
-                    System.out.println(operand3);
-                    op3Done = true;
-                }
-                if (instResDone && op1Done && op2Done && op3Done) break;
+            if (result.getKind() == INSTRUCTION) {
+                result.setRegisterNumber(registerForResults.get(result.getInstructionId()));
+                result.setKind(REGISTER);
             }
         }
     }

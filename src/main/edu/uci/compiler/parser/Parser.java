@@ -29,6 +29,7 @@ public class Parser {
     private HashMap<Instruction, Result> instructionResults;
     private HashMap<Integer, Instruction> allInstructions;
     private LinkedList<Instruction> phiInstructions;
+    private HashMap<Integer, Integer> registerForResults;
     private CopyPropagator cp;
     private CommonSubExpElimination cse;
     private DominatorTree domTree;
@@ -46,6 +47,7 @@ public class Parser {
         instructionResults = new HashMap<>();
         allInstructions = new HashMap<>();
         phiInstructions = new LinkedList<>();
+        registerForResults = new HashMap<>();
         allDomParents = new HashMap<>();
         scanner = new Scanner(fileName);
         currentToken = scanner.getToken();
@@ -56,7 +58,7 @@ public class Parser {
         cp = new CopyPropagator(allRootDominatorBlocks, ig, instructionResults);
         cse = new CommonSubExpElimination(allRootDominatorBlocks, instructionResults, allInstructions);
         lra = new LiveRangeAnalysis(endBasicBlocks, allDomParents, phiInstructions, instructionResults);
-        ra = new RegisterAllocator(lra.getInterferenceGraph(), cfg);
+        ra = new RegisterAllocator(lra.getInterferenceGraph(), cfg, registerForResults);
 
         relOpList = new ArrayList<Token>() {{
             add(EQL);
@@ -125,8 +127,10 @@ public class Parser {
 
     public void printCFG(boolean isCP, boolean isCSE, boolean isPhiRemoved) {
         if (isPhiRemoved) {
-            System.out.println("Yes Phi Removed");
-            cfg.writeToCFGAfterPhiRemoval(fileName, cfg.getStartBasicBlock(), startBasicBlock.getListOfAllBasicBlocks());
+            cfg.writeToCFGAfterPhiRemoval(fileName,
+                    cfg.getStartBasicBlock(),
+                    startBasicBlock.getListOfAllBasicBlocks(),
+                    registerForResults);
             return;
         }
         cfg.writeToCFGFile(fileName, isCP, isCSE, cfg.getStartBasicBlock(), startBasicBlock.getListOfAllBasicBlocks());
@@ -152,7 +156,9 @@ public class Parser {
 
     public void doRegisterAllocation(String fileName) {
         ra.allocateRegister(fileName);
+        ra.mapToRegisters();
         removePhiInstructions();
+
     }
 
     private void varDecl(Function function, BasicBlock basicBlock) throws IOException {
@@ -356,7 +362,6 @@ public class Parser {
             }
         }
         if (lhs.getKind() == INSTRUCTION) {
-            System.out.println("Might be a array variable" + lhs.getInstructionId());
             Result arrayVariable = new Result();
             arrayVariable.setKind(ARRAY_VARIABLE);
             arrayVariable.setIdentifierName(lhs.getIdentifierName());
@@ -1011,32 +1016,39 @@ public class Parser {
             Result phiOperand = phi.getOperand3();
             Result leftOperand = phi.getOperand1();
             Result rightOperand = phi.getOperand2();
-            Integer phiRegisterNumber = phi.getRegisterNumber();
-            Integer leftRegisterNumber = leftOperand.getRegisterNumber();
-            Integer rightRegisterNumber = rightOperand.getRegisterNumber();
-
+            Integer phiRegisterNumber = registerForResults.get(phi.getInstructionId());
+            BasicBlock leftParent = null, rightParent = null;
             if (phiBasicBlock.getType() == BB_IF_ELSE_JOIN || phiBasicBlock.getType() == BB_IF_THEN_JOIN) {
-                if (leftOperand.getKind() != CONSTANT && !phiRegisterNumber.equals(leftRegisterNumber)) {
-                    addMoveInstruction(phiBasicBlock, phiBasicBlock.getLeftParent(), phiOperand, leftOperand);
-                }
-                if (rightOperand.getKind() != CONSTANT && !phiRegisterNumber.equals(rightRegisterNumber)) {
-                    addMoveInstruction(phiBasicBlock, phiBasicBlock.getRightParent(), phiOperand, rightOperand);
-                }
-                phiBasicBlock.removeInstruction(phi);
-                continue;
+                leftParent = phiBasicBlock.getLeftParent();
+                rightParent = phiBasicBlock.getRightParent();
             }
             if (phiBasicBlock.getType() == BB_WHILE_CONDITION_AND_JOIN) {
-                BasicBlock dominatingBlock = allDomParents.get(phiBasicBlock);
+                leftParent = allDomParents.get(phiBasicBlock);
                 List<BasicBlock> parentBlocks = phiBasicBlock.getParents();
-                BasicBlock whileHeaderParentApartFromDominator = lra.getWhileBody(parentBlocks, dominatingBlock);
+                rightParent = lra.getWhileBody(parentBlocks, leftParent);
+            }
+            if(leftOperand != null){
+                checkAndAddMoveInstruction(leftOperand, phiOperand, phiRegisterNumber, phiBasicBlock, leftParent);
+            }
+            if(rightOperand != null){
+                checkAndAddMoveInstruction(rightOperand, phiOperand, phiRegisterNumber, phiBasicBlock, rightParent);
+            }
+            phiBasicBlock.removeInstruction(phi);
+        }
+    }
 
-                if (leftOperand.getKind() != CONSTANT && !phiRegisterNumber.equals(leftOperand.getRegisterNumber())) {
-                    addMoveInstruction(phiBasicBlock, dominatingBlock, phiOperand, leftOperand);
+    private void checkAndAddMoveInstruction(Result operand,
+                                            Result phiOperand,
+                                            Integer phiRegisterNumber,
+                                            BasicBlock phiBasicBlock,
+                                            BasicBlock parent){
+        if(operand != null){
+            if (operand.getKind() == CONSTANT) {
+                addMoveInstruction(phiBasicBlock, parent, phiOperand, operand);
+            } else {
+                if (!(phiRegisterNumber.intValue() == operand.getRegisterNumber().intValue())) {
+                    addMoveInstruction(phiBasicBlock, parent, phiOperand, operand);
                 }
-                if (rightOperand.getKind() != CONSTANT && !phiRegisterNumber.equals(rightRegisterNumber)) {
-                    addMoveInstruction(phiBasicBlock, whileHeaderParentApartFromDominator, phiOperand, rightOperand);
-                }
-                phiBasicBlock.removeInstruction(phi);
             }
         }
     }
@@ -1048,7 +1060,13 @@ public class Parser {
         Result moveResult = ig.generateMoveInstructionForPhi(operand, phiOperand);
         Instruction moveInstruction = ig.getInstruction(moveResult.getInstructionId());
         moveInstruction.setBasicBlock(phiBasicBlock);
-        parentBasicBlock.addInstruction(moveInstruction);
+        BasicBlock.Type basicBlockType = parentBasicBlock.getType();
+        if (basicBlockType == BB_IF_CONDITION || basicBlockType == BB_MAIN) {
+            parentBasicBlock.addInstruction(moveInstruction);
+        } else {
+            parentBasicBlock.addInstructionAtLastButOne(moveInstruction);
+        }
+
     }
 
     private void generateError(ErrorMessage message) {

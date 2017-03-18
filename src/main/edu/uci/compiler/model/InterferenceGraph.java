@@ -107,13 +107,23 @@ public class InterferenceGraph {
     }
 
     public List<String> writeAdjListWithCluster(HashMap<Integer, List<Integer>> clusterResults,
-                                                HashMap<Result, Integer> registerForResults) {
+                                                HashMap<Integer, Integer> registerForResults) {
         List<String> adjListDigraph = new ArrayList<>();
         List<String> edges = new ArrayList<>();
         adjListDigraph.add("strict graph{");
         for (Map.Entry<Integer, HashSet<Integer>> entry : this.adjacencyList.entrySet()) {
             Integer key = entry.getKey();
             HashSet<Integer> values = entry.getValue();
+
+            String cluster2 = key + " [label=\"" + key;
+            if(clusterResults.containsKey(key)){
+                for(Integer node: clusterResults.get(key)){
+                    cluster2 += ", " + node;
+                }
+            }
+            String color2 = colors.get(registerForResults.get(key));
+            cluster2 += "\",color="+color2+"];";
+            adjListDigraph.add(cluster2);
             for (Integer instructionId : values) {
                 String cluster1 = instructionId + " [label=\"" + instructionId;
                 if(clusterResults.containsKey(instructionId)){
@@ -122,20 +132,12 @@ public class InterferenceGraph {
                     }
 
                 }
-                String color = colors.get(registerForResults.get(liveRangeNumberToResult.get(instructionId)));
+                String color = colors.get(registerForResults.get(instructionId));
                 cluster1 += "\",color="+color+"];";
-                String cluster2 = key + " [label=\"" + key;
-                if(clusterResults.containsKey(key)){
-                    for(Integer node: clusterResults.get(key)){
-                        cluster2 += ", " + node;
-                    }
-                }
-                String color2 = colors.get(registerForResults.get(liveRangeNumberToResult.get(key)));
-                cluster2 += "\",color="+color2+"];";
                 adjListDigraph.add(cluster1);
-                adjListDigraph.add(cluster2);
                 edges.add(instructionId + "--" + key + ";");
             }
+
             if (values == null || values.isEmpty()) {
                 System.err.println(key + " has no edges");
 //                adjListDigraph.add(key.toString());
