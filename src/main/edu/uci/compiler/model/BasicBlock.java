@@ -65,7 +65,7 @@ public class BasicBlock {
     }
 
     public void addInstructionAtLastButOne(Instruction instruction) {
-        if(instructions.size() > 1){
+        if(instructions.size() >= 1){
             this.instructions.add(instructions.size() - 1, instruction);
         } else {
             this.instructions.add(instruction);

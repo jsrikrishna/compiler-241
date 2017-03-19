@@ -347,12 +347,16 @@ public class RegisterAllocator {
 
     public void mapToRegisters() {
         for (Instruction instruction : interferenceGraph.getAllInstructions()) {
+            Integer instructionId = instruction.getInstructionId();
             Result operand1 = instruction.getOperand1();
             Result operand2 = instruction.getOperand2();
             Result operand3 = instruction.getOperand3();
             mapResultToRegister(operand1);
             mapResultToRegister(operand2);
             mapResultToRegister(operand3);
+            if(registerForResults.containsKey(instructionId)){
+                instruction.setRegisterNumber(registerForResults.get(instructionId));
+            }
         }
     }
 
