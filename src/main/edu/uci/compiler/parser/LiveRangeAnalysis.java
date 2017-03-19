@@ -71,7 +71,7 @@ public class LiveRangeAnalysis {
                         }
                         for (Integer liveInstructionId : rightCopy) {
                             adjacencyList.get(phi.getInstructionId()).add(liveInstructionId);
-                            if(adjacencyList.containsKey(liveInstructionId)){
+                            if (adjacencyList.containsKey(liveInstructionId)) {
                                 adjacencyList.get(liveInstructionId).add(phi.getInstructionId());
                             } else {
                                 HashSet<Integer> edges = new HashSet<>(Arrays.asList(phi.getInstructionId()));
@@ -92,7 +92,7 @@ public class LiveRangeAnalysis {
                         }
                         for (Integer liveInstructionId : leftCopy) {
                             adjacencyList.get(phi.getInstructionId()).add(liveInstructionId);
-                            if(adjacencyList.containsKey(liveInstructionId)){
+                            if (adjacencyList.containsKey(liveInstructionId)) {
                                 adjacencyList.get(liveInstructionId).add(phi.getInstructionId());
                             } else {
                                 HashSet<Integer> edges = new HashSet<>(Arrays.asList(phi.getInstructionId()));
@@ -151,7 +151,7 @@ public class LiveRangeAnalysis {
                     }
                     for (Integer liveInstructionId : liveRangeSet) {
                         adjacencyList.get(phi.getInstructionId()).add(liveInstructionId);
-                        if(adjacencyList.containsKey(liveInstructionId)){
+                        if (adjacencyList.containsKey(liveInstructionId)) {
                             adjacencyList.get(liveInstructionId).add(phi.getInstructionId());
                         } else {
                             HashSet<Integer> edges = new HashSet<>(Arrays.asList(phi.getInstructionId()));
@@ -179,6 +179,7 @@ public class LiveRangeAnalysis {
         LinkedList<Instruction> phiInstructions = new LinkedList<>();
         allInstructions.addAll(basicBlock.getInstructions());
         basicBlock.reverseInstructions();
+        HashSet<Instruction> deadCodeInstructions = new HashSet<>();
         for (Instruction instruction : basicBlock.getInstructions()) {
             Operation op = instruction.getOperation();
 
@@ -213,6 +214,10 @@ public class LiveRangeAnalysis {
                     liveRangeNumberToResult.put(instructionId, instructionResults.get(instruction));
                 }
             }
+            if (canBeDeadCodeEliminated(op) && !liveRangeSet.contains(instructionId)) {
+                deadCodeInstructions.add(instruction);
+                continue;
+            }
             if (!isPhiInstruction(instruction)) {
                 if (liveRangeSet.contains(instructionId)) {
                     liveRangeSet.remove(instructionId);
@@ -220,7 +225,7 @@ public class LiveRangeAnalysis {
                 for (Integer liveInstructionId : liveRangeSet) {
                     if (adjacencyList.containsKey(instructionId)) {
                         adjacencyList.get(instructionId).add(liveInstructionId);
-                        if(adjacencyList.containsKey(liveInstructionId)){
+                        if (adjacencyList.containsKey(liveInstructionId)) {
                             adjacencyList.get(liveInstructionId).add(instructionId);
                         } else {
                             HashSet<Integer> edges = new HashSet<>(Arrays.asList(instructionId));
@@ -232,6 +237,7 @@ public class LiveRangeAnalysis {
                 addResultToLiveRange(instruction.getOperand2(), liveRangeSet);
             }
         }
+        basicBlock.getInstructions().removeAll(deadCodeInstructions);
         basicBlock.reverseInstructions();
         return phiInstructions;
 
@@ -321,6 +327,10 @@ public class LiveRangeAnalysis {
 
     private boolean canBeInLiveRangeGraph(Operation operation) {
         return !(operation == END || operation == BRA || operation == WRITENL || operation == WRITE);
+    }
+
+    private boolean canBeDeadCodeEliminated(Operation operation) {
+        return !(operation == RET || operation == END || operation == WRITENL || operation == WRITE);
     }
 
 
