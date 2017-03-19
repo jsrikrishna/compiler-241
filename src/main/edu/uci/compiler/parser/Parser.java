@@ -663,7 +663,7 @@ public class Parser {
             // Need to add here, because, last elseBlock returned should link to if-else-join
             elseBlock.addChildrenAndUpdateChildrenTracker(joinBlock);
             // BRA instruction from ELSE Block to JOIN Block
-            addBranchInstruction(elseBlock, joinBlock);
+//            addBranchInstruction(elseBlock, joinBlock);
             insertKillInstructionsForIfStatement(joinBlock, ifKillInstructions, elseKillInstructions);
             insertPhiFunctionForIfStatement(ifThenBlock, elseBlock, joinBlock);
         }
@@ -1061,7 +1061,7 @@ public class Parser {
         Instruction moveInstruction = ig.getInstruction(moveResult.getInstructionId());
         moveInstruction.setBasicBlock(phiBasicBlock);
         BasicBlock.Type basicBlockType = parentBasicBlock.getType();
-        if (basicBlockType == BB_IF_CONDITION || basicBlockType == BB_MAIN) {
+        if (basicBlockType == BB_MAIN) {
             parentBasicBlock.addInstruction(moveInstruction);
         } else {
             parentBasicBlock.addInstructionAtLastButOne(moveInstruction);
