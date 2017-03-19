@@ -1,30 +1,30 @@
-package test.parser;
+package test.edu.uci.compiler.copyPropagation;
 
-import main.edu.uci.compiler.parser.Parser;
 import org.junit.Test;
 
 import java.io.IOException;
 
 import static org.junit.Assert.assertTrue;
 
-/**
- * Created by srikrishna on 2/22/17.
- */
-public class DominatorRelationships {
+import main.edu.uci.compiler.parser.Parser;
+
+
+public class CopyPropagationTest {
     @Test
-    public void testDominanceRelationships() {
+    public void testParser() {
         String resourcePath = "resources/programs";
         boolean noExceptionOccurred = true;
 
         try {
             //To Test one code at a time
-            String fileName = resourcePath + "/test007.txt";
+            String fileName = resourcePath + "/test009.txt";
 //             String fileName = resourcePath + "/big.txt";
-//             String fileName = resourcePath + "/cell.txt";
+//            String fileName = resourcePath + "/cell.txt";
             System.out.println("File name is " + fileName);
-            Parser parser = new Parser(fileName);
-            parser.computation();
-            parser.generateDomTree();
+            Parser parser_cp = new Parser(fileName);
+            parser_cp.computation();
+            parser_cp.doCopyPropagation();
+            parser_cp.printCFG(true, false);
         } catch (IOException ex) {
             System.out.println("Exception is " + ex.getMessage());
             noExceptionOccurred = false;
@@ -32,3 +32,4 @@ public class DominatorRelationships {
         assertTrue(noExceptionOccurred);
     }
 }
+

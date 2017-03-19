@@ -22,7 +22,9 @@ public class BasicBlock {
     List<BasicBlock> parent;
     List<BasicBlock> children;
     HashMap<String, Integer> localTracker; // Local SSA Tracker
-    ArrayList<Function> functionsCalled;
+    ArrayList<Function> functionsCalled; // functions called from basic blocks
+    HashMap<Operation, Instruction> anchor;
+    boolean isRootBasicBlock; // used in dominance relationships
     boolean isVisited;
 
     public BasicBlock(Type type) {
@@ -31,18 +33,32 @@ public class BasicBlock {
         instructions = new LinkedList<>();
         parent = new ArrayList<BasicBlock>();
         children = new ArrayList<BasicBlock>();
+        anchor = null; // Will be set during common subexpression elimination
         localTracker = new HashMap<>();
         functionsCalled = new ArrayList<>();
+        this.isRootBasicBlock = false;
         this.isVisited = false;
         allBasicBlocks.add(this);
         ++numBasicBlocks;
+    }
+
+    public void addInstructionToAnchor(Instruction instruction) {
+        anchor.put(instruction.getOperation(), instruction);
+    }
+
+    public void setAnchor(HashMap<Operation, Instruction> anchor){
+        this.anchor = anchor;
+    }
+
+    public HashMap<Operation, Instruction> getAnchor(){
+        return this.anchor;
     }
 
     public void addInstruction(Instruction instruction) {
         this.instructions.add(instruction);
     }
 
-    public void addInstructionAtStart(Instruction instruction){
+    public void addInstructionAtStart(Instruction instruction) {
         this.instructions.add(0, instruction);
     }
 
@@ -76,10 +92,9 @@ public class BasicBlock {
 
     public void addChildrenAndUpdateChildrenTracker(BasicBlock children) {
         this.children.add(children);
-        children.setLocalTracker(this.getCopyOfVariableTracker());
-//        if(children.getLocalTracker().isEmpty()){
-//
-//        }
+        if(children.getLocalTracker().isEmpty()){
+            children.setLocalTracker(this.getCopyOfVariableTracker());
+        }
     }
 
     public void addParent(BasicBlock parent) {
@@ -126,15 +141,22 @@ public class BasicBlock {
         this.isVisited = true;
     }
 
-    public HashMap<String, Integer> getCopyOfVariableTracker(){
+    public void setIsRootBasicBlock(){
+        this.isRootBasicBlock = true;
+    }
+    public boolean isRootBasicBlock(){
+        return this.isRootBasicBlock;
+    }
+
+    public HashMap<String, Integer> getCopyOfVariableTracker() {
         HashMap<String, Integer> copy = new HashMap<>();
-        for(Map.Entry<String, Integer> entry: this.localTracker.entrySet()){
+        for (Map.Entry<String, Integer> entry : this.localTracker.entrySet()) {
             copy.put(entry.getKey(), entry.getValue());
         }
         return copy;
     }
 
-    public LinkedList<BasicBlock> getListOfAllBasicBlocks(){
+    public LinkedList<BasicBlock> getListOfAllBasicBlocks() {
         return this.allBasicBlocks;
     }
 

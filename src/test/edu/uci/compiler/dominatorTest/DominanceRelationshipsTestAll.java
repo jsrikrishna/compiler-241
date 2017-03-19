@@ -1,4 +1,4 @@
-package test.parser;
+package test.edu.uci.compiler.dominatorTest;
 
 import main.edu.uci.compiler.parser.Parser;
 import org.junit.Test;
@@ -8,9 +8,9 @@ import java.io.IOException;
 import static org.junit.Assert.assertTrue;
 
 /**
- * Created by srikrishna on 2/1/17.
+ * Created by srikrishna on 2/23/17.
  */
-public class ParserTestAll {
+public class DominanceRelationshipsTestAll {
     static int index = 1;
 
     @Test
@@ -24,7 +24,7 @@ public class ParserTestAll {
                 System.out.println("fileName - " + fileName);
                 Parser parser = new Parser(fileName);
                 parser.computation();
-                parser.generateCFG();
+                parser.printDomVCG();
                 noExceptionOccurred = true;
             } catch (IOException ex) {
                 System.out.println("Exception is " + ex.getMessage());

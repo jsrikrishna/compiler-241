@@ -13,9 +13,11 @@ public class Instruction {
     Result operand2;
     Result operand3; // Used for PHI FUNCTIONS
     private int instructionId;
+    private Instruction anchorInstruction;
 
     public Instruction() {
         this.instructionId = numberOfInstructions;
+        anchorInstruction = null;
         ++numberOfInstructions;
     }
 
@@ -59,17 +61,50 @@ public class Instruction {
         this.instructionId = instructionId;
     }
 
+    public Instruction getAnchorInstruction() {
+        return this.anchorInstruction;
+    }
+
+    public void setAnchorInstruction(Instruction anchorInstruction){
+        this.anchorInstruction = anchorInstruction;
+    }
+
+    @Override
+    public boolean equals(Object object){
+        Instruction instruction = (Instruction) object;
+        boolean isSameOperation = this.operation.equals(instruction.getOperation());
+        boolean isSameOperand1 = areSameOperands(operand1, instruction.getOperand1());
+        boolean isSameOperand2 = areSameOperands(operand2, instruction.getOperand2());
+        if(!isSameOperand1 && !isSameOperand2){
+            isSameOperand1 = areSameOperands(operand1, instruction.getOperand2());
+            isSameOperand2 = areSameOperands(operand2, instruction.getOperand1());
+        }
+        boolean isSameOperand3 = areSameOperands(operand3, instruction.getOperand3());
+
+        return isSameOperation && isSameOperand1 && isSameOperand2 && isSameOperand3;
+    }
+
+    private boolean areSameOperands(Result operand, Result targetOperand){
+        if(operand == null && targetOperand == null) return true;
+        if(operand == null || targetOperand == null) return false;
+        return operand.equals(targetOperand);
+    }
+
     @Override
     public String toString() {
         if (this.operation == null) return null;
         if (this.isBinaryOperand()) return forTwoOperands();
         if (this.isUnaryOperand()) return forOneOperand();
         if (this.noOperand()) return forNoOperand();
-        if (this.operation == Operation.MOVE
-                || this.operation == Operation.STORE)
-            return this.operation + " " + this.operand1.toString() + " " + this.operand2.toString();
-        if(this.operation == Operation.PHI){
-            return this.operation + " " + this.operand1.toString() + " "+ this.operand2.toString() + " " + this.operand3.toString();
+        if (this.operation == Operation.MOVE || this.operation == Operation.STORE)
+            return this.operation
+                    + " " + this.operand1.toString()
+                    + " " + this.operand2.toString();
+        if (this.operation == Operation.PHI) {
+            return this.operation
+                    + " " + this.operand1.toString()
+                    + " " + this.operand2.toString()
+                    + " " + this.operand3.toString();
         }
         return "";
     }
@@ -93,6 +128,7 @@ public class Instruction {
 
     private boolean isUnaryOperand() {
         return (this.operation == Operation.BRA
+                || this.operation == Operation.LOAD
                 || this.operation == Operation.RET
                 || this.operation == Operation.PARAM
                 || this.operation == Operation.WRITE);
