@@ -124,6 +124,12 @@ public class InstructionGenerator {
         }
         // Else it is a array variable
         Instruction storeInstruction = generateInstruction(STORE, r2, r1);
+
+        Result arrayVariable = new Result();
+        arrayVariable.setKind(ARRAY_VARIABLE);
+        arrayVariable.setIdentifierName(r1.getIdentifierName());
+        storeInstruction.setArrayVariable(arrayVariable);
+
         return resultForInstruction(storeInstruction);
 
     }
@@ -338,13 +344,13 @@ public class InstructionGenerator {
         return resultForInstruction(phiInstruction);
     }
 
-    public Instruction generateKillInstruction(Result arrayVariable){
-        Instruction killInstruction =  generateInstruction(KILL, null, null);
+    public Instruction generateKillInstruction(Result arrayVariable) {
+        Instruction killInstruction = generateInstruction(KILL, null, null);
         killInstruction.setArrayVariable(arrayVariable);
         return killInstruction;
     }
 
-    public Result generateMoveInstructionForPhi(Result from, Result to){
+    public Result generateMoveInstructionForPhi(Result from, Result to) {
         Instruction moveInstruction = generateInstruction(MOVE, from, to);
         return resultForInstruction(moveInstruction);
     }

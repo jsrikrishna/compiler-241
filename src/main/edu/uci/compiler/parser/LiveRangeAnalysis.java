@@ -182,6 +182,7 @@ public class LiveRangeAnalysis {
         HashSet<Instruction> deadCodeInstructions = new HashSet<>();
         for (Instruction instruction : basicBlock.getInstructions()) {
             Operation op = instruction.getOperation();
+            Integer instructionId = instruction.getInstructionId();
 
             if (isCondBranchInstruction(op)) {
                 Result result = instruction.getOperand1();
@@ -196,7 +197,11 @@ public class LiveRangeAnalysis {
 
             if (isBranchInstruction(op) || isEndInstruction(op)) continue;
 
-            Integer instructionId = instruction.getInstructionId();
+//            if (canBeDeadCodeEliminated(op) && !liveRangeSet.contains(instructionId)) {
+//                System.out.println("Dead Code Elimination for " + instruction);
+//                deadCodeInstructions.add(instruction);
+//                continue;
+//            }
 
             if (isWhileHeaderBlock(basicBlock) && !isVisited(basicBlock)) {
                 basicBlock.setIsVisitedWhileLiveRangeAnalysis();
@@ -213,10 +218,6 @@ public class LiveRangeAnalysis {
                 } else {
                     liveRangeNumberToResult.put(instructionId, instructionResults.get(instruction));
                 }
-            }
-            if (canBeDeadCodeEliminated(op) && !liveRangeSet.contains(instructionId)) {
-                deadCodeInstructions.add(instruction);
-                continue;
             }
             if (!isPhiInstruction(instruction)) {
                 if (liveRangeSet.contains(instructionId)) {

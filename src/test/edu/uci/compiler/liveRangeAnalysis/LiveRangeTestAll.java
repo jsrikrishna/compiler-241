@@ -26,6 +26,8 @@ public class LiveRangeTestAll {
                 lraParser.computation();
                 lraParser.doCopyPropagation();
                 lraParser.doCommonSubExpressionElimination();
+                lraParser.doCommonSubExpressionElimination();
+                lraParser.doCommonSubExpressionElimination();
                 lraParser.printDomVCG();
                 lraParser.printCFG(true, true, false);
                 lraParser.doLiveRangeAnalysis();

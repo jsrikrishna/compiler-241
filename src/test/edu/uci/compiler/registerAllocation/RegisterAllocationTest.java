@@ -18,13 +18,15 @@ public class RegisterAllocationTest {
 
         try {
             //To Test one code at a time
-            String fileName = resourcePath + "/test007.txt";
+            String fileName = resourcePath + "/test026.txt";
 //             String fileName = resourcePath + "/big.txt";
 //            String fileName = resourcePath + "/cell.txt";
             System.out.println("File name is " + fileName);
             Parser ra = new Parser(fileName);
             ra.computation();
             ra.doCopyPropagation();
+            ra.doCommonSubExpressionElimination();
+            ra.doCommonSubExpressionElimination();
             ra.doCommonSubExpressionElimination();
             ra.printDomVCG();
             ra.printCFG(true, true, false);
