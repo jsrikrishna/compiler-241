@@ -103,7 +103,7 @@ public class Parser {
 
         if (currentToken != BEGIN) generateError(BEGIN_NOT_FOUND);
         moveToNextToken();
-        BasicBlock endBasicBlock = statSequence(startBasicBlock, null);
+        BasicBlock endBasicBlock = statSequence(startBasicBlock, null, null);
 
         if (currentToken != END) generateError(END_NOT_FOUND);
         moveToNextToken();
@@ -296,33 +296,36 @@ public class Parser {
         while (currentToken == VAR || currentToken == ARRAY) varDecl(function, function.getFuncBasicBlock());
         if (currentToken != BEGIN) generateError(BEGIN_NOT_FOUND);
         moveToNextToken();
-        BasicBlock finalBlock = statSequence(function.getFuncBasicBlock(), function);
+        BasicBlock finalBlock = statSequence(function.getFuncBasicBlock(), function, null);
         if (currentToken != END) generateError(END_NOT_FOUND);
         moveToNextToken();
     }
 
-    private BasicBlock statSequence(BasicBlock basicBlock, Function function) throws IOException {
-        basicBlock = statement(basicBlock, function);
+    private BasicBlock statSequence(BasicBlock basicBlock,
+                                    Function function,
+                                    List<Instruction> toBeKilled) throws IOException {
+        basicBlock = statement(basicBlock, function, toBeKilled);
         while (currentToken == SEMICOLON) {
             moveToNextToken();
-            basicBlock = statement(basicBlock, function);
+            basicBlock = statement(basicBlock, function, toBeKilled);
         }
         return basicBlock;
     }
 
     private BasicBlock statement(BasicBlock basicBlock,
-                                 Function function) throws IOException {
+                                 Function function,
+                                 List<Instruction> toBeKilled) throws IOException {
 
         if (!(statSeqList.contains(currentToken))) generateError(KEYWORD_EXPECTED);
 
         if (currentToken == IF) {
-            return ifStatement(basicBlock, function);
+            return ifStatement(basicBlock, function, toBeKilled);
         }
         if (currentToken == WHILE) {
-            return whileStatement(basicBlock, function);
+            return whileStatement(basicBlock, function, toBeKilled);
         }
         if (currentToken == LET) {
-            assignment(basicBlock, function);
+            assignment(basicBlock, function, toBeKilled);
         } else if (currentToken == CALL) {
             funcCall(basicBlock);
         } else if (currentToken == RETURN) {
@@ -333,7 +336,8 @@ public class Parser {
     }
 
     private Result assignment(BasicBlock basicBlock,
-                              Function function) throws IOException {
+                              Function function,
+                              List<Instruction> toBeKilled) throws IOException {
         if (currentToken != LET) generateError(ASSIGNMENT_ERROR);
         moveToNextToken();
         Result lhs = designator(basicBlock, function);
@@ -350,6 +354,7 @@ public class Parser {
             Instruction killInstruction = ig.generateKillInstruction(instruction.getArrayVariable());
             killInstruction.setBasicBlock(basicBlock);
             basicBlock.addInstruction(killInstruction);
+            if (toBeKilled != null) toBeKilled.add(killInstruction);
         }
         /*
         Update lhs result with SSA Version
@@ -629,7 +634,8 @@ public class Parser {
     }
 
     private BasicBlock ifStatement(BasicBlock basicBlock,
-                                   Function function) throws IOException {
+                                   Function function,
+                                   List<Instruction> toBeKilled) throws IOException {
         if (currentToken != IF) generateError(IF_STATEMENT_ERROR);
         moveToNextToken();
 
@@ -643,9 +649,11 @@ public class Parser {
 
         BasicBlock elseBlock = null;
         Result fixUpResult = relation(ifConditionBlock, function);
+        List<Instruction> toBeKilledInIfThen = new LinkedList<>();
+        List<Instruction> toBeKilledInElse = new LinkedList<>();
         if (currentToken != THEN) generateError(THEN_STATEMENT_ERROR);
         moveToNextToken();
-        ifThenBlock = statSequence(ifThenBlock, function);
+        ifThenBlock = statSequence(ifThenBlock, function, toBeKilledInIfThen);
 
         BasicBlock joinBlock = new BasicBlock(BB_IF_THEN_JOIN);
         ifThenBlock.addChildrenAndUpdateChildrenTracker(joinBlock);
@@ -665,7 +673,7 @@ public class Parser {
 
             joinBlock.setType(BB_IF_ELSE_JOIN);
 
-            elseBlock = statSequence(elseBlock, function);
+            elseBlock = statSequence(elseBlock, function, toBeKilledInElse);
             // Need to add here, as parent relationships are used in Live Range Analysis
             joinBlock.addParent(elseBlock);
             joinBlock.setRightParent(elseBlock);
@@ -673,6 +681,7 @@ public class Parser {
             elseBlock.addChildrenAndUpdateChildrenTracker(joinBlock);
             // BRA instruction from ELSE Block to JOIN Block
 //            addBranchInstruction(elseBlock, joinBlock);
+            insertKillInstructionsForIfStatement(joinBlock, toBeKilledInIfThen, toBeKilledInElse);
             insertPhiFunctionForIfStatement(ifThenBlock, elseBlock, joinBlock);
         }
 
@@ -685,7 +694,13 @@ public class Parser {
             joinBlock.addParent(ifConditionBlock);
             joinBlock.setRightParent(ifConditionBlock);
             fixUpNegCompareInstruction(fixUpResult, joinBlock);
+            insertKillInstructionsForIfStatement(joinBlock, toBeKilledInIfThen, toBeKilledInElse);
             insertPhiFunctionForIfStatement(ifThenBlock, ifConditionBlock, joinBlock);
+        }
+
+        if (toBeKilled != null) {
+            toBeKilled.addAll(toBeKilledInIfThen);
+            toBeKilled.addAll(toBeKilledInElse);
         }
 
         return joinBlock;
@@ -725,8 +740,28 @@ public class Parser {
         }
     }
 
+    private void insertKillInstructionsForIfStatement(BasicBlock basicBlock,
+                                                      List<Instruction> leftKill,
+                                                      List<Instruction> rightKill) {
+        if (leftKill != null) {
+            for (Instruction kill : leftKill) {
+                Instruction newKill = ig.generateKillInstruction(kill.getArrayVariable());
+                basicBlock.addInstruction(newKill);
+                newKill.setBasicBlock(basicBlock);
+            }
+        }
+        if (rightKill != null) {
+            for (Instruction kill : rightKill) {
+                Instruction newKill = ig.generateKillInstruction(kill.getArrayVariable());
+                basicBlock.addInstruction(newKill);
+                newKill.setBasicBlock(basicBlock);
+            }
+        }
+    }
+
     private BasicBlock whileStatement(BasicBlock basicBlock,
-                                      Function function) throws IOException {
+                                      Function function,
+                                      List<Instruction> toBekilled) throws IOException {
         if (currentToken != WHILE) generateError(WHILE_STATEMENT_ERROR);
         moveToNextToken();
 
@@ -755,7 +790,7 @@ public class Parser {
         whileBodyBlock.addChildrenAndUpdateChildrenTracker(whileConditionJoinBlock);
 
 
-        BasicBlock whileBodyEndBlock = statSequence(whileBodyBlock, function);
+        BasicBlock whileBodyEndBlock = statSequence(whileBodyBlock, function, toBekilled);
         //Go Back to while condition -> adding instruction for that
         if (whileBodyBlock != whileBodyEndBlock) {
             whileBodyEndBlock.addChildrenAndUpdateChildrenTracker(whileConditionJoinBlock);
