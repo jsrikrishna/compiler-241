@@ -332,7 +332,15 @@ public class LiveRangeAnalysis {
     }
 
     private boolean canBeDeadCodeEliminated(Operation operation) {
-        return !(operation == PHI || operation == RET || operation == END || operation == WRITENL || operation == WRITE);
+        return !(operation == PHI
+                || operation == RET
+                || operation == END
+                || operation == WRITENL
+                || operation == WRITE
+                || operation == READ
+                || operation == BRA
+                || operation == LOAD
+                || operation == STORE);
     }
 
 
