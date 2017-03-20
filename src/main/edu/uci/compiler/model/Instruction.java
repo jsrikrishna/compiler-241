@@ -124,6 +124,14 @@ public class Instruction {
 
     @Override
     public String toString() {
+        String str = Integer.toString(this.instructionId);
+        if (this.getRegisterNumber() != null) {
+            str += "(R" + this.getRegisterNumber() + ") ";
+        }
+        return str + ": "+ getStringRepresentation();
+    }
+
+    private String getStringRepresentation() {
         if (this.operation == null) return null;
         if (isKillInstruction()) return forKill();
         if (this.isLoadStore()) return forLoadStore();
@@ -201,7 +209,7 @@ public class Instruction {
     }
 
     private String forKill() {
-        return this.operation.toString() + " " + this.arrayVariable.toString();
+        return this.operation.toString() + " " + this.arrayVariable.getIdentifierName();
     }
 
 

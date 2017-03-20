@@ -103,7 +103,7 @@ public class Parser {
 
         if (currentToken != BEGIN) generateError(BEGIN_NOT_FOUND);
         moveToNextToken();
-        BasicBlock endBasicBlock = statSequence(startBasicBlock, null, null);
+        BasicBlock endBasicBlock = statSequence(startBasicBlock, null);
 
         if (currentToken != END) generateError(END_NOT_FOUND);
         moveToNextToken();
@@ -292,36 +292,33 @@ public class Parser {
         while (currentToken == VAR || currentToken == ARRAY) varDecl(function, function.getFuncBasicBlock());
         if (currentToken != BEGIN) generateError(BEGIN_NOT_FOUND);
         moveToNextToken();
-        BasicBlock finalBlock = statSequence(function.getFuncBasicBlock(), function, null);
+        BasicBlock finalBlock = statSequence(function.getFuncBasicBlock(), function);
         if (currentToken != END) generateError(END_NOT_FOUND);
         moveToNextToken();
     }
 
-    private BasicBlock statSequence(BasicBlock basicBlock,
-                                    Function function,
-                                    List<Instruction> killInstructions) throws IOException {
-        basicBlock = statement(basicBlock, function, killInstructions);
+    private BasicBlock statSequence(BasicBlock basicBlock, Function function) throws IOException {
+        basicBlock = statement(basicBlock, function);
         while (currentToken == SEMICOLON) {
             moveToNextToken();
-            basicBlock = statement(basicBlock, function, killInstructions);
+            basicBlock = statement(basicBlock, function);
         }
         return basicBlock;
     }
 
     private BasicBlock statement(BasicBlock basicBlock,
-                                 Function function,
-                                 List<Instruction> toBeKilledInstructions) throws IOException {
+                                 Function function) throws IOException {
 
         if (!(statSeqList.contains(currentToken))) generateError(KEYWORD_EXPECTED);
 
         if (currentToken == IF) {
-            return ifStatement(basicBlock, function, toBeKilledInstructions);
+            return ifStatement(basicBlock, function);
         }
         if (currentToken == WHILE) {
-            return whileStatement(basicBlock, function, toBeKilledInstructions);
+            return whileStatement(basicBlock, function);
         }
         if (currentToken == LET) {
-            assignment(basicBlock, function, toBeKilledInstructions);
+            assignment(basicBlock, function);
         } else if (currentToken == CALL) {
             funcCall(basicBlock);
         } else if (currentToken == RETURN) {
@@ -332,8 +329,7 @@ public class Parser {
     }
 
     private Result assignment(BasicBlock basicBlock,
-                              Function function,
-                              List<Instruction> killInstructions) throws IOException {
+                              Function function) throws IOException {
         if (currentToken != LET) generateError(ASSIGNMENT_ERROR);
         moveToNextToken();
         Result lhs = designator(basicBlock, function);
@@ -342,8 +338,14 @@ public class Parser {
         Result rhs = expression(basicBlock, function);
         Result assignmentResult = ig.generateInstructionForAssignment(lhs, rhs);
         Instruction instruction = allInstructions.get(assignmentResult.getInstructionId());
-        if (instruction.getOperation() == Operation.STORE && killInstructions != null) {
-            killInstructions.add(instruction);
+        instruction.setBasicBlock(basicBlock);
+        basicBlock.addInstruction(instruction);
+        // If Assignment is a store instruction,
+        // then it will be an array, so insert kill instruction for the array variable represented by lhs
+        if (instruction.getOperation() == Operation.STORE) {
+            Instruction killInstruction = ig.generateKillInstruction(instruction.getArrayVariable());
+            killInstruction.setBasicBlock(basicBlock);
+            basicBlock.addInstruction(killInstruction);
         }
         /*
         Update lhs result with SSA Version
@@ -385,8 +387,6 @@ public class Parser {
                 rhs.setSsaVersion(basicBlockSSAVersion);
             }
         }
-        instruction.setBasicBlock(basicBlock);
-        basicBlock.addInstruction(instruction);
         return lhs;
     }
 
@@ -617,8 +617,7 @@ public class Parser {
     }
 
     private BasicBlock ifStatement(BasicBlock basicBlock,
-                                   Function function,
-                                   List<Instruction> toBeKilledInstructions) throws IOException {
+                                   Function function) throws IOException {
         if (currentToken != IF) generateError(IF_STATEMENT_ERROR);
         moveToNextToken();
 
@@ -632,11 +631,9 @@ public class Parser {
 
         BasicBlock elseBlock = null;
         Result fixUpResult = relation(ifConditionBlock, function);
-        List<Instruction> ifKillInstructions = new LinkedList<>();
-        List<Instruction> elseKillInstructions = new LinkedList<>();
         if (currentToken != THEN) generateError(THEN_STATEMENT_ERROR);
         moveToNextToken();
-        ifThenBlock = statSequence(ifThenBlock, function, ifKillInstructions);
+        ifThenBlock = statSequence(ifThenBlock, function);
 
         BasicBlock joinBlock = new BasicBlock(BB_IF_THEN_JOIN);
         ifThenBlock.addChildrenAndUpdateChildrenTracker(joinBlock);
@@ -656,7 +653,7 @@ public class Parser {
 
             joinBlock.setType(BB_IF_ELSE_JOIN);
 
-            elseBlock = statSequence(elseBlock, function, elseKillInstructions);
+            elseBlock = statSequence(elseBlock, function);
             // Need to add here, as parent relationships are used in Live Range Analysis
             joinBlock.addParent(elseBlock);
             joinBlock.setRightParent(elseBlock);
@@ -664,7 +661,6 @@ public class Parser {
             elseBlock.addChildrenAndUpdateChildrenTracker(joinBlock);
             // BRA instruction from ELSE Block to JOIN Block
 //            addBranchInstruction(elseBlock, joinBlock);
-            insertKillInstructionsForIfStatement(joinBlock, ifKillInstructions, elseKillInstructions);
             insertPhiFunctionForIfStatement(ifThenBlock, elseBlock, joinBlock);
         }
 
@@ -677,13 +673,7 @@ public class Parser {
             joinBlock.addParent(ifConditionBlock);
             joinBlock.setRightParent(ifConditionBlock);
             fixUpNegCompareInstruction(fixUpResult, joinBlock);
-            insertKillInstructionsForIfStatement(joinBlock, ifKillInstructions, null);
             insertPhiFunctionForIfStatement(ifThenBlock, ifConditionBlock, joinBlock);
-        }
-
-        if (toBeKilledInstructions != null) {
-            toBeKilledInstructions.addAll(ifKillInstructions);
-            toBeKilledInstructions.addAll(elseKillInstructions);
         }
 
         return joinBlock;
@@ -724,8 +714,7 @@ public class Parser {
     }
 
     private BasicBlock whileStatement(BasicBlock basicBlock,
-                                      Function function,
-                                      List<Instruction> toBeKilledInstructions) throws IOException {
+                                      Function function) throws IOException {
         if (currentToken != WHILE) generateError(WHILE_STATEMENT_ERROR);
         moveToNextToken();
 
@@ -754,7 +743,7 @@ public class Parser {
         whileBodyBlock.addChildrenAndUpdateChildrenTracker(whileConditionJoinBlock);
 
 
-        BasicBlock whileBodyEndBlock = statSequence(whileBodyBlock, function, toBeKilledInstructions);
+        BasicBlock whileBodyEndBlock = statSequence(whileBodyBlock, function);
         //Go Back to while condition -> adding instruction for that
         if (whileBodyBlock != whileBodyEndBlock) {
             whileBodyEndBlock.addChildrenAndUpdateChildrenTracker(whileConditionJoinBlock);
@@ -839,24 +828,6 @@ public class Parser {
         }
         putRemainingTrackerEntries(leftTracker, rightTracker, joinTracker);
         joinBlock.setLocalTracker(joinTracker);
-    }
-
-    private void insertKillInstructionsForIfStatement(BasicBlock basicBlock,
-                                                      List<Instruction> leftKill,
-                                                      List<Instruction> rightKill) {
-        Set<Result> killResults = new HashSet<>();
-        if (leftKill != null) {
-            for (Instruction kill : leftKill) killResults.add(kill.getArrayVariable());
-        }
-        if (rightKill != null) {
-            for (Instruction kill : rightKill) killResults.add(kill.getArrayVariable());
-        }
-        // Generate Kill Instructions
-        for (Result killResult : killResults) {
-            Instruction killInstruction = ig.generateKillInstruction(killResult);
-            killInstruction.setBasicBlock(basicBlock);
-            basicBlock.addInstructionAtStart(killInstruction);
-        }
     }
 
     private void insertPhiFunctionForWhileStatement(BasicBlock parentBasicBlock,
@@ -1016,6 +987,10 @@ public class Parser {
             Result phiOperand = phi.getOperand3();
             Result leftOperand = phi.getOperand1();
             Result rightOperand = phi.getOperand2();
+            if(leftOperand.equals(rightOperand)) {
+                phiBasicBlock.removeInstruction(phi);
+                continue;
+            }
             Integer phiRegisterNumber = registerForResults.get(phi.getInstructionId());
             BasicBlock leftParent = null, rightParent = null;
             if (phiBasicBlock.getType() == BB_IF_ELSE_JOIN || phiBasicBlock.getType() == BB_IF_THEN_JOIN) {
@@ -1027,10 +1002,10 @@ public class Parser {
                 List<BasicBlock> parentBlocks = phiBasicBlock.getParents();
                 rightParent = lra.getWhileBody(parentBlocks, leftParent);
             }
-            if(leftOperand != null){
+            if (leftOperand != null) {
                 checkAndAddMoveInstruction(leftOperand, phiOperand, phiRegisterNumber, phiBasicBlock, leftParent);
             }
-            if(rightOperand != null){
+            if (rightOperand != null) {
                 checkAndAddMoveInstruction(rightOperand, phiOperand, phiRegisterNumber, phiBasicBlock, rightParent);
             }
             phiBasicBlock.removeInstruction(phi);
@@ -1041,8 +1016,8 @@ public class Parser {
                                             Result phiOperand,
                                             Integer phiRegisterNumber,
                                             BasicBlock phiBasicBlock,
-                                            BasicBlock parent){
-        if(operand != null){
+                                            BasicBlock parent) {
+        if (operand != null) {
             if (operand.getKind() == CONSTANT) {
                 addMoveInstruction(phiBasicBlock, parent, phiOperand, operand);
             } else {
