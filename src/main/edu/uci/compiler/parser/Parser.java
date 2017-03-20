@@ -26,6 +26,7 @@ public class Parser {
     private Set<DominatorBlock> allRootDominatorBlocks;
     private HashMap<BasicBlock, BasicBlock> allDomParents;
     private Set<BasicBlock> endBasicBlocks;
+    private ArrayList<Function> declaredFunctions;
     private HashMap<Instruction, Result> instructionResults;
     private HashMap<Integer, Instruction> allInstructions;
     private LinkedList<Instruction> phiInstructions;
@@ -49,6 +50,7 @@ public class Parser {
         phiInstructions = new LinkedList<>();
         registerForResults = new HashMap<>();
         allDomParents = new HashMap<>();
+        declaredFunctions = new ArrayList<>();
         scanner = new Scanner(fileName);
         currentToken = scanner.getToken();
         ig = new InstructionGenerator(instructionResults, allInstructions);
@@ -127,13 +129,21 @@ public class Parser {
 
     public void printCFG(boolean isCP, boolean isCSE, boolean isPhiRemoved) {
         if (isPhiRemoved) {
-            cfg.writeToCFGAfterPhiRemoval(fileName,
+            cfg.writeToCFGAfterPhiRemoval(
+                    fileName,
                     cfg.getStartBasicBlock(),
                     startBasicBlock.getListOfAllBasicBlocks(),
-                    registerForResults);
+                    registerForResults,
+                    declaredFunctions);
             return;
         }
-        cfg.writeToCFGFile(fileName, isCP, isCSE, cfg.getStartBasicBlock(), startBasicBlock.getListOfAllBasicBlocks());
+        cfg.writeToCFGFile(
+                fileName,
+                isCP,
+                isCSE,
+                cfg.getStartBasicBlock(),
+                startBasicBlock.getListOfAllBasicBlocks(),
+                declaredFunctions);
     }
 
     public void printNumberOfInstructions() {
@@ -237,6 +247,7 @@ public class Parser {
             if (currentToken == IDENTIFIER) {
                 String identifier = scanner.getCurrentIdentifier();
                 Function function = new Function(identifier);
+                this.declaredFunctions.add(function);
                 tracker.addFunction(identifier, function);
                 moveToNextToken();
                 formalParam(function); // formalParam, handles of moving to next token
