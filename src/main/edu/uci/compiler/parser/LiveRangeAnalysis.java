@@ -197,18 +197,19 @@ public class LiveRangeAnalysis {
 
             if (isBranchInstruction(op) || isEndInstruction(op)) continue;
 
-//            if (canBeDeadCodeEliminated(op) && !liveRangeSet.contains(instructionId)) {
-//                System.out.println("Dead Code Elimination for " + instruction);
-//                deadCodeInstructions.add(instruction);
-//                continue;
-//            }
-
             if (isWhileHeaderBlock(basicBlock) && !isVisited(basicBlock)) {
                 basicBlock.setIsVisitedWhileLiveRangeAnalysis();
             }
             if (isPhiInstruction(instruction)) {
                 phiInstructions.add(instruction);
             }
+
+//            if (canBeDeadCodeEliminated(op) && !liveRangeSet.contains(instructionId)) {
+//                System.out.println("Dead Code Elimination for " + instruction);
+//                deadCodeInstructions.add(instruction);
+//                continue;
+//            }
+
             if (canBeInLiveRangeGraph(op)) {
                 if (!adjacencyList.containsKey(instructionId)) {
                     adjacencyList.put(instructionId, new HashSet<>());
@@ -331,7 +332,7 @@ public class LiveRangeAnalysis {
     }
 
     private boolean canBeDeadCodeEliminated(Operation operation) {
-        return !(operation == RET || operation == END || operation == WRITENL || operation == WRITE);
+        return !(operation == PHI || operation == RET || operation == END || operation == WRITENL || operation == WRITE);
     }
 
 

@@ -26,8 +26,6 @@ public class RegisterAllocationTest {
             ra.computation();
             ra.doCopyPropagation();
             ra.doCommonSubExpressionElimination();
-            ra.doCommonSubExpressionElimination();
-            ra.doCommonSubExpressionElimination();
             ra.printDomVCG();
             ra.printCFG(true, true, false);
             ra.doLiveRangeAnalysis();

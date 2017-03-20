@@ -987,6 +987,10 @@ public class Parser {
             Result phiOperand = phi.getOperand3();
             Result leftOperand = phi.getOperand1();
             Result rightOperand = phi.getOperand2();
+            if(leftOperand.equals(rightOperand)) {
+                phiBasicBlock.removeInstruction(phi);
+                continue;
+            }
             Integer phiRegisterNumber = registerForResults.get(phi.getInstructionId());
             BasicBlock leftParent = null, rightParent = null;
             if (phiBasicBlock.getType() == BB_IF_ELSE_JOIN || phiBasicBlock.getType() == BB_IF_THEN_JOIN) {
