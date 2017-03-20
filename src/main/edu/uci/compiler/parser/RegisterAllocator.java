@@ -45,7 +45,7 @@ public class RegisterAllocator {
 //        preProcessAdjacencyList();
         clusterPhiInstructions();
         colorInterferenceGraph();
-        generateClusteredGraph(fileName);
+        generateColoredGraph(fileName);
         int maxRegisterNumber = 0;
         for (Map.Entry<Integer, Integer> entry : registerForResults.entrySet()) {
             if (entry.getValue() > maxRegisterNumber) {
@@ -55,10 +55,10 @@ public class RegisterAllocator {
         System.out.println("Total Number of Registers needed are " + maxRegisterNumber);
     }
 
-    private void generateClusteredGraph(String fileName) {
+    private void generateColoredGraph(String fileName) {
         List<String> adjListStrictGraph =
                 interferenceGraph.writeAdjListWithCluster(getClusterResults(), registerForResults);
-        cfg.generateFlow(fileName, adjListStrictGraph, "cluster");
+        cfg.generateFlow(fileName, adjListStrictGraph, "color");
     }
 
     private void preProcessAdjacencyList() {
