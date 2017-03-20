@@ -253,9 +253,11 @@ public class Parser {
     private void formalParam(Function function) throws IOException {
         if (currentToken == OPENPAREN) {
             moveToNextToken();
+            int number_of_paramers = 0;
             if (currentToken == IDENTIFIER) {
                 //TODO: need to store the variable at common place - Done i guess, but still keeping for validate check
                 addFunctionParameters(function);
+                number_of_paramers++;
                 moveToNextToken();
                 while (currentToken == COMMA) {
                     moveToNextToken();
@@ -263,9 +265,11 @@ public class Parser {
                     //TODO: need to store the variable at common place -
                     //TODO: Done i guess, but still keeping for validate check
                     addFunctionParameters(function);
+                    number_of_paramers++;
                     moveToNextToken();
                 }
             }
+
             if (currentToken != CLOSEPAREN) generateError(FORMAL_PARAM_DECL_ERROR);
             moveToNextToken();
         }
@@ -570,16 +574,24 @@ public class Parser {
                             param = expression(basicBlock, function);
                             parameters.add(param);
                         }
-                        ArrayList<Instruction> instructions = ig.generateInstructionForParams(parameters);
-                        for (Instruction instruction : instructions) {
-                            instruction.setBasicBlock(basicBlock);
-                            basicBlock.addInstruction(instruction);
-                        }
+//                        ArrayList<Instruction> instructions = ig.generateInstructionForParams(parameters);
+//                        for (Instruction instruction : instructions) {
+//                            instruction.setBasicBlock(basicBlock);
+//                            basicBlock.addInstruction(instruction);
+//                        }
                     }
                     if (currentToken != CLOSEPAREN) generateError(CLOSE_PAREN_NOT_FOUND);
                     moveToNextToken();
                 }
-                res = ig.generateInstructionForFunctionCall(parameters.size(), basicBlock.getId());
+                if (parameters.size() != function.getFuncParameters().size()) {
+                    Integer expected = function.getFuncParameters().size();
+                    Integer got = parameters.size();
+                    String funcName = function.getFuncName();
+                    System.err.println("Function parameters does not match for - " + function.getFuncName());
+                    System.err.println("Expected " + expected + " parameters for " + funcName + " but got " + got);
+                    System.exit(103);
+                }
+                res = ig.generateInstructionForFunctionCall(parameters.size(), function.getFuncBasicBlock().getId());
                 Instruction funcCallInstruction = ig.getInstruction(res.getInstructionId());
                 funcCallInstruction.setBasicBlock(basicBlock);
                 basicBlock.addInstruction(funcCallInstruction);
@@ -987,7 +999,7 @@ public class Parser {
             Result phiOperand = phi.getOperand3();
             Result leftOperand = phi.getOperand1();
             Result rightOperand = phi.getOperand2();
-            if(leftOperand.equals(rightOperand)) {
+            if (leftOperand.equals(rightOperand)) {
                 phiBasicBlock.removeInstruction(phi);
                 continue;
             }

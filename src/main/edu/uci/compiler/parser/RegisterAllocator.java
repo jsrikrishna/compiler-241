@@ -46,6 +46,13 @@ public class RegisterAllocator {
         clusterPhiInstructions();
         colorInterferenceGraph();
         generateClusteredGraph(fileName);
+        int maxRegisterNumber = 0;
+        for (Map.Entry<Integer, Integer> entry : registerForResults.entrySet()) {
+            if (entry.getValue() > maxRegisterNumber) {
+                maxRegisterNumber = entry.getValue();
+            }
+        }
+        System.out.println("Total Number of Registers needed are " + maxRegisterNumber);
     }
 
     private void generateClusteredGraph(String fileName) {
@@ -354,7 +361,7 @@ public class RegisterAllocator {
             mapResultToRegister(operand1);
             mapResultToRegister(operand2);
             mapResultToRegister(operand3);
-            if(registerForResults.containsKey(instructionId)){
+            if (registerForResults.containsKey(instructionId)) {
                 instruction.setRegisterNumber(registerForResults.get(instructionId));
             }
         }
