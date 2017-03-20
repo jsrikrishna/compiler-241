@@ -374,6 +374,10 @@ public class Parser {
         TODO: Q - Does array as well have Tracker ?
          */
         if (lhs.getKind() == VARIABLE) {
+            if (lhs.getSsaVersion() == null || lhs.getSsaVersion() == -1) {
+                System.err.println("Variable " + lhs.getIdentifierName() + " must declared before being used");
+                System.exit(103);
+            }
             tracker.updateSSAForVariable(lhs.getIdentifierName(), instruction.getInstructionId());
             lhs.setSsaVersion(instruction.getInstructionId());
             // Keep a Copy in Basic Block also, so that it can be used while generating Phi Functions
@@ -394,6 +398,10 @@ public class Parser {
         Update rhs result with SSA Version
          */
         if (rhs.getKind() == VARIABLE) {
+            if (rhs.getSsaVersion() == null || rhs.getSsaVersion() == -1) {
+                System.err.println("Variable " + rhs.getIdentifierName() + " must declared before being used");
+                System.exit(103);
+            }
             String identifier = rhs.getIdentifierName();
             // I may get Basic Block correct all the time,
             // so i can take the ssa from Basic Block all the time instead of checking for func == null
@@ -498,6 +506,16 @@ public class Parser {
             Token prevToken = currentToken;
             moveToNextToken();
             Result rhs = term(basicBlock, function);
+            System.out.println("Expression lhs " + lhs);
+            System.out.println("Expression rhs " + rhs);
+            if (isVariableNotDeclared(lhs)) {
+                System.err.println("Variable " + lhs.getIdentifierName() + " must declared before being used");
+                System.exit(103);
+            }
+            if (isVariableNotDeclared(rhs)) {
+                System.err.println("Variable " + rhs.getIdentifierName() + " must declared before being used");
+                System.exit(103);
+            }
             lhs = ig.computeExpression(prevToken, lhs, rhs);
             if (lhs.getKind() == INSTRUCTION) {
                 Instruction lhsInstruction = ig.getInstruction(lhs.getInstructionId());
@@ -515,6 +533,14 @@ public class Parser {
             Token prevToken = currentToken;
             moveToNextToken();
             Result rhs = factor(basicBlock, function);
+            if (isVariableNotDeclared(lhs)) {
+                System.err.println("Variable " + lhs.getIdentifierName() + " must declared before being used");
+                System.exit(103);
+            }
+            if (isVariableNotDeclared(rhs)) {
+                System.err.println("Variable " + rhs.getIdentifierName() + " must declared before being used");
+                System.exit(103);
+            }
             lhs = ig.computeExpression(prevToken, lhs, rhs);
             if (lhs.getKind() == INSTRUCTION) {
                 Instruction lhsInstruction = ig.getInstruction(lhs.getInstructionId());
@@ -1100,6 +1126,10 @@ public class Parser {
             parentBasicBlock.addInstructionAtLastButOne(moveInstruction);
         }
 
+    }
+
+    private boolean isVariableNotDeclared(Result result) {
+        return result.getKind() == VARIABLE && (result.getSsaVersion() == null || result.getSsaVersion() == -1);
     }
 
     private void generateError(ErrorMessage message) {
