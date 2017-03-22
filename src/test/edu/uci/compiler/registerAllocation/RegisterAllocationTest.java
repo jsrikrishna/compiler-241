@@ -18,8 +18,8 @@ public class RegisterAllocationTest {
 
         try {
             //To Test one code at a time
-            String fileName = resourcePath + "/test002.txt";
-//             String fileName = resourcePath + "/big.txt";
+//            String fileName = resourcePath + "/test002.txt";
+             String fileName = resourcePath + "/big.txt";
 //            String fileName = resourcePath + "/cell.txt";
 //            String fileName = resourcePath + "/new.txt";
             System.out.println("File name is " + fileName);

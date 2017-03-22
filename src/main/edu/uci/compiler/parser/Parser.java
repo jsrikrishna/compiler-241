@@ -506,8 +506,6 @@ public class Parser {
             Token prevToken = currentToken;
             moveToNextToken();
             Result rhs = term(basicBlock, function);
-            System.out.println("Expression lhs " + lhs);
-            System.out.println("Expression rhs " + rhs);
             if (isVariableNotDeclared(lhs)) {
                 System.err.println("Variable " + lhs.getIdentifierName() + " must declared before being used");
                 System.exit(103);
