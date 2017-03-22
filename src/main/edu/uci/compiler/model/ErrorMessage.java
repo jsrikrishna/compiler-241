@@ -37,7 +37,12 @@ public enum ErrorMessage {
     RELATION_OP_NOT_FOUND("Expected Relation Operation to be present"),
     ARRAY_DIMENSION_MISMATCH("Error in specifying array dimensions"),
 
-    NOT_ABLE_TO_LINK_NEG_INSTR("Not able to link branch instructions");
+    NOT_ABLE_TO_LINK_NEG_INSTR("Not able to link branch instructions"),
+    OPCODE_ERROR("Opcode must be with in range"),
+    REGISTER_NOT_IN_RANGE("Register not in range"),
+    LITERAL_NOT_IN_RANGE("Literal is not in range"),
+    ABSOLUTE_NOT_IN_RANGE ("Absolute is not in range"),
+    WRONG_FIX_UP_LOCATION("Wrong Fix Up Location");
 
     private String errorMessage;
     private ErrorMessage(String errorMessage){
