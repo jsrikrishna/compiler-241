@@ -120,11 +120,11 @@ public class Parser {
         this.endBasicBlocks.add(endBasicBlock);
 
         domTree.generateDomRelationsForProgram();
-        cfg.printParentsForProgram(fileName);
+//        cfg.printParentsForProgram(fileName);
     }
 
-    public void doCopyPropagation() {
-        cp.propagateCopiesForProgram();
+    public void doCopyPropagation(boolean doBranchFolding) {
+        cp.propagateCopiesForProgram(doBranchFolding);
     }
 
     public void printCFG(boolean isCP, boolean isCSE, boolean isPhiRemoved) {
@@ -299,8 +299,11 @@ public class Parser {
             tracker.updateSSAForVariable(identifier, ssaVersion);
             function.getFuncBasicBlock().updateSSAVersion(identifier, ssaVersion);
         }
+        Result paramResult = new Result();
+        paramResult.setKind(PARAMETER);
+        paramResult.setIdentifierName(identifier);
         function.updateSSAVariable(identifier, ssaVersion);
-        function.setFuncParameter(identifier);
+        function.setFuncParameter(paramResult);
     }
 
     private void funcBody(Function function) throws IOException {
@@ -374,9 +377,19 @@ public class Parser {
         TODO: Q - Does array as well have Tracker ?
          */
         if (lhs.getKind() == VARIABLE) {
-            if (lhs.getSsaVersion() == null || lhs.getSsaVersion() == -1) {
-                System.err.println("Variable " + lhs.getIdentifierName() + " must declared before being used");
-                System.exit(103);
+            if (function != null) {
+                Result paramResult = new Result();
+                paramResult.setKind(PARAMETER);
+                paramResult.setIdentifierName(lhs.getIdentifierName());
+                if (!function.getFuncParameters().contains(paramResult) && !function.isLocalVariable(lhs.getIdentifierName())) {
+                    System.err.println("Variables in function '" + lhs.getIdentifierName() + "' must declared before being used");
+                    System.exit(103);
+                }
+            } else {
+                if (lhs.getSsaVersion() == null || lhs.getSsaVersion() == -1) {
+                    System.err.println("Variable " + lhs.getIdentifierName() + " must declared before being used");
+                    System.exit(103);
+                }
             }
             tracker.updateSSAForVariable(lhs.getIdentifierName(), instruction.getInstructionId());
             lhs.setSsaVersion(instruction.getInstructionId());
@@ -398,10 +411,24 @@ public class Parser {
         Update rhs result with SSA Version
          */
         if (rhs.getKind() == VARIABLE) {
-            if (rhs.getSsaVersion() == null || rhs.getSsaVersion() == -1) {
-                System.err.println("Variable " + rhs.getIdentifierName() + " must declared before being used");
-                System.exit(103);
+
+            if (function != null) {
+                String identifierName = rhs.getIdentifierName();
+                Result paramResult = new Result();
+                paramResult.setKind(PARAMETER);
+                paramResult.setIdentifierName(identifierName);
+                if (!function.getFuncParameters().contains(paramResult) && !function.isLocalVariable(identifierName)) {
+                    System.err.println("Variables in function " + rhs.getIdentifierName() + " must declared before being used");
+                    System.exit(103);
+                }
+
+            } else {
+                if (rhs.getSsaVersion() == null || rhs.getSsaVersion() == -1) {
+                    System.err.println("Variable " + rhs.getIdentifierName() + " must declared before being used");
+                    System.exit(103);
+                }
             }
+
             String identifier = rhs.getIdentifierName();
             // I may get Basic Block correct all the time,
             // so i can take the ssa from Basic Block all the time instead of checking for func == null
@@ -627,7 +654,7 @@ public class Parser {
                     Integer expected = function.getFuncParameters().size();
                     Integer got = parameters.size();
                     String funcName = function.getFuncName();
-                    System.err.println("Function parameters does not match for - " + function.getFuncName());
+                    System.err.println("Function parameters does not match for - '" + function.getFuncName() + "'");
                     System.err.println("Expected " + expected + " parameters for " + funcName + " but got " + got);
                     System.exit(103);
                 }

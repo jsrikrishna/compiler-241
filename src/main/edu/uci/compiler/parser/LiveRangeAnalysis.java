@@ -204,11 +204,11 @@ public class LiveRangeAnalysis {
                 phiInstructions.add(instruction);
             }
 
-//            if (canBeDeadCodeEliminated(op) && !liveRangeSet.contains(instructionId)) {
-//                System.out.println("Dead Code Elimination for " + instruction);
-//                deadCodeInstructions.add(instruction);
-//                continue;
-//            }
+            if (canBeDeadCodeEliminated(op) && !liveRangeSet.contains(instructionId)) {
+                System.out.println("Dead Code Elimination for " + instruction);
+                deadCodeInstructions.add(instruction);
+                continue;
+            }
 
             if (canBeInLiveRangeGraph(op)) {
                 if (!adjacencyList.containsKey(instructionId)) {
@@ -338,9 +338,9 @@ public class LiveRangeAnalysis {
                 || operation == WRITENL
                 || operation == WRITE
                 || operation == READ
-                || operation == BRA
-                || operation == LOAD
-                || operation == STORE);
+                || operation == BRA);
+//                || operation == LOAD
+//                || operation == STORE);
     }
 
 

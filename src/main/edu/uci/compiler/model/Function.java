@@ -12,7 +12,7 @@ public class Function {
     private Integer functionId;
     private HashMap<String, Integer> localSSATrackerForVariables;
     private HashMap<String, ArrayList<Integer>> localArrayVariables;
-    private ArrayList<String> funcParameters;
+    private ArrayList<Result> funcParameters;
     private BasicBlock funcBasicBlock;
     private boolean isVisited; // This member is for printing the basic blocks and functions
     private boolean isVisitedAfterPhiRemoval;
@@ -39,6 +39,10 @@ public class Function {
     public Integer getSSAForVariable(String identifier){
         return this.localSSATrackerForVariables.get(identifier);
     }
+
+    public boolean isLocalVariable(String identifier){
+        return this.localSSATrackerForVariables.containsKey(identifier);
+    }
     public void addLocalArrayVariable(String arrayIdentifier, ArrayList<Integer> dimensions){
         this.localArrayVariables.put(arrayIdentifier, dimensions);
     }
@@ -49,13 +53,13 @@ public class Function {
         return this.localArrayVariables.get(arrayIdentifier);
     }
 
-    public void setFuncParameter(String identifier){
-        this.funcParameters.add(identifier);
+    public void setFuncParameter(Result parameter){
+        this.funcParameters.add(parameter);
     }
-    public void setFuncParameters(ArrayList<String> funcParameters){
+    public void setFuncParameters(ArrayList<Result> funcParameters){
         this.funcParameters = funcParameters;
     }
-    public ArrayList<String> getFuncParameters(){
+    public ArrayList<Result> getFuncParameters(){
         return this.funcParameters;
     }
     public BasicBlock getFuncBasicBlock(){

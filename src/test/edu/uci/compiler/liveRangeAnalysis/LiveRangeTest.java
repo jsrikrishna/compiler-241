@@ -24,7 +24,7 @@ public class LiveRangeTest {
             System.out.println("File name is " + fileName);
             Parser lraParser = new Parser(fileName);
             lraParser.computation();
-            lraParser.doCopyPropagation();
+            lraParser.doCopyPropagation(false);
             lraParser.doCommonSubExpressionElimination();
             lraParser.printDomVCG();
             lraParser.printCFG(true, true, false);

@@ -17,6 +17,8 @@ public class Instruction {
     private Instruction anchorInstruction;
     private Integer registerNumber;
     private BasicBlock basicBlock;
+    private Instruction prevInstruction;
+    private Instruction nextInstruction;
 
     public Instruction() {
         this.instructionId = numberOfInstructions;
@@ -25,6 +27,8 @@ public class Instruction {
         operand2 = null;
         operand3 = null;
         arrayVariable = null;
+        prevInstruction = null;
+        nextInstruction = null;
         ++numberOfInstructions;
     }
 
@@ -98,6 +102,21 @@ public class Instruction {
 
     public Integer getRegisterNumber() {
         return this.registerNumber;
+    }
+
+    public void setNextInstruction(Instruction instruction){
+        this.nextInstruction = instruction;
+    }
+
+    public void setPrevInstruction(Instruction instruction){
+        this.prevInstruction = instruction;
+    }
+
+    public Instruction getPrevInstruction(){
+        return this.prevInstruction;
+    }
+    public Instruction getNextInstruction(){
+        return this.nextInstruction;
     }
 
     @Override

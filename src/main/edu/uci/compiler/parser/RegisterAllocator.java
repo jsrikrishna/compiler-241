@@ -149,7 +149,10 @@ public class RegisterAllocator {
                 }
             }
         }
+        System.out.println("Cluster Instructions Before Union/Find " + clusterResults);
         updateAdjacencyList();
+        System.out.println("Cluster Instructions After Union/Find " + clusterResults);
+        System.out.println();
     }
 
     private void checkAndAddToCluster(Result phiOperandResult, List<Integer> cluster) {

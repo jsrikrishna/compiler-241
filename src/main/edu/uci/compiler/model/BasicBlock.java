@@ -30,6 +30,7 @@ public class BasicBlock {
     boolean isVisitedWhileLiveRangeAnalysis;
     BasicBlock leftParent; // This will be used only for if join blocks
     BasicBlock rightParent; // This will be used only if join blocks
+    public static HashSet<Integer> removedBasicBlocks = new HashSet<>();
 
     public BasicBlock(Type type) {
         id = numBasicBlocks;
@@ -65,7 +66,7 @@ public class BasicBlock {
     }
 
     public void addInstructionAtLastButOne(Instruction instruction) {
-        if(instructions.size() >= 1){
+        if (instructions.size() >= 1) {
             this.instructions.add(instructions.size() - 1, instruction);
         } else {
             this.instructions.add(instruction);
@@ -122,6 +123,55 @@ public class BasicBlock {
 
     public void removeChildren(BasicBlock basicBlock) {
         if (this.children.contains(basicBlock)) this.children.remove(basicBlock);
+    }
+
+    public void removeChildrenWithId(Integer basicBlockId) {
+        Iterator iterator = this.getChildren().iterator();
+        while (iterator.hasNext()) {
+            BasicBlock basicBlock = (BasicBlock) iterator.next();
+            if (basicBlock.getId() == basicBlockId) {
+                iterator.remove();
+                removedBasicBlocks.add(basicBlock.getId());
+                break;
+            }
+        }
+        Iterator allBasicBlocksIterator = this.getListOfAllBasicBlocks().iterator();
+        while (allBasicBlocksIterator.hasNext()) {
+            BasicBlock basicBlock = (BasicBlock) allBasicBlocksIterator.next();
+            if (basicBlock.getId() == basicBlockId) {
+                allBasicBlocksIterator.remove();
+                removedBasicBlocks.add(basicBlock.getId());
+                break;
+            }
+        }
+
+    }
+
+    public void removeChildrenWithoutId(Integer basicBlockId) {
+        Iterator iterator = this.getChildren().iterator();
+        Integer toBeRemoved = null;
+        while (iterator.hasNext()) {
+            BasicBlock basicBlock = (BasicBlock) iterator.next();
+            if (basicBlock.getId() != basicBlockId) {
+                toBeRemoved = basicBlock.getId();
+                removedBasicBlocks.add(toBeRemoved);
+                iterator.remove();
+                break;
+            }
+        }
+
+        if (toBeRemoved != null) {
+            Iterator allBasicBlocksIterator = this.getListOfAllBasicBlocks().iterator();
+            while (allBasicBlocksIterator.hasNext()) {
+                BasicBlock basicBlock = (BasicBlock) allBasicBlocksIterator.next();
+                if (basicBlock.getId() == toBeRemoved) {
+                    removedBasicBlocks.add(toBeRemoved);
+                    allBasicBlocksIterator.remove();
+                    break;
+                }
+            }
+        }
+
     }
 
     public void addParent(BasicBlock parent) {

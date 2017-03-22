@@ -71,6 +71,11 @@ public class InstructionGenerator {
         instruction.setOperation(operation);
         instruction.setOperand1(r1);
         instruction.setOperand2(r2);
+        Instruction prev = instructions.get(instruction.getInstructionId() - 1);
+        if(prev != null){
+            prev.setNextInstruction(instruction);
+            instruction.setPrevInstruction(prev);
+        }
         instructions.put(instruction.getInstructionId(), instruction);
         return instruction;
     }
