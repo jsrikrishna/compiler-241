@@ -48,16 +48,9 @@ public class Parser {
         ig = new InstructionGenerator(instructionResults, allInstructions);
         cfg = new ControlFlowGraph(this.endBasicBlocks);
         tracker = new Tracker();
-<<<<<<< Updated upstream
         domTree = new DominatorTree(allRootDominatorBlocks, endBasicBlocks);
 //        ltDomTree = new LTDominatorTree(startBasicBlock);
         cp = new CopyPropagator(allRootDominatorBlocks);
-=======
-        domTree = new DominatorTree(allRootDominatorBlocks, endBasicBlocks, allDomParents);
-        cp = new CopyPropagator(allRootDominatorBlocks, ig, instructionResults);
-//        ltDomTree = new LTDominatorTree(startBasicBlock);
-
->>>>>>> Stashed changes
         cse = new CommonSubExpElimination(allRootDominatorBlocks, instructionResults, allInstructions);
         lra = new LiveRangeAnalysis(this.endBasicBlocks);
 
@@ -119,6 +112,8 @@ public class Parser {
         domTree.generateDomRelationsForProgram();
 //        ltDomTree.getDominatorTree();
 //        cfg.printParentsForProgram(fileName);
+//        ltDomTree.getDominatorTree();
+
     }
 
     public void doCopyPropagation() {
