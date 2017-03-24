@@ -19,6 +19,7 @@ public class Instruction {
     private BasicBlock basicBlock;
     private Instruction prevInstruction;
     private Instruction nextInstruction;
+    private Instruction forwardAnchorInstruction;
 
     public Instruction() {
         this.instructionId = numberOfInstructions;
@@ -29,6 +30,7 @@ public class Instruction {
         arrayVariable = null;
         prevInstruction = null;
         nextInstruction = null;
+        forwardAnchorInstruction = null;
         ++numberOfInstructions;
     }
 
@@ -108,6 +110,14 @@ public class Instruction {
         this.nextInstruction = instruction;
     }
 
+    public void setForwardAnchorInstruction(Instruction instruction){
+        this.forwardAnchorInstruction = instruction;
+    }
+
+    public Instruction getForwardAnchorInstruction(){
+        return this.forwardAnchorInstruction ;
+    }
+
     public void setPrevInstruction(Instruction instruction){
         this.prevInstruction = instruction;
     }
@@ -121,6 +131,7 @@ public class Instruction {
 
     @Override
     public boolean equals(Object object) {
+        if(object == null) return false;
         Instruction instruction = (Instruction) object;
         boolean isSameOperation = this.operation.equals(instruction.getOperation());
         boolean isSameOperand1 = areSameOperands(operand1, instruction.getOperand1());

@@ -72,7 +72,7 @@ public class InstructionGenerator {
         instruction.setOperand1(r1);
         instruction.setOperand2(r2);
         Instruction prev = instructions.get(instruction.getInstructionId() - 1);
-        if(prev != null){
+        if (prev != null) {
             prev.setNextInstruction(instruction);
             instruction.setPrevInstruction(prev);
         }
@@ -241,7 +241,7 @@ public class InstructionGenerator {
         return resultForInstruction(addInstruction);
     }
 
-    public ArrayBase computeArrayDesignator(Result arrDimResult, String arrayIdentifier) {
+    public ArrayBase computeArrayDesignator(Result arrDimResult, String arrayIdentifier, boolean isRHS) {
         //TODO: Need to understand frame pointer
 
         ArrayBase arrayBase = new ArrayBase();
@@ -265,15 +265,22 @@ public class InstructionGenerator {
         Instruction locInArrayInstr = generateInstruction(ADDA, arrDimResult, arrayBaseAddrInstrRes);
         Result addaResult = resultForInstruction(locInArrayInstr);
         arrayBase.instructionIds.add(locInArrayInstr.getInstructionId());
-        Instruction loadInstruction = generateInstruction(LOAD, addaResult, null);
 
         Result arrayVariable = new Result();
         arrayVariable.setKind(ARRAY_VARIABLE);
         arrayVariable.setIdentifierName(arrayIdentifier);
+        locInArrayInstr.setArrayVariable(arrayVariable);
 
-        loadInstruction.setArrayVariable(arrayVariable);
-        arrayBase.instructionIds.add(loadInstruction.getInstructionId());
-        arrayBase.finalResult = resultForInstruction(loadInstruction);
+        if (isRHS) {
+            Instruction loadInstruction = generateInstruction(LOAD, addaResult, null);
+            loadInstruction.setArrayVariable(arrayVariable);
+            arrayBase.instructionIds.add(loadInstruction.getInstructionId());
+            arrayBase.finalResult = resultForInstruction(loadInstruction);
+            arrayBase.finalResult.setIdentifierName(arrayIdentifier);
+            // Keep the above instruction in a result
+            return arrayBase;
+        }
+        arrayBase.finalResult = addaResult;
         arrayBase.finalResult.setIdentifierName(arrayIdentifier);
         // Keep the above instruction in a result
         return arrayBase;

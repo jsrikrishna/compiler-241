@@ -338,9 +338,9 @@ public class LiveRangeAnalysis {
                 || operation == WRITENL
                 || operation == WRITE
                 || operation == READ
-                || operation == BRA);
-//                || operation == LOAD
-//                || operation == STORE);
+                || operation == BRA
+                || operation == LOAD
+                || operation == STORE);
     }
 
 

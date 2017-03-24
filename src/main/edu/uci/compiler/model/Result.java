@@ -154,8 +154,9 @@ public class Result {
         if (kind == KIND.FRAME_POINTER) return "FRAME_POINTER";
         if (kind == KIND.FUNCTION) return "[" + this.funcBasicBlockId + "]";
         if (kind == KIND.PARAMETER_COUNT) return "parameter_count " + this.parameterCount;
+        if (kind == KIND.PARAMETER) return "Parameter " + this.getIdentifierName();
         if (kind == KIND.REGISTER) {
-            if(this.getRegisterNumber() > 8){
+            if (this.getRegisterNumber() > 8) {
                 return "SR" + registerNumber;
             }
             return "R" + registerNumber;

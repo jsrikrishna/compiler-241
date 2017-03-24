@@ -354,7 +354,7 @@ public class Parser {
                               List<Instruction> toBeKilled) throws IOException {
         if (currentToken != LET) generateError(ASSIGNMENT_ERROR);
         moveToNextToken();
-        Result lhs = designator(basicBlock, function);
+        Result lhs = designator(basicBlock, function, false);
         if (currentToken != BECOMES) generateError(BECOMES_NOT_FOUND);
         moveToNextToken();
         Result rhs = expression(basicBlock, function);
@@ -381,8 +381,14 @@ public class Parser {
                 Result paramResult = new Result();
                 paramResult.setKind(PARAMETER);
                 paramResult.setIdentifierName(lhs.getIdentifierName());
-                if (!function.getFuncParameters().contains(paramResult) && !function.isLocalVariable(lhs.getIdentifierName())) {
-                    System.err.println("Variables in function '" + lhs.getIdentifierName() + "' must declared before being used");
+                boolean isNotFuncParameter = !containFuncParameter(function, paramResult);
+                System.out.println(lhs.getIdentifierName() + " func parametr " + isNotFuncParameter);
+                boolean isNotFuncLocalVariable = !function.isLocalVariable(lhs.getIdentifierName());
+                System.out.println(lhs.getIdentifierName() + " func varibale " + isNotFuncLocalVariable);
+                System.out.println(lhs);
+                boolean isNotGlobalVariable = lhs.getSsaVersion() == null;
+                if (isNotFuncParameter && isNotFuncLocalVariable && isNotGlobalVariable) {
+                    System.err.println("Variable '" + lhs.getIdentifierName() + "' in function '" + function.getFuncName() + "' must declared before being used");
                     System.exit(103);
                 }
             } else {
@@ -417,8 +423,10 @@ public class Parser {
                 Result paramResult = new Result();
                 paramResult.setKind(PARAMETER);
                 paramResult.setIdentifierName(identifierName);
-                if (!function.getFuncParameters().contains(paramResult) && !function.isLocalVariable(identifierName)) {
-                    System.err.println("Variables in function " + rhs.getIdentifierName() + " must declared before being used");
+                boolean funcVariable = containFuncParameter(function, paramResult) && !function.isLocalVariable(identifierName);
+                if (funcVariable) {
+                    System.out.println("RHS");
+                    System.err.println("Variable '" + rhs.getIdentifierName() + "' in function '" + function.getFuncName() + "' must declared before being used");
                     System.exit(103);
                 }
 
@@ -445,7 +453,16 @@ public class Parser {
         return lhs;
     }
 
-    private Result designator(BasicBlock basicBlock, Function function) throws IOException {
+    private boolean containFuncParameter(Function function, Result paramResult) {
+        for (Result result : function.getFuncParameters()) {
+            if (result.equals(paramResult)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private Result designator(BasicBlock basicBlock, Function function, boolean isRHS) throws IOException {
         if (currentToken != IDENTIFIER) generateError(DESIGNATOR_ERROR);
         // Could be array variable or a normal variable
         String identifier = scanner.getCurrentIdentifier();
@@ -472,7 +489,7 @@ public class Parser {
             // Need to generate instructions and return the final Result that contains the instruction id
             if (dimensionExp.size() != dimensions.size()) generateError(ARRAY_DIMENSION_MISMATCH);
             Result arrayDimensionResult = handleArrayDimInstructions(dimensionExp, dimensions, basicBlock);
-            Result indexInArray = handleArrayDesignator(arrayDimensionResult, identifier, basicBlock);
+            Result indexInArray = handleArrayDesignator(arrayDimensionResult, identifier, basicBlock, isRHS);
             return indexInArray;
         }
 
@@ -517,8 +534,8 @@ public class Parser {
         return res.finalResult;
     }
 
-    private Result handleArrayDesignator(Result dimResult, String identifier, BasicBlock basicBlock) {
-        ArrayBase res = ig.computeArrayDesignator(dimResult, identifier);
+    private Result handleArrayDesignator(Result dimResult, String identifier, BasicBlock basicBlock, boolean isRHS) {
+        ArrayBase res = ig.computeArrayDesignator(dimResult, identifier, isRHS);
         for (Integer instrId : res.instructionIds) {
             Instruction arrDesigInstruction = ig.getInstruction(instrId);
             arrDesigInstruction.setBasicBlock(basicBlock);
@@ -553,11 +570,11 @@ public class Parser {
     }
 
     private Result term(BasicBlock basicBlock, Function function) throws IOException {
-        Result lhs = factor(basicBlock, function);
+        Result lhs = factor(basicBlock, function, false);
         while (currentToken == TIMES || currentToken == DIV) {
             Token prevToken = currentToken;
             moveToNextToken();
-            Result rhs = factor(basicBlock, function);
+            Result rhs = factor(basicBlock, function, true);
             if (isVariableNotDeclared(lhs)) {
                 System.err.println("Variable " + lhs.getIdentifierName() + " must declared before being used");
                 System.exit(103);
@@ -577,11 +594,11 @@ public class Parser {
         return lhs;
     }
 
-    private Result factor(BasicBlock basicBlock, Function function) throws IOException {
+    private Result factor(BasicBlock basicBlock, Function function, boolean isRHS) throws IOException {
         if (!isAFactor(currentToken)) generateError(FACTOR_ERROR);
         if (currentToken == IDENTIFIER) {
             //TODO: Need to deal with identifiers
-            return designator(basicBlock, function);
+            return designator(basicBlock, function, true);
         }
         if (currentToken == NUMBER) {
             //TODO: Need to deal with number
