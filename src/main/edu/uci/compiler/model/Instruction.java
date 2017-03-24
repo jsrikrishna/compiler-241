@@ -12,12 +12,25 @@ public class Instruction {
     Result operand1;
     Result operand2;
     Result operand3; // Used for PHI FUNCTIONS
+    Result arrayVariable; // Used for Array Variable kill instructions
     private int instructionId;
     private Instruction anchorInstruction;
+    private Integer registerNumber;
+    private BasicBlock basicBlock;
+    private Instruction prevInstruction;
+    private Instruction nextInstruction;
+    private Instruction forwardAnchorInstruction;
 
     public Instruction() {
         this.instructionId = numberOfInstructions;
         anchorInstruction = null;
+        operand1 = null;
+        operand2 = null;
+        operand3 = null;
+        arrayVariable = null;
+        prevInstruction = null;
+        nextInstruction = null;
+        forwardAnchorInstruction = null;
         ++numberOfInstructions;
     }
 
@@ -53,8 +66,24 @@ public class Instruction {
         this.operand3 = operand3;
     }
 
+    public void setArrayVariable(Result arrayVariable) {
+        this.arrayVariable = arrayVariable;
+    }
+
+    public Result getArrayVariable() {
+        return this.arrayVariable;
+    }
+
     public int getInstructionId() {
         return instructionId;
+    }
+
+    public void setBasicBlock(BasicBlock basicBlock) {
+        this.basicBlock = basicBlock;
+    }
+
+    public BasicBlock getBasicBlock() {
+        return this.basicBlock;
     }
 
     public void setInstructionId(int instructionId) {
@@ -65,41 +94,80 @@ public class Instruction {
         return this.anchorInstruction;
     }
 
-    public void setAnchorInstruction(Instruction anchorInstruction){
+    public void setAnchorInstruction(Instruction anchorInstruction) {
         this.anchorInstruction = anchorInstruction;
     }
 
+    public void setRegisterNumber(Integer registerNumber) {
+        this.registerNumber = registerNumber;
+    }
+
+    public Integer getRegisterNumber() {
+        return this.registerNumber;
+    }
+
+    public void setNextInstruction(Instruction instruction){
+        this.nextInstruction = instruction;
+    }
+
+    public void setForwardAnchorInstruction(Instruction instruction){
+        this.forwardAnchorInstruction = instruction;
+    }
+
+    public Instruction getForwardAnchorInstruction(){
+        return this.forwardAnchorInstruction ;
+    }
+
+    public void setPrevInstruction(Instruction instruction){
+        this.prevInstruction = instruction;
+    }
+
+    public Instruction getPrevInstruction(){
+        return this.prevInstruction;
+    }
+    public Instruction getNextInstruction(){
+        return this.nextInstruction;
+    }
+
     @Override
-    public boolean equals(Object object){
+    public boolean equals(Object object) {
+        if(object == null) return false;
         Instruction instruction = (Instruction) object;
         boolean isSameOperation = this.operation.equals(instruction.getOperation());
         boolean isSameOperand1 = areSameOperands(operand1, instruction.getOperand1());
         boolean isSameOperand2 = areSameOperands(operand2, instruction.getOperand2());
-        if(!isSameOperand1 && !isSameOperand2){
+        if (!isSameOperand1 && !isSameOperand2) {
             isSameOperand1 = areSameOperands(operand1, instruction.getOperand2());
             isSameOperand2 = areSameOperands(operand2, instruction.getOperand1());
         }
         boolean isSameOperand3 = areSameOperands(operand3, instruction.getOperand3());
+        boolean isSameArrayVariables = areSameOperands(arrayVariable, instruction.getArrayVariable());
 
-        return isSameOperation && isSameOperand1 && isSameOperand2 && isSameOperand3;
+        return isSameOperation && isSameOperand1 && isSameOperand2 && isSameOperand3 && isSameArrayVariables;
     }
 
-    private boolean areSameOperands(Result operand, Result targetOperand){
-        if(operand == null && targetOperand == null) return true;
-        if(operand == null || targetOperand == null) return false;
+    private boolean areSameOperands(Result operand, Result targetOperand) {
+        if (operand == null && targetOperand == null) return true;
+        if (operand == null || targetOperand == null) return false;
         return operand.equals(targetOperand);
     }
 
     @Override
     public String toString() {
+        String str = Integer.toString(this.instructionId);
+        if (this.getRegisterNumber() != null) {
+            str += "(R" + this.getRegisterNumber() + ") ";
+        }
+        return str + ": "+ getStringRepresentation();
+    }
+
+    private String getStringRepresentation() {
         if (this.operation == null) return null;
+        if (isKillInstruction()) return forKill();
+        if (this.isLoadStore()) return forLoadStore();
         if (this.isBinaryOperand()) return forTwoOperands();
         if (this.isUnaryOperand()) return forOneOperand();
         if (this.noOperand()) return forNoOperand();
-        if (this.operation == Operation.MOVE || this.operation == Operation.STORE)
-            return this.operation
-                    + " " + this.operand1.toString()
-                    + " " + this.operand2.toString();
         if (this.operation == Operation.PHI) {
             return this.operation
                     + " " + this.operand1.toString()
@@ -107,6 +175,10 @@ public class Instruction {
                     + " " + this.operand3.toString();
         }
         return "";
+    }
+
+    private boolean isKillInstruction() {
+        return this.operation == Operation.KILL;
     }
 
     private boolean isBinaryOperand() {
@@ -123,15 +195,20 @@ public class Instruction {
                 || this.operation == Operation.BGE
                 || this.operation == Operation.BGT
                 || this.operation == Operation.BLE
-                || this.operation == Operation.BLT);
+                || this.operation == Operation.BLT
+                || this.operation == Operation.MOVE);
     }
 
     private boolean isUnaryOperand() {
         return (this.operation == Operation.BRA
-                || this.operation == Operation.LOAD
                 || this.operation == Operation.RET
                 || this.operation == Operation.PARAM
                 || this.operation == Operation.WRITE);
+    }
+
+    private boolean isLoadStore() {
+        return (this.operation == Operation.LOAD
+                || this.operation == Operation.STORE);
     }
 
     private boolean noOperand() {
@@ -151,6 +228,18 @@ public class Instruction {
 
     private String forNoOperand() {
         return this.operation.toString();
+    }
+
+    private String forLoadStore() {
+        String instructionString = this.operation.toString() + " " + this.operand1.toString();
+        if (operation == Operation.STORE) {
+            instructionString += " " + operand2.toString();
+        }
+        return instructionString + " {" + arrayVariable.getIdentifierName() + "}";
+    }
+
+    private String forKill() {
+        return this.operation.toString() + " " + this.arrayVariable.getIdentifierName();
     }
 
 

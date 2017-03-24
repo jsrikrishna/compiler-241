@@ -7,7 +7,7 @@ public class Result {
     public enum KIND {
         CONSTANT, VARIABLE, REGISTER, CONDITION, INSTRUCTION, BRANCH_INSTRUCTION, FIX_UP,
         ARRAY_VARIABLE, BASE_ADDRESS, FRAME_POINTER,
-        FUNCTION, PARAMETER_COUNT,
+        FUNCTION, PARAMETER_COUNT, PARAMETER,
         INIT;
     }
 
@@ -23,17 +23,19 @@ public class Result {
     private Integer ssaVersion; // Tracker Version for a variable
     private Integer funcBasicBlockId;
     private Integer parameterCount;
+    private Integer registerNumber;
 
     public Result() {
         kind = KIND.INIT;
         value = address = regNo = fixUpInstructionId = -1;
+        registerNumber = -1;
         instructionId = basicBlockId = ssaVersion = funcBasicBlockId = parameterCount = -1;
         condition = Token.INIT;
         identifierName = "";
     }
 
 
-    public int getInstructionId() {
+    public Integer getInstructionId() {
         return instructionId;
     }
 
@@ -129,6 +131,14 @@ public class Result {
         return this.parameterCount;
     }
 
+    public void setRegisterNumber(Integer color) {
+        this.registerNumber = color;
+    }
+
+    public Integer getRegisterNumber() {
+        return this.registerNumber;
+    }
+
 
     @Override
     public String toString() {
@@ -144,6 +154,13 @@ public class Result {
         if (kind == KIND.FRAME_POINTER) return "FRAME_POINTER";
         if (kind == KIND.FUNCTION) return "[" + this.funcBasicBlockId + "]";
         if (kind == KIND.PARAMETER_COUNT) return "parameter_count " + this.parameterCount;
+        if (kind == KIND.PARAMETER) return "Parameter " + this.getIdentifierName();
+        if (kind == KIND.REGISTER) {
+            if (this.getRegisterNumber() > 8) {
+                return "SR" + registerNumber;
+            }
+            return "R" + registerNumber;
+        }
         return super.toString();
     }
 
@@ -157,14 +174,14 @@ public class Result {
                 + this.instructionId
                 + this.basicBlockId
                 + this.funcBasicBlockId
-                + this.parameterCount)
+                + this.parameterCount
+                + this.registerNumber)
                 + identifierName.length();
     }
 
     @Override
     public boolean equals(Object obj) {
         Result result = (Result) obj;
-
         return this.kind == result.getKind()
                 & this.value == result.getValue()
                 & this.address == result.getAddress()
@@ -176,6 +193,7 @@ public class Result {
                 & this.funcBasicBlockId.equals(result.getFuncBasicBlockId())
                 & this.parameterCount.equals(result.getParameterCount())
                 & this.identifierName.equals(result.getIdentifierName())
-                & this.condition == result.getCondition();
+                & this.condition == result.getCondition()
+                & this.registerNumber.equals(result.getRegisterNumber());
     }
 }

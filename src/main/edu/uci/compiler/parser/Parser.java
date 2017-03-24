@@ -24,13 +24,18 @@ public class Parser {
     private InstructionGenerator ig;
     private LiveRangeAnalysis lra;
     private Set<DominatorBlock> allRootDominatorBlocks;
+    private HashMap<BasicBlock, BasicBlock> allDomParents;
     private Set<BasicBlock> endBasicBlocks;
+    private ArrayList<Function> declaredFunctions;
     private HashMap<Instruction, Result> instructionResults;
     private HashMap<Integer, Instruction> allInstructions;
+    private LinkedList<Instruction> phiInstructions;
+    private HashMap<Integer, Integer> registerForResults;
     private CopyPropagator cp;
     private CommonSubExpElimination cse;
     private LTDominatorTree ltDomTree;
     private DominatorTree domTree;
+    private RegisterAllocator ra;
     private ArrayList<Token> relOpList;
     private ArrayList<Token> statSeqList;
     private Tracker tracker;
@@ -43,16 +48,22 @@ public class Parser {
         allRootDominatorBlocks = new HashSet<>();
         instructionResults = new HashMap<>();
         allInstructions = new HashMap<>();
+        phiInstructions = new LinkedList<>();
+        registerForResults = new HashMap<>();
+        allDomParents = new HashMap<>();
+        declaredFunctions = new ArrayList<>();
         scanner = new Scanner(fileName);
         currentToken = scanner.getToken();
         ig = new InstructionGenerator(instructionResults, allInstructions);
         cfg = new ControlFlowGraph(this.endBasicBlocks);
         tracker = new Tracker();
-        domTree = new DominatorTree(allRootDominatorBlocks, endBasicBlocks);
+        domTree = new DominatorTree(allRootDominatorBlocks, endBasicBlocks, allDomParents);
 //        ltDomTree = new LTDominatorTree(startBasicBlock);
-        cp = new CopyPropagator(allRootDominatorBlocks);
+        cp = new CopyPropagator(allRootDominatorBlocks, ig, instructionResults);
+
         cse = new CommonSubExpElimination(allRootDominatorBlocks, instructionResults, allInstructions);
-        lra = new LiveRangeAnalysis(this.endBasicBlocks);
+        lra = new LiveRangeAnalysis(endBasicBlocks, allDomParents, phiInstructions, instructionResults);
+        ra = new RegisterAllocator(lra.getInterferenceGraph(), cfg, registerForResults);
 
         relOpList = new ArrayList<Token>() {{
             add(EQL);
@@ -97,14 +108,16 @@ public class Parser {
 
         if (currentToken != BEGIN) generateError(BEGIN_NOT_FOUND);
         moveToNextToken();
-        BasicBlock endBasicBlock = statSequence(startBasicBlock, null);
+        BasicBlock endBasicBlock = statSequence(startBasicBlock, null, null);
 
         if (currentToken != END) generateError(END_NOT_FOUND);
         moveToNextToken();
 
         if (currentToken != PERIOD) generateError(PERIOD_NOT_FOUND);
         moveToNextToken();
-        endBasicBlock.addInstruction(ig.generateEndInstruction());
+        Instruction endInstruction = ig.generateEndInstruction();
+        endInstruction.setBasicBlock(endBasicBlock);
+        endBasicBlock.addInstruction(endInstruction);
         // This need not be done, have to check
         cfg.addEndBasicBlock(endBasicBlock);
         this.endBasicBlocks.add(endBasicBlock);
@@ -112,24 +125,54 @@ public class Parser {
         domTree.generateDomRelationsForProgram();
 //        ltDomTree.getDominatorTree();
 //        cfg.printParentsForProgram(fileName);
-//        ltDomTree.getDominatorTree();
-
     }
 
-    public void doCopyPropagation() {
-        cp.propagateCopiesForProgram();
+    public void doCopyPropagation(boolean doBranchFolding) {
+        cp.propagateCopiesForProgram(doBranchFolding);
     }
 
-    public void printCFG(boolean isCP, boolean isCSE) {
-        cfg.writeToCFGFile(fileName, isCP, isCSE, cfg.getStartBasicBlock(), startBasicBlock.getListOfAllBasicBlocks());
+    public void printCFG(boolean isCP, boolean isCSE, boolean isPhiRemoved) {
+        if (isPhiRemoved) {
+            cfg.writeToCFGAfterPhiRemoval(
+                    fileName,
+                    cfg.getStartBasicBlock(),
+                    startBasicBlock.getListOfAllBasicBlocks(),
+                    registerForResults,
+                    declaredFunctions);
+            return;
+        }
+        cfg.writeToCFGFile(
+                fileName,
+                isCP,
+                isCSE,
+                cfg.getStartBasicBlock(),
+                startBasicBlock.getListOfAllBasicBlocks(),
+                declaredFunctions);
+    }
+
+    public void printNumberOfInstructions() {
+        ig.printTotalNumberOfInstructions();
     }
 
     public void printDomVCG() {
         domTree.printDomVCGForProgram(fileName);
     }
 
-    public void doCommonSubExpressionElimination(){
+    public void doCommonSubExpressionElimination() {
         cse.doCSEForProgram();
+    }
+
+    public void doLiveRangeAnalysis() {
+        lra.generateInterferenceGraphForProgram();
+        List<String> adjListStrictGraph = lra.getInterferenceGraph().writeAdjList();
+        cfg.generateFlow(fileName, adjListStrictGraph, "lra");
+    }
+
+    public void doRegisterAllocation(String fileName) {
+        ra.allocateRegister(fileName);
+        ra.mapToRegisters();
+        removePhiInstructions();
+
     }
 
     private void varDecl(Function function, BasicBlock basicBlock) throws IOException {
@@ -158,7 +201,9 @@ public class Parser {
                 function.updateSSAVariable(identifier, instruction.getInstructionId());
                 // Here for sure, code will have the instruction id, so updating in basic block copy as well
                 basicBlock.updateSSAVersion(identifier, instruction.getInstructionId());
-                // May be normal block as well, need to check -> checked, need not do, it will be either func or non-func
+                // May be normal block as well,
+                // need to check -> checked, need not do, it will be either func or non-func
+                instruction.setBasicBlock(basicBlock);
                 basicBlock.addInstruction(instruction);
             }
 
@@ -169,6 +214,7 @@ public class Parser {
                 Instruction instruction = ig.generateInstructionToInitVar(identifier);
                 tracker.updateSSAForVariable(identifier, instruction.getInstructionId());
                 instruction.getOperand2().setSsaVersion(tracker.getSSAVersion(identifier));
+                instruction.setBasicBlock(basicBlock);
                 basicBlock.addInstruction(instruction);
             }
         }
@@ -205,6 +251,7 @@ public class Parser {
             if (currentToken == IDENTIFIER) {
                 String identifier = scanner.getCurrentIdentifier();
                 Function function = new Function(identifier);
+                this.declaredFunctions.add(function);
                 tracker.addFunction(identifier, function);
                 moveToNextToken();
                 formalParam(function); // formalParam, handles of moving to next token
@@ -221,18 +268,23 @@ public class Parser {
     private void formalParam(Function function) throws IOException {
         if (currentToken == OPENPAREN) {
             moveToNextToken();
+            int number_of_paramers = 0;
             if (currentToken == IDENTIFIER) {
                 //TODO: need to store the variable at common place - Done i guess, but still keeping for validate check
                 addFunctionParameters(function);
+                number_of_paramers++;
                 moveToNextToken();
                 while (currentToken == COMMA) {
                     moveToNextToken();
                     if (currentToken != IDENTIFIER) generateError(FORMAL_PARAM_DECL_ERROR);
-                    //TODO: need to store the variable at common place - Done i guess, but still keeping for validate check
+                    //TODO: need to store the variable at common place -
+                    //TODO: Done i guess, but still keeping for validate check
                     addFunctionParameters(function);
+                    number_of_paramers++;
                     moveToNextToken();
                 }
             }
+
             if (currentToken != CLOSEPAREN) generateError(FORMAL_PARAM_DECL_ERROR);
             moveToNextToken();
         }
@@ -251,39 +303,47 @@ public class Parser {
             tracker.updateSSAForVariable(identifier, ssaVersion);
             function.getFuncBasicBlock().updateSSAVersion(identifier, ssaVersion);
         }
+        Result paramResult = new Result();
+        paramResult.setKind(PARAMETER);
+        paramResult.setIdentifierName(identifier);
         function.updateSSAVariable(identifier, ssaVersion);
-        function.setFuncParameter(identifier);
+        function.setFuncParameter(paramResult);
     }
 
     private void funcBody(Function function) throws IOException {
         while (currentToken == VAR || currentToken == ARRAY) varDecl(function, function.getFuncBasicBlock());
         if (currentToken != BEGIN) generateError(BEGIN_NOT_FOUND);
         moveToNextToken();
-        BasicBlock finalBlock = statSequence(function.getFuncBasicBlock(), function);
+        BasicBlock finalBlock = statSequence(function.getFuncBasicBlock(), function, null);
         if (currentToken != END) generateError(END_NOT_FOUND);
         moveToNextToken();
     }
 
-    private BasicBlock statSequence(BasicBlock basicBlock, Function function) throws IOException {
-        basicBlock = statement(basicBlock, function);
+    private BasicBlock statSequence(BasicBlock basicBlock,
+                                    Function function,
+                                    List<Instruction> toBeKilled) throws IOException {
+        basicBlock = statement(basicBlock, function, toBeKilled);
         while (currentToken == SEMICOLON) {
             moveToNextToken();
-            basicBlock = statement(basicBlock, function);
+            basicBlock = statement(basicBlock, function, toBeKilled);
         }
         return basicBlock;
     }
 
-    private BasicBlock statement(BasicBlock basicBlock, Function function) throws IOException {
+    private BasicBlock statement(BasicBlock basicBlock,
+                                 Function function,
+                                 List<Instruction> toBeKilled) throws IOException {
+
         if (!(statSeqList.contains(currentToken))) generateError(KEYWORD_EXPECTED);
 
         if (currentToken == IF) {
-            return ifStatement(basicBlock, function);
+            return ifStatement(basicBlock, function, toBeKilled);
         }
         if (currentToken == WHILE) {
-            return whileStatement(basicBlock, function);
+            return whileStatement(basicBlock, function, toBeKilled);
         }
         if (currentToken == LET) {
-            assignment(basicBlock, function);
+            assignment(basicBlock, function, toBeKilled);
         } else if (currentToken == CALL) {
             funcCall(basicBlock);
         } else if (currentToken == RETURN) {
@@ -293,14 +353,27 @@ public class Parser {
 
     }
 
-    private Result assignment(BasicBlock basicBlock, Function function) throws IOException {
+    private Result assignment(BasicBlock basicBlock,
+                              Function function,
+                              List<Instruction> toBeKilled) throws IOException {
         if (currentToken != LET) generateError(ASSIGNMENT_ERROR);
         moveToNextToken();
-        Result lhs = designator(basicBlock, function);
+        Result lhs = designator(basicBlock, function, false);
         if (currentToken != BECOMES) generateError(BECOMES_NOT_FOUND);
         moveToNextToken();
         Result rhs = expression(basicBlock, function);
-        Instruction instruction = ig.generateInstructionForAssignment(lhs, rhs);
+        Result assignmentResult = ig.generateInstructionForAssignment(lhs, rhs);
+        Instruction instruction = allInstructions.get(assignmentResult.getInstructionId());
+        instruction.setBasicBlock(basicBlock);
+        basicBlock.addInstruction(instruction);
+        // If Assignment is a store instruction,
+        // then it will be an array, so insert kill instruction for the array variable represented by lhs
+        if (instruction.getOperation() == Operation.STORE) {
+            Instruction killInstruction = ig.generateKillInstruction(instruction.getArrayVariable());
+            killInstruction.setBasicBlock(basicBlock);
+            basicBlock.addInstruction(killInstruction);
+            if (toBeKilled != null) toBeKilled.add(killInstruction);
+        }
         /*
         Update lhs result with SSA Version
         Update Tracker for local result, both basic block level and global level
@@ -308,6 +381,26 @@ public class Parser {
         TODO: Q - Does array as well have Tracker ?
          */
         if (lhs.getKind() == VARIABLE) {
+            if (function != null) {
+                Result paramResult = new Result();
+                paramResult.setKind(PARAMETER);
+                paramResult.setIdentifierName(lhs.getIdentifierName());
+                boolean isNotFuncParameter = !containFuncParameter(function, paramResult);
+                System.out.println(lhs.getIdentifierName() + " func parametr " + isNotFuncParameter);
+                boolean isNotFuncLocalVariable = !function.isLocalVariable(lhs.getIdentifierName());
+                System.out.println(lhs.getIdentifierName() + " func varibale " + isNotFuncLocalVariable);
+                System.out.println(lhs);
+                boolean isNotGlobalVariable = lhs.getSsaVersion() == null;
+                if (isNotFuncParameter && isNotFuncLocalVariable && isNotGlobalVariable) {
+                    System.err.println("Variable '" + lhs.getIdentifierName() + "' in function '" + function.getFuncName() + "' must declared before being used");
+                    System.exit(103);
+                }
+            } else {
+                if (lhs.getSsaVersion() == null || lhs.getSsaVersion() == -1) {
+                    System.err.println("Variable " + lhs.getIdentifierName() + " must declared before being used");
+                    System.exit(103);
+                }
+            }
             tracker.updateSSAForVariable(lhs.getIdentifierName(), instruction.getInstructionId());
             lhs.setSsaVersion(instruction.getInstructionId());
             // Keep a Copy in Basic Block also, so that it can be used while generating Phi Functions
@@ -317,10 +410,37 @@ public class Parser {
                 // Tag:  FUNC_BASIC_BLOCK_VS_NORMAL_BASIC_BLOCK_CHECK
             }
         }
+        if (lhs.getKind() == INSTRUCTION) {
+            Result arrayVariable = new Result();
+            arrayVariable.setKind(ARRAY_VARIABLE);
+            arrayVariable.setIdentifierName(lhs.getIdentifierName());
+            instruction.setArrayVariable(arrayVariable);
+        }
+
         /*
         Update rhs result with SSA Version
          */
         if (rhs.getKind() == VARIABLE) {
+
+            if (function != null) {
+                String identifierName = rhs.getIdentifierName();
+                Result paramResult = new Result();
+                paramResult.setKind(PARAMETER);
+                paramResult.setIdentifierName(identifierName);
+                boolean funcVariable = containFuncParameter(function, paramResult) && !function.isLocalVariable(identifierName);
+                if (funcVariable) {
+                    System.out.println("RHS");
+                    System.err.println("Variable '" + rhs.getIdentifierName() + "' in function '" + function.getFuncName() + "' must declared before being used");
+                    System.exit(103);
+                }
+
+            } else {
+                if (rhs.getSsaVersion() == null || rhs.getSsaVersion() == -1) {
+                    System.err.println("Variable " + rhs.getIdentifierName() + " must declared before being used");
+                    System.exit(103);
+                }
+            }
+
             String identifier = rhs.getIdentifierName();
             // I may get Basic Block correct all the time,
             // so i can take the ssa from Basic Block all the time instead of checking for func == null
@@ -334,11 +454,19 @@ public class Parser {
                 rhs.setSsaVersion(basicBlockSSAVersion);
             }
         }
-        basicBlock.addInstruction(instruction);
         return lhs;
     }
 
-    private Result designator(BasicBlock basicBlock, Function function) throws IOException {
+    private boolean containFuncParameter(Function function, Result paramResult) {
+        for (Result result : function.getFuncParameters()) {
+            if (result.equals(paramResult)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private Result designator(BasicBlock basicBlock, Function function, boolean isRHS) throws IOException {
         if (currentToken != IDENTIFIER) generateError(DESIGNATOR_ERROR);
         // Could be array variable or a normal variable
         String identifier = scanner.getCurrentIdentifier();
@@ -365,7 +493,7 @@ public class Parser {
             // Need to generate instructions and return the final Result that contains the instruction id
             if (dimensionExp.size() != dimensions.size()) generateError(ARRAY_DIMENSION_MISMATCH);
             Result arrayDimensionResult = handleArrayDimInstructions(dimensionExp, dimensions, basicBlock);
-            Result indexInArray = handleArrayDesignator(arrayDimensionResult, identifier, basicBlock);
+            Result indexInArray = handleArrayDesignator(arrayDimensionResult, identifier, basicBlock, isRHS);
             return indexInArray;
         }
 
@@ -398,15 +526,25 @@ public class Parser {
         return res;
     }
 
-    private Result handleArrayDimInstructions(ArrayList<Result> dimExp, ArrayList<Integer> dims, BasicBlock basicBlock) {
+    private Result handleArrayDimInstructions(ArrayList<Result> dimExp,
+                                              ArrayList<Integer> dims,
+                                              BasicBlock basicBlock) {
         ArrayBase res = ig.generateInstructionsForArrDim(dimExp, dims);
-        for (Integer instrId : res.instructionIds) basicBlock.addInstruction(ig.getInstruction(instrId));
+        for (Integer instrId : res.instructionIds) {
+            Instruction arrDimInstruction = ig.getInstruction(instrId);
+            arrDimInstruction.setBasicBlock(basicBlock);
+            basicBlock.addInstruction(arrDimInstruction);
+        }
         return res.finalResult;
     }
 
-    private Result handleArrayDesignator(Result dimResult, String identifier, BasicBlock basicBlock) {
-        ArrayBase res = ig.computeArrayDesignator(dimResult, identifier);
-        for (Integer instrId : res.instructionIds) basicBlock.addInstruction(ig.getInstruction(instrId));
+    private Result handleArrayDesignator(Result dimResult, String identifier, BasicBlock basicBlock, boolean isRHS) {
+        ArrayBase res = ig.computeArrayDesignator(dimResult, identifier, isRHS);
+        for (Integer instrId : res.instructionIds) {
+            Instruction arrDesigInstruction = ig.getInstruction(instrId);
+            arrDesigInstruction.setBasicBlock(basicBlock);
+            basicBlock.addInstruction(arrDesigInstruction);
+        }
         return res.finalResult;
     }
 
@@ -416,9 +554,19 @@ public class Parser {
             Token prevToken = currentToken;
             moveToNextToken();
             Result rhs = term(basicBlock, function);
+            if (isVariableNotDeclared(lhs)) {
+                System.err.println("Variable " + lhs.getIdentifierName() + " must declared before being used");
+                System.exit(103);
+            }
+            if (isVariableNotDeclared(rhs)) {
+                System.err.println("Variable " + rhs.getIdentifierName() + " must declared before being used");
+                System.exit(103);
+            }
             lhs = ig.computeExpression(prevToken, lhs, rhs);
             if (lhs.getKind() == INSTRUCTION) {
-                basicBlock.addInstruction(ig.getInstruction(lhs.getInstructionId()));
+                Instruction lhsInstruction = ig.getInstruction(lhs.getInstructionId());
+                lhsInstruction.setBasicBlock(basicBlock);
+                basicBlock.addInstruction(lhsInstruction);
                 lhs.setBasicBlockId(basicBlock.getId());
             }
         }
@@ -426,25 +574,35 @@ public class Parser {
     }
 
     private Result term(BasicBlock basicBlock, Function function) throws IOException {
-        Result lhs = factor(basicBlock, function);
+        Result lhs = factor(basicBlock, function, false);
         while (currentToken == TIMES || currentToken == DIV) {
             Token prevToken = currentToken;
             moveToNextToken();
-            Result rhs = factor(basicBlock, function);
+            Result rhs = factor(basicBlock, function, true);
+            if (isVariableNotDeclared(lhs)) {
+                System.err.println("Variable " + lhs.getIdentifierName() + " must declared before being used");
+                System.exit(103);
+            }
+            if (isVariableNotDeclared(rhs)) {
+                System.err.println("Variable " + rhs.getIdentifierName() + " must declared before being used");
+                System.exit(103);
+            }
             lhs = ig.computeExpression(prevToken, lhs, rhs);
             if (lhs.getKind() == INSTRUCTION) {
-                basicBlock.addInstruction(ig.getInstruction(lhs.getInstructionId()));
+                Instruction lhsInstruction = ig.getInstruction(lhs.getInstructionId());
+                lhsInstruction.setBasicBlock(basicBlock);
+                basicBlock.addInstruction(lhsInstruction);
                 lhs.setBasicBlockId(basicBlock.getId());
             }
         }
         return lhs;
     }
 
-    private Result factor(BasicBlock basicBlock, Function function) throws IOException {
+    private Result factor(BasicBlock basicBlock, Function function, boolean isRHS) throws IOException {
         if (!isAFactor(currentToken)) generateError(FACTOR_ERROR);
         if (currentToken == IDENTIFIER) {
             //TODO: Need to deal with identifiers
-            return designator(basicBlock, function);
+            return designator(basicBlock, function, true);
         }
         if (currentToken == NUMBER) {
             //TODO: Need to deal with number
@@ -485,7 +643,9 @@ public class Parser {
                 moveToNextToken();
                 Result paramResult = getParametersForSpecialFunctions(basicBlock);
                 res = ig.generateInstructionForPreDefinedFunctions(identifier, paramResult);
-                basicBlock.addInstruction(ig.getInstruction(res.getInstructionId()));
+                Instruction preDefinedInstruction = ig.getInstruction(res.getInstructionId());
+                preDefinedInstruction.setBasicBlock(basicBlock);
+                basicBlock.addInstruction(preDefinedInstruction);
             } else {
                 Function function = tracker.getFunction(identifier);
                 basicBlock.addFunctionCalled(function);
@@ -502,14 +662,27 @@ public class Parser {
                             param = expression(basicBlock, function);
                             parameters.add(param);
                         }
-                        ArrayList<Instruction> instructions = ig.generateInstructionForParams(parameters);
-                        for (Instruction instruction : instructions) basicBlock.addInstruction(instruction);
+//                        ArrayList<Instruction> instructions = ig.generateInstructionForParams(parameters);
+//                        for (Instruction instruction : instructions) {
+//                            instruction.setBasicBlock(basicBlock);
+//                            basicBlock.addInstruction(instruction);
+//                        }
                     }
                     if (currentToken != CLOSEPAREN) generateError(CLOSE_PAREN_NOT_FOUND);
                     moveToNextToken();
                 }
-                res = ig.generateInstructionForFunctionCall(parameters.size(), basicBlock.getId());
-                basicBlock.addInstruction(ig.getInstruction(res.getInstructionId()));
+                if (parameters.size() != function.getFuncParameters().size()) {
+                    Integer expected = function.getFuncParameters().size();
+                    Integer got = parameters.size();
+                    String funcName = function.getFuncName();
+                    System.err.println("Function parameters does not match for - '" + function.getFuncName() + "'");
+                    System.err.println("Expected " + expected + " parameters for " + funcName + " but got " + got);
+                    System.exit(103);
+                }
+                res = ig.generateInstructionForFunctionCall(parameters.size(), function.getFuncBasicBlock().getId());
+                Instruction funcCallInstruction = ig.getInstruction(res.getInstructionId());
+                funcCallInstruction.setBasicBlock(basicBlock);
+                basicBlock.addInstruction(funcCallInstruction);
             }
         }
         return res;
@@ -543,7 +716,9 @@ public class Parser {
         return result;
     }
 
-    private BasicBlock ifStatement(BasicBlock basicBlock, Function function) throws IOException {
+    private BasicBlock ifStatement(BasicBlock basicBlock,
+                                   Function function,
+                                   List<Instruction> toBeKilled) throws IOException {
         if (currentToken != IF) generateError(IF_STATEMENT_ERROR);
         moveToNextToken();
 
@@ -557,13 +732,16 @@ public class Parser {
 
         BasicBlock elseBlock = null;
         Result fixUpResult = relation(ifConditionBlock, function);
+        List<Instruction> toBeKilledInIfThen = new LinkedList<>();
+        List<Instruction> toBeKilledInElse = new LinkedList<>();
         if (currentToken != THEN) generateError(THEN_STATEMENT_ERROR);
         moveToNextToken();
-        ifThenBlock = statSequence(ifThenBlock, function);
+        ifThenBlock = statSequence(ifThenBlock, function, toBeKilledInIfThen);
 
         BasicBlock joinBlock = new BasicBlock(BB_IF_THEN_JOIN);
         ifThenBlock.addChildrenAndUpdateChildrenTracker(joinBlock);
         joinBlock.addParent(ifThenBlock);
+        joinBlock.setLeftParent(ifThenBlock);
         // BRA instruction from IF Block to JOIN Block
         addBranchInstruction(ifThenBlock, joinBlock);
 
@@ -578,13 +756,15 @@ public class Parser {
 
             joinBlock.setType(BB_IF_ELSE_JOIN);
 
-            elseBlock = statSequence(elseBlock, function);
+            elseBlock = statSequence(elseBlock, function, toBeKilledInElse);
             // Need to add here, as parent relationships are used in Live Range Analysis
             joinBlock.addParent(elseBlock);
+            joinBlock.setRightParent(elseBlock);
             // Need to add here, because, last elseBlock returned should link to if-else-join
             elseBlock.addChildrenAndUpdateChildrenTracker(joinBlock);
             // BRA instruction from ELSE Block to JOIN Block
-            addBranchInstruction(elseBlock, joinBlock);
+//            addBranchInstruction(elseBlock, joinBlock);
+            insertKillInstructionsForIfStatement(joinBlock, toBeKilledInIfThen, toBeKilledInElse);
             insertPhiFunctionForIfStatement(ifThenBlock, elseBlock, joinBlock);
         }
 
@@ -595,8 +775,15 @@ public class Parser {
             // NEGATED Jump to JOIN BLOCK from IF_CONDITION block, if condition is NOT TRUE
             ifConditionBlock.addChildrenAndUpdateChildrenTracker(joinBlock);
             joinBlock.addParent(ifConditionBlock);
+            joinBlock.setRightParent(ifConditionBlock);
             fixUpNegCompareInstruction(fixUpResult, joinBlock);
-            insertPhiFunctionForIfStatement(ifConditionBlock, ifThenBlock, joinBlock);
+            insertKillInstructionsForIfStatement(joinBlock, toBeKilledInIfThen, toBeKilledInElse);
+            insertPhiFunctionForIfStatement(ifThenBlock, ifConditionBlock, joinBlock);
+        }
+
+        if (toBeKilled != null) {
+            toBeKilled.addAll(toBeKilledInIfThen);
+            toBeKilled.addAll(toBeKilledInElse);
         }
 
         return joinBlock;
@@ -607,14 +794,16 @@ public class Parser {
         Result condition = relOp();
         Result rhs = expression(basicBlock, function);
         RelationResult res = ig.computeRelation(condition, lhs, rhs);
-        setSSAForVariableResult(lhs, function);
-        setSSAForVariableResult(rhs, function);
+        setSSAForVariableResult(basicBlock, lhs, function);
+        setSSAForVariableResult(basicBlock, rhs, function);
         basicBlock.addInstruction(res.compareInstruction);
         basicBlock.addInstruction(res.negCompareInstruction);
+        res.compareInstruction.setBasicBlock(basicBlock);
+        res.negCompareInstruction.setBasicBlock(basicBlock);
         return res.fixUpResult;
     }
 
-    private void setSSAForVariableResult(Result res, Function function) {
+    private void setSSAForVariableResult(BasicBlock basicBlock, Result res, Function function) {
         if (res.getKind() == VARIABLE) {
             if (function != null) {
                 Integer ssaVersion = function.getSSAForVariable(res.getIdentifierName());
@@ -624,14 +813,38 @@ public class Parser {
                 }
                 res.setSsaVersion(ssaVersion);
             } else {
-                Integer ssaVersion = tracker.getSSAVersion(res.getIdentifierName());
-                if (ssaVersion == null) generateError(VARIABLE_NOT_DECLARED);
+                Integer ssaVersion = basicBlock.getSSAVersion(res.getIdentifierName());
+                if (ssaVersion == null) {
+                    ssaVersion = tracker.getSSAVersion(res.getIdentifierName());
+                    if (ssaVersion == null) generateError(VARIABLE_NOT_DECLARED);
+                }
                 res.setSsaVersion(ssaVersion);
             }
         }
     }
 
-    private BasicBlock whileStatement(BasicBlock basicBlock, Function function) throws IOException {
+    private void insertKillInstructionsForIfStatement(BasicBlock basicBlock,
+                                                      List<Instruction> leftKill,
+                                                      List<Instruction> rightKill) {
+        if (leftKill != null) {
+            for (Instruction kill : leftKill) {
+                Instruction newKill = ig.generateKillInstruction(kill.getArrayVariable());
+                basicBlock.addInstruction(newKill);
+                newKill.setBasicBlock(basicBlock);
+            }
+        }
+        if (rightKill != null) {
+            for (Instruction kill : rightKill) {
+                Instruction newKill = ig.generateKillInstruction(kill.getArrayVariable());
+                basicBlock.addInstruction(newKill);
+                newKill.setBasicBlock(basicBlock);
+            }
+        }
+    }
+
+    private BasicBlock whileStatement(BasicBlock basicBlock,
+                                      Function function,
+                                      List<Instruction> toBekilled) throws IOException {
         if (currentToken != WHILE) generateError(WHILE_STATEMENT_ERROR);
         moveToNextToken();
 
@@ -653,7 +866,6 @@ public class Parser {
         moveToNextToken();
         BasicBlock whileBodyBlock = new BasicBlock(BB_WHILE_BODY);
         whileConditionJoinBlock.addChildrenAndUpdateChildrenTracker(whileBodyBlock);
-        whileConditionJoinBlock.addParent(whileBodyBlock);
         whileBodyBlock.addParent(whileConditionJoinBlock);
 
 
@@ -661,11 +873,14 @@ public class Parser {
         whileBodyBlock.addChildrenAndUpdateChildrenTracker(whileConditionJoinBlock);
 
 
-        BasicBlock whileBodyEndBlock = statSequence(whileBodyBlock, function);
+        BasicBlock whileBodyEndBlock = statSequence(whileBodyBlock, function, toBekilled);
         //Go Back to while condition -> adding instruction for that
-        if (whileBodyBlock != whileBodyEndBlock){
+        if (whileBodyBlock != whileBodyEndBlock) {
             whileBodyEndBlock.addChildrenAndUpdateChildrenTracker(whileConditionJoinBlock);
             whileConditionJoinBlock.addParent(whileBodyEndBlock);
+            whileBodyBlock.removeChildren(whileConditionJoinBlock);
+        } else {
+            whileConditionJoinBlock.addParent(whileBodyBlock);
         }
 
 
@@ -687,8 +902,10 @@ public class Parser {
         moveToNextToken();
         if (currentToken != END) {
             Result expResult = expression(basicBlock, function);
-            Instruction instruction = ig.generateInstructionForReturn(expResult);
-            basicBlock.addInstruction(instruction);
+            Result endResult = ig.generateInstructionForReturn(expResult);
+            Instruction endInstruction = allInstructions.get(endResult.getInstructionId());
+            endInstruction.setBasicBlock(basicBlock);
+            basicBlock.addInstruction(endInstruction);
         }
     }
 
@@ -708,6 +925,7 @@ public class Parser {
     private void addBranchInstruction(BasicBlock fromBlock, BasicBlock toBlock) {
         Instruction branchInstruction = ig.generateBranchInstruction();
         branchInstruction.getOperand1().setBasicBlockId(toBlock.getId());
+        branchInstruction.setBasicBlock(fromBlock);
         fromBlock.addInstruction(branchInstruction);
     }
 
@@ -727,8 +945,10 @@ public class Parser {
                 Result leftResult = ig.resultForVariable(identifier, leftSSAVersion);
                 Result rightResult = ig.resultForVariable(identifier, rightSSAVersion);
 
-                Instruction phiInstruction = ig.generatePhiInstruction(leftResult, rightResult);
+                Result phiInstructionResult = ig.generatePhiInstruction(leftResult, rightResult);
+                Instruction phiInstruction = allInstructions.get(phiInstructionResult.getInstructionId());
 
+                phiInstruction.setBasicBlock(joinBlock);
                 joinBlock.addInstruction(phiInstruction);
                 // Same as phiInstruction.getInstructionId() instead of phiInstruction.getOperand3().getSsaVersion()
 
@@ -763,7 +983,8 @@ public class Parser {
                 Result parentResult = ig.resultForVariable(identifier, parentSSAVersion);
 
                 // First Operand of Phi Instruction should be parent always for while phi instructions
-                Instruction phiInstruction = ig.generatePhiInstruction(parentResult, whileBodyResult);
+                Result phiInstructionResult = ig.generatePhiInstruction(parentResult, whileBodyResult);
+                Instruction phiInstruction = allInstructions.get(phiInstructionResult.getInstructionId());
                 phiInstructionList.add(phiInstruction);
                 Integer phiInstructionId = phiInstruction.getInstructionId();
 
@@ -784,8 +1005,11 @@ public class Parser {
         updatePhiVariablesInWhileBodyBlock(whileBodyBlock, phiInstructionList);
 
         // Insert phi instructions into WHILE_CONDITION_BLOCK at the START
-        for (Instruction phiInstruction : phiInstructionList)
+        for (Instruction phiInstruction : phiInstructionList) {
+            phiInstruction.setBasicBlock(whileConditionBlock);
             whileConditionBlock.addInstructionAtStart(phiInstruction);
+        }
+
 
         // Update SSA Tracker of whileJoinBlock
         whileJoinBlock.setLocalTracker(whileJoinTracker);
@@ -885,6 +1109,73 @@ public class Parser {
         return operand != null
                 && operand.getKind() == VARIABLE
                 && operand.getIdentifierName().equals(phiIdentifier);
+    }
+
+    private void removePhiInstructions() {
+        for (Instruction phi : phiInstructions) {
+            BasicBlock phiBasicBlock = phi.getBasicBlock();
+            Result phiOperand = phi.getOperand3();
+            Result leftOperand = phi.getOperand1();
+            Result rightOperand = phi.getOperand2();
+            if (leftOperand.equals(rightOperand)) {
+                phiBasicBlock.removeInstruction(phi);
+                continue;
+            }
+            Integer phiRegisterNumber = registerForResults.get(phi.getInstructionId());
+            BasicBlock leftParent = null, rightParent = null;
+            if (phiBasicBlock.getType() == BB_IF_ELSE_JOIN || phiBasicBlock.getType() == BB_IF_THEN_JOIN) {
+                leftParent = phiBasicBlock.getLeftParent();
+                rightParent = phiBasicBlock.getRightParent();
+            }
+            if (phiBasicBlock.getType() == BB_WHILE_CONDITION_AND_JOIN) {
+                leftParent = allDomParents.get(phiBasicBlock);
+                List<BasicBlock> parentBlocks = phiBasicBlock.getParents();
+                rightParent = lra.getWhileBody(parentBlocks, leftParent);
+            }
+            if (leftOperand != null) {
+                checkAndAddMoveInstruction(leftOperand, phiOperand, phiRegisterNumber, phiBasicBlock, leftParent);
+            }
+            if (rightOperand != null) {
+                checkAndAddMoveInstruction(rightOperand, phiOperand, phiRegisterNumber, phiBasicBlock, rightParent);
+            }
+            phiBasicBlock.removeInstruction(phi);
+        }
+    }
+
+    private void checkAndAddMoveInstruction(Result operand,
+                                            Result phiOperand,
+                                            Integer phiRegisterNumber,
+                                            BasicBlock phiBasicBlock,
+                                            BasicBlock parent) {
+        if (operand != null) {
+            if (operand.getKind() == CONSTANT) {
+                addMoveInstruction(phiBasicBlock, parent, phiOperand, operand);
+            } else {
+                if (!(phiRegisterNumber.intValue() == operand.getRegisterNumber().intValue())) {
+                    addMoveInstruction(phiBasicBlock, parent, phiOperand, operand);
+                }
+            }
+        }
+    }
+
+    private void addMoveInstruction(BasicBlock phiBasicBlock,
+                                    BasicBlock parentBasicBlock,
+                                    Result phiOperand,
+                                    Result operand) {
+        Result moveResult = ig.generateMoveInstructionForPhi(operand, phiOperand);
+        Instruction moveInstruction = ig.getInstruction(moveResult.getInstructionId());
+        moveInstruction.setBasicBlock(phiBasicBlock);
+        BasicBlock.Type basicBlockType = parentBasicBlock.getType();
+        if (basicBlockType == BB_MAIN) {
+            parentBasicBlock.addInstruction(moveInstruction);
+        } else {
+            parentBasicBlock.addInstructionAtLastButOne(moveInstruction);
+        }
+
+    }
+
+    private boolean isVariableNotDeclared(Result result) {
+        return result.getKind() == VARIABLE && (result.getSsaVersion() == null || result.getSsaVersion() == -1);
     }
 
     private void generateError(ErrorMessage message) {

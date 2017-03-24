@@ -26,6 +26,11 @@ public class BasicBlock {
     HashMap<Operation, Instruction> anchor;
     boolean isRootBasicBlock; // used in dominance relationships
     boolean isVisited;
+    boolean isVisitedAfterPhiRemoval;
+    boolean isVisitedWhileLiveRangeAnalysis;
+    BasicBlock leftParent; // This will be used only for if join blocks
+    BasicBlock rightParent; // This will be used only if join blocks
+    public static HashSet<Integer> removedBasicBlocks = new HashSet<>();
 
     public BasicBlock(Type type) {
         id = numBasicBlocks;
@@ -37,7 +42,9 @@ public class BasicBlock {
         localTracker = new HashMap<>();
         functionsCalled = new ArrayList<>();
         this.isRootBasicBlock = false;
+        this.isVisitedWhileLiveRangeAnalysis = false;
         this.isVisited = false;
+        this.isVisitedAfterPhiRemoval = false;
         allBasicBlocks.add(this);
         ++numBasicBlocks;
     }
@@ -46,11 +53,11 @@ public class BasicBlock {
         anchor.put(instruction.getOperation(), instruction);
     }
 
-    public void setAnchor(HashMap<Operation, Instruction> anchor){
+    public void setAnchor(HashMap<Operation, Instruction> anchor) {
         this.anchor = anchor;
     }
 
-    public HashMap<Operation, Instruction> getAnchor(){
+    public HashMap<Operation, Instruction> getAnchor() {
         return this.anchor;
     }
 
@@ -58,8 +65,21 @@ public class BasicBlock {
         this.instructions.add(instruction);
     }
 
+    public void addInstructionAtLastButOne(Instruction instruction) {
+        if (instructions.size() >= 1) {
+            this.instructions.add(instructions.size() - 1, instruction);
+        } else {
+            this.instructions.add(instruction);
+        }
+
+    }
+
     public void addInstructionAtStart(Instruction instruction) {
         this.instructions.add(0, instruction);
+    }
+
+    public void removeInstruction(Instruction instruction) {
+        this.instructions.remove(instruction);
     }
 
     public void setInstructions(LinkedList<Instruction> instructions) {
@@ -70,6 +90,10 @@ public class BasicBlock {
         return this.instructions;
     }
 
+    public void reverseInstructions() {
+        Collections.reverse(this.instructions);
+    }
+
     public int getId() {
         return this.id;
     }
@@ -78,7 +102,7 @@ public class BasicBlock {
         return children;
     }
 
-    public List<BasicBlock> getParent() {
+    public List<BasicBlock> getParents() {
         return parent;
     }
 
@@ -92,14 +116,84 @@ public class BasicBlock {
 
     public void addChildrenAndUpdateChildrenTracker(BasicBlock children) {
         this.children.add(children);
-        if(children.getLocalTracker().isEmpty()){
+        if (children.getLocalTracker().isEmpty()) {
             children.setLocalTracker(this.getCopyOfVariableTracker());
         }
+    }
+
+    public void removeChildren(BasicBlock basicBlock) {
+        if (this.children.contains(basicBlock)) this.children.remove(basicBlock);
+    }
+
+    public void removeChildrenWithId(Integer basicBlockId) {
+        Iterator iterator = this.getChildren().iterator();
+        while (iterator.hasNext()) {
+            BasicBlock basicBlock = (BasicBlock) iterator.next();
+            if (basicBlock.getId() == basicBlockId) {
+                iterator.remove();
+                removedBasicBlocks.add(basicBlock.getId());
+                break;
+            }
+        }
+        Iterator allBasicBlocksIterator = this.getListOfAllBasicBlocks().iterator();
+        while (allBasicBlocksIterator.hasNext()) {
+            BasicBlock basicBlock = (BasicBlock) allBasicBlocksIterator.next();
+            if (basicBlock.getId() == basicBlockId) {
+                allBasicBlocksIterator.remove();
+                removedBasicBlocks.add(basicBlock.getId());
+                break;
+            }
+        }
+
+    }
+
+    public void removeChildrenWithoutId(Integer basicBlockId) {
+        Iterator iterator = this.getChildren().iterator();
+        Integer toBeRemoved = null;
+        while (iterator.hasNext()) {
+            BasicBlock basicBlock = (BasicBlock) iterator.next();
+            if (basicBlock.getId() != basicBlockId) {
+                toBeRemoved = basicBlock.getId();
+                removedBasicBlocks.add(toBeRemoved);
+                iterator.remove();
+                break;
+            }
+        }
+
+        if (toBeRemoved != null) {
+            Iterator allBasicBlocksIterator = this.getListOfAllBasicBlocks().iterator();
+            while (allBasicBlocksIterator.hasNext()) {
+                BasicBlock basicBlock = (BasicBlock) allBasicBlocksIterator.next();
+                if (basicBlock.getId() == toBeRemoved) {
+                    removedBasicBlocks.add(toBeRemoved);
+                    allBasicBlocksIterator.remove();
+                    break;
+                }
+            }
+        }
+
     }
 
     public void addParent(BasicBlock parent) {
         this.parent.add(parent);
     }
+
+    public void setLeftParent(BasicBlock basicBlock) {
+        this.leftParent = basicBlock;
+    }
+
+    public BasicBlock getLeftParent() {
+        return this.leftParent;
+    }
+
+    public void setRightParent(BasicBlock basicBlock) {
+        this.rightParent = basicBlock;
+    }
+
+    public BasicBlock getRightParent() {
+        return this.rightParent;
+    }
+
 
     public void setType(Type type) {
         this.type = type;
@@ -141,10 +235,27 @@ public class BasicBlock {
         this.isVisited = true;
     }
 
-    public void setIsRootBasicBlock(){
+    public void setIsVisitedAfterPhiRemoval() {
+        this.isVisitedAfterPhiRemoval = true;
+    }
+
+    public boolean isVisitedAfterPhiRemoval() {
+        return this.isVisitedAfterPhiRemoval;
+    }
+
+    public void setIsVisitedWhileLiveRangeAnalysis() {
+        this.isVisitedWhileLiveRangeAnalysis = !this.isVisitedWhileLiveRangeAnalysis;
+    }
+
+    public boolean getIsVisitedWhileLiveRangeAnalysis() {
+        return this.isVisitedWhileLiveRangeAnalysis;
+    }
+
+    public void setIsRootBasicBlock() {
         this.isRootBasicBlock = true;
     }
-    public boolean isRootBasicBlock(){
+
+    public boolean isRootBasicBlock() {
         return this.isRootBasicBlock;
     }
 

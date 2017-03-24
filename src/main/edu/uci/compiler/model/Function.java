@@ -12,9 +12,10 @@ public class Function {
     private Integer functionId;
     private HashMap<String, Integer> localSSATrackerForVariables;
     private HashMap<String, ArrayList<Integer>> localArrayVariables;
-    private ArrayList<String> funcParameters;
+    private ArrayList<Result> funcParameters;
     private BasicBlock funcBasicBlock;
     private boolean isVisited; // This member is for printing the basic blocks and functions
+    private boolean isVisitedAfterPhiRemoval;
 
     public Function(String funcName){
         this.funcName = funcName;
@@ -24,6 +25,7 @@ public class Function {
         this.funcParameters = new ArrayList<>();
         this.funcBasicBlock = new BasicBlock(BasicBlock.Type.BB_FUNCTION);
         this.isVisited = false;
+        this.isVisitedAfterPhiRemoval = false;
         ++numFunctions;
     }
 
@@ -37,6 +39,11 @@ public class Function {
     public Integer getSSAForVariable(String identifier){
         return this.localSSATrackerForVariables.get(identifier);
     }
+
+    public boolean isLocalVariable(String identifier){
+        System.out.println("identifier " + identifier + this.localSSATrackerForVariables.containsKey(identifier));
+        return this.localSSATrackerForVariables.containsKey(identifier);
+    }
     public void addLocalArrayVariable(String arrayIdentifier, ArrayList<Integer> dimensions){
         this.localArrayVariables.put(arrayIdentifier, dimensions);
     }
@@ -47,13 +54,13 @@ public class Function {
         return this.localArrayVariables.get(arrayIdentifier);
     }
 
-    public void setFuncParameter(String identifier){
-        this.funcParameters.add(identifier);
+    public void setFuncParameter(Result parameter){
+        this.funcParameters.add(parameter);
     }
-    public void setFuncParameters(ArrayList<String> funcParameters){
+    public void setFuncParameters(ArrayList<Result> funcParameters){
         this.funcParameters = funcParameters;
     }
-    public ArrayList<String> getFuncParameters(){
+    public ArrayList<Result> getFuncParameters(){
         return this.funcParameters;
     }
     public BasicBlock getFuncBasicBlock(){
@@ -67,5 +74,11 @@ public class Function {
     }
     public void setIsVisited(){
         this.isVisited = true;
+    }
+    public void setIsVisitedAfterPhiRemoval(){
+        this.isVisitedAfterPhiRemoval = true;
+    }
+    public boolean isVisitedAfterPhiRemoval(){
+        return this.isVisitedAfterPhiRemoval;
     }
 }

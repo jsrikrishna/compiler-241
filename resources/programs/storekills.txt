@@ -1,0 +1,20 @@
+main
+var a, b, c, d, x, y;
+array [5][3][4] arr;
+array [10] barr;
+{
+	let b <- arr[0][1][2];
+	if b>0 then
+		let barr[0] <- 18;
+		if c > 0 then
+			let barr[0] <- 20
+		else
+			let d <- a
+		fi;
+		let x <- y
+	else
+		let c <- d;
+		let arr[0][0][0] <- 67
+	fi;
+	let c<- arr[4][2][3]
+}.

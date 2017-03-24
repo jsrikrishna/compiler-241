@@ -1,0 +1,106 @@
+digraph{
+BasicBlock0 -> BasicBlock1
+BasicBlock1 -> BasicBlock2
+BasicBlock1 -> BasicBlock3
+BasicBlock3 -> BasicBlock4
+BasicBlock4 -> BasicBlock5
+BasicBlock4 -> BasicBlock6
+BasicBlock5 -> BasicBlock1
+BasicBlock6 -> BasicBlock7
+BasicBlock7 -> BasicBlock8
+BasicBlock7 -> BasicBlock10
+BasicBlock8 -> BasicBlock9
+BasicBlock9 -> BasicBlock4
+BasicBlock10 -> BasicBlock9
+BasicBlock0[shape="box", label="BasicBlock0
+
+ Type is BB_MAIN
+
+5: MULI -6 4
+6: ADD FRAME_POINTER foo_baseAddress
+7: ADDA (5) (6)
+8: LOAD (7) {foo}
+"]
+BasicBlock1[shape="box", label="BasicBlock1
+
+ Type is BB_WHILE_CONDITION_AND_JOIN
+
+53: PHI (8) (49) c_53
+52: PHI 0 (17) b_52
+10: CMP 2 3
+11: BGE (10) [2]
+"]
+BasicBlock2[shape="box", label="BasicBlock2
+
+ Type is BB_WHILE_FALL_THROUGH
+
+58: ADDA (5) (6)
+59: LOAD (58) {foo}
+61: END
+"]
+BasicBlock3[shape="box", label="BasicBlock3
+
+ Type is BB_WHILE_BODY
+
+16: ADDA (5) (6)
+17: LOAD (16) {foo}
+51: BRA [1]
+"]
+BasicBlock4[shape="box", label="BasicBlock4
+
+ Type is BB_WHILE_CONDITION_AND_JOIN
+
+23: ADDA (5) (6)
+24: LOAD (23) {foo}
+25: CMP 4 (24)
+26: BGE (25) [5]
+"]
+BasicBlock5[shape="box", label="BasicBlock5
+
+ Type is BB_WHILE_FALL_THROUGH
+
+48: ADDA (5) (6)
+49: LOAD (48) {foo}
+"]
+BasicBlock6[shape="box", label="BasicBlock6
+
+ Type is BB_WHILE_BODY
+
+43: BRA [4]
+"]
+BasicBlock7[shape="box", label="BasicBlock7
+
+ Type is BB_IF_CONDITION
+
+27: CMP 3 4
+28: BGE (27) [10]
+"]
+BasicBlock8[shape="box", label="BasicBlock8
+
+ Type is BB_IF_THEN
+
+29: MULI c_53 4
+30: ADD FRAME_POINTER boo_baseAddress
+31: ADDA (29) (30)
+32: LOAD (31) {boo}
+33: STORE 3 (32) {boo}
+34: BRA [9]
+"]
+BasicBlock9[shape="box", label="BasicBlock9
+
+ Type is BB_IF_ELSE_JOIN
+
+42: KILL foo
+41: KILL boo
+"]
+BasicBlock10[shape="box", label="BasicBlock10
+
+ Type is BB_ELSE
+
+35: MULI 2 4
+37: ADDA (35) (6)
+38: LOAD (37) {foo}
+39: STORE 5 (38) {foo}
+40: BRA [9]
+"]
+}

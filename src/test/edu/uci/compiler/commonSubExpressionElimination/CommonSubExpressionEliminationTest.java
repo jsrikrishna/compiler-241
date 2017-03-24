@@ -24,10 +24,10 @@ public class CommonSubExpressionEliminationTest {
             System.out.println("File name is " + fileName);
             Parser cseParser = new Parser(fileName);
             cseParser.computation();
-            cseParser.doCopyPropagation();
+            cseParser.doCopyPropagation(false);
             cseParser.doCommonSubExpressionElimination();
             cseParser.printDomVCG();
-            cseParser.printCFG(true, true);
+            cseParser.printCFG(true, true, false);
         } catch (IOException ex) {
             System.out.println("Exception is " + ex.getMessage());
             noExceptionOccurred = false;

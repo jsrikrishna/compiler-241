@@ -32,7 +32,10 @@ public enum Operation {
 
     // Function Calls
     PARAM("param"),
-    CALL("call");
+    CALL("call"),
+
+    // Array Kills
+    KILL("kill");
 
 
     private String operationName;

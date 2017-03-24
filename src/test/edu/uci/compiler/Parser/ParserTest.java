@@ -18,13 +18,13 @@ public class ParserTest {
 
         try {
             //To Test one code at a time
-            String fileName = resourcePath + "/test027.txt";
+            String fileName = resourcePath + "/new1.txt";
 //             String fileName = resourcePath + "/big.txt";
 //            String fileName = resourcePath + "/cell.txt";
             System.out.println("File name is " + fileName);
             Parser parser_no_cp = new Parser(fileName);
             parser_no_cp.computation();
-            parser_no_cp.printCFG(false, false);
+            parser_no_cp.printCFG(false, false, false);
         } catch (IOException ex) {
             System.out.println("Exception is " + ex.getMessage());
             noExceptionOccurred = false;

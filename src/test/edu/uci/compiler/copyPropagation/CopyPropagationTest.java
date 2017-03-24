@@ -23,8 +23,8 @@ public class CopyPropagationTest {
             System.out.println("File name is " + fileName);
             Parser parser_cp = new Parser(fileName);
             parser_cp.computation();
-            parser_cp.doCopyPropagation();
-            parser_cp.printCFG(true, false);
+            parser_cp.doCopyPropagation(false);
+            parser_cp.printCFG(true, false, false);
         } catch (IOException ex) {
             System.out.println("Exception is " + ex.getMessage());
             noExceptionOccurred = false;

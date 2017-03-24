@@ -61,11 +61,21 @@ public class InstructionGenerator {
         return instructions.get(instructionId);
     }
 
+    public void printTotalNumberOfInstructions() {
+        System.out.println("Total Number of Instructions are " + instructions.size());
+        System.out.println("Total Number of Instruction Results are " + instructionResults.size());
+    }
+
     private Instruction generateInstruction(Operation operation, Result r1, Result r2) {
         Instruction instruction = new Instruction();
         instruction.setOperation(operation);
         instruction.setOperand1(r1);
         instruction.setOperand2(r2);
+        Instruction prev = instructions.get(instruction.getInstructionId() - 1);
+        if (prev != null) {
+            prev.setNextInstruction(instruction);
+            instruction.setPrevInstruction(prev);
+        }
         instructions.put(instruction.getInstructionId(), instruction);
         return instruction;
     }
@@ -100,13 +110,32 @@ public class InstructionGenerator {
         else return r2;
     }
 
-    public Instruction generateInstructionForAssignment(Result r1, Result r2) {
+    public Result computeConstantResult(Instruction constantInstruction) {
+        Operation operation = constantInstruction.getOperation();
+        Result operand1 = constantInstruction.getOperand1();
+        Result operand2 = constantInstruction.getOperand2();
+        if (operation == ADD) return resultForConstant(operand1.getValue() + operand2.getValue());
+        if (operation == SUB) return resultForConstant(operand1.getValue() - operand2.getValue());
+        if (operation == Operation.DIV) return resultForConstant(operand1.getValue() / operand2.getValue());
+        if (operation == MUL) return resultForConstant(operand1.getValue() * operand2.getValue());
+        return null;
+    }
+
+    public Result generateInstructionForAssignment(Result r1, Result r2) {
         if (r1.getKind() == VARIABLE) {
             // Here it is MOVE, so move y x => assign x:= y
-            return generateInstruction(MOVE, r2, r1);
+            Instruction moveInstruction = generateInstruction(MOVE, r2, r1);
+            return resultForInstruction(moveInstruction);
         }
         // Else it is a array variable
-        return generateInstruction(STORE, r2, r1);
+        Instruction storeInstruction = generateInstruction(STORE, r2, r1);
+
+        Result arrayVariable = new Result();
+        arrayVariable.setKind(ARRAY_VARIABLE);
+        arrayVariable.setIdentifierName(r1.getIdentifierName());
+        storeInstruction.setArrayVariable(arrayVariable);
+
+        return resultForInstruction(storeInstruction);
 
     }
 
@@ -212,7 +241,7 @@ public class InstructionGenerator {
         return resultForInstruction(addInstruction);
     }
 
-    public ArrayBase computeArrayDesignator(Result arrDimResult, String arrayIdentifier) {
+    public ArrayBase computeArrayDesignator(Result arrDimResult, String arrayIdentifier, boolean isRHS) {
         //TODO: Need to understand frame pointer
 
         ArrayBase arrayBase = new ArrayBase();
@@ -236,17 +265,30 @@ public class InstructionGenerator {
         Instruction locInArrayInstr = generateInstruction(ADDA, arrDimResult, arrayBaseAddrInstrRes);
         Result addaResult = resultForInstruction(locInArrayInstr);
         arrayBase.instructionIds.add(locInArrayInstr.getInstructionId());
-        Instruction loadInstruction = generateInstruction(LOAD, addaResult, null);
-        arrayBase.instructionIds.add(loadInstruction.getInstructionId());
-        arrayBase.finalResult = resultForInstruction(loadInstruction);
 
+        Result arrayVariable = new Result();
+        arrayVariable.setKind(ARRAY_VARIABLE);
+        arrayVariable.setIdentifierName(arrayIdentifier);
+        locInArrayInstr.setArrayVariable(arrayVariable);
+
+        if (isRHS) {
+            Instruction loadInstruction = generateInstruction(LOAD, addaResult, null);
+            loadInstruction.setArrayVariable(arrayVariable);
+            arrayBase.instructionIds.add(loadInstruction.getInstructionId());
+            arrayBase.finalResult = resultForInstruction(loadInstruction);
+            arrayBase.finalResult.setIdentifierName(arrayIdentifier);
+            // Keep the above instruction in a result
+            return arrayBase;
+        }
+        arrayBase.finalResult = addaResult;
+        arrayBase.finalResult.setIdentifierName(arrayIdentifier);
         // Keep the above instruction in a result
         return arrayBase;
 
     }
 
-    public Instruction generateInstructionForReturn(Result result) {
-        return generateInstruction(RET, result, null);
+    public Result generateInstructionForReturn(Result result) {
+        return resultForInstruction(generateInstruction(RET, result, null));
     }
 
     private Result resultForInstruction(Instruction instruction) {
@@ -297,7 +339,7 @@ public class InstructionGenerator {
         return null;
     }
 
-    public Instruction generateInstructionToInitVar(String identifier){
+    public Instruction generateInstructionToInitVar(String identifier) {
         Result zero = new Result();
         zero.setKind(CONSTANT);
         zero.setValue(0);
@@ -307,19 +349,37 @@ public class InstructionGenerator {
         return generateInstruction(MOVE, zero, varResult);
     }
 
-    public Instruction generatePhiInstruction(Result lhs, Result rhs){
+    public Result generatePhiInstruction(Result lhs, Result rhs) {
         Instruction phiInstruction = generateInstruction(PHI, lhs, rhs);
         Result phiResult = resultForVariable(lhs.getIdentifierName(), phiInstruction.getInstructionId());
         phiInstruction.setOperand3(phiResult);
-        return phiInstruction;
+        return resultForInstruction(phiInstruction);
     }
 
-    public Result resultForVariable(String identifier, Integer ssaVersion){
+    public Instruction generateKillInstruction(Result arrayVariable) {
+        Instruction killInstruction = generateInstruction(KILL, null, null);
+        killInstruction.setArrayVariable(arrayVariable);
+        return killInstruction;
+    }
+
+    public Result generateMoveInstructionForPhi(Result from, Result to) {
+        Instruction moveInstruction = generateInstruction(MOVE, from, to);
+        return resultForInstruction(moveInstruction);
+    }
+
+    public Result resultForVariable(String identifier, Integer ssaVersion) {
         Result result = new Result();
         result.setKind(VARIABLE);
         result.setIdentifierName(identifier);
         result.setSsaVersion(ssaVersion);
-        return  result;
+        return result;
+    }
+
+    public Result resultForConstant(Integer value) {
+        Result result = new Result();
+        result.setKind(CONSTANT);
+        result.setValue(value);
+        return result;
     }
 
     public void generateError(String message) {
