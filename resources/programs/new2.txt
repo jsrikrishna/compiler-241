@@ -1,0 +1,11 @@
+main
+  var i, j;
+{
+  let i <- 0;
+  while i < 10 do
+    let j <- call InputNum();
+    let j <- j + 7;
+    call OutputNum(j);
+    let i <- i + 1
+  od
+}.

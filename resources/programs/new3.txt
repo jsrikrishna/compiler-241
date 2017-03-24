@@ -1,0 +1,54 @@
+/* Something has to be spilled here if you have 6 regular */
+/* registers and 2 scratch registers */
+main
+
+array [5] [5] a, b, c;
+var i, j, k, sum, inout;
+
+{
+  let inout <- call InputNum;
+
+  let i <- 0;
+  while i < 5 do
+    let j <- 0;
+    while j < 5 do
+      let a[i][j] <- i * j;
+      let b[i][j] <- i + j;
+      let j <- j + 1
+    od;
+    let i <- i + 1
+  od;
+
+
+  let i <- 0;
+  while i < 5 do
+    let k <- 0;
+    while k < 5 do
+      let sum <- 0;
+      let j <- 0;
+      while j < 5 do
+        let sum <- sum + a[i][j] * b[j][k];
+        let j <- j + 1
+      od;
+      let c[i][k] <- sum;
+      let k <- k + 1
+    od;
+    let i <- i + 1
+  od;
+
+
+  let i <- 0;
+  while i < 5 do
+    let j <- 0;
+    while j < 5 do
+      call OutputNum(i);
+      call OutputNum(j);
+      call OutputNum(c[i][j]);
+      call OutputNewLine;
+
+      let j <- j + 1
+    od;
+    let i <- i + 1
+  od;
+  call OutputNum(inout)
+}.
