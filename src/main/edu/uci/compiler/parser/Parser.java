@@ -33,6 +33,7 @@ public class Parser {
     private HashMap<Integer, Integer> registerForResults;
     private CopyPropagator cp;
     private CommonSubExpElimination cse;
+    private LTDominatorTree ltDomTree;
     private DominatorTree domTree;
     private RegisterAllocator ra;
     private ArrayList<Token> relOpList;
@@ -57,7 +58,9 @@ public class Parser {
         cfg = new ControlFlowGraph(this.endBasicBlocks);
         tracker = new Tracker();
         domTree = new DominatorTree(allRootDominatorBlocks, endBasicBlocks, allDomParents);
+//        ltDomTree = new LTDominatorTree(startBasicBlock);
         cp = new CopyPropagator(allRootDominatorBlocks, ig, instructionResults);
+
         cse = new CommonSubExpElimination(allRootDominatorBlocks, instructionResults, allInstructions);
         lra = new LiveRangeAnalysis(endBasicBlocks, allDomParents, phiInstructions, instructionResults);
         ra = new RegisterAllocator(lra.getInterferenceGraph(), cfg, registerForResults);
@@ -120,6 +123,7 @@ public class Parser {
         this.endBasicBlocks.add(endBasicBlock);
 
         domTree.generateDomRelationsForProgram();
+//        ltDomTree.getDominatorTree();
 //        cfg.printParentsForProgram(fileName);
     }
 
