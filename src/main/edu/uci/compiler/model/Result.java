@@ -7,7 +7,7 @@ public class Result {
     public enum KIND {
         CONSTANT, VARIABLE, REGISTER, CONDITION, INSTRUCTION, BRANCH_INSTRUCTION, FIX_UP,
         ARRAY_VARIABLE, BASE_ADDRESS, FRAME_POINTER,
-        FUNCTION, PARAMETER_COUNT,
+        FUNCTION, PARAMETER_COUNT, PARAMETER,
         INIT;
     }
 
@@ -154,8 +154,9 @@ public class Result {
         if (kind == KIND.FRAME_POINTER) return "FRAME_POINTER";
         if (kind == KIND.FUNCTION) return "[" + this.funcBasicBlockId + "]";
         if (kind == KIND.PARAMETER_COUNT) return "parameter_count " + this.parameterCount;
+        if (kind == KIND.PARAMETER) return "Parameter " + this.getIdentifierName();
         if (kind == KIND.REGISTER) {
-            if(this.getRegisterNumber() > 8){
+            if (this.getRegisterNumber() > 8) {
                 return "SR" + registerNumber;
             }
             return "R" + registerNumber;

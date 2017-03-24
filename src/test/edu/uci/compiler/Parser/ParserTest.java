@@ -18,7 +18,7 @@ public class ParserTest {
 
         try {
             //To Test one code at a time
-            String fileName = resourcePath + "/test003.txt";
+            String fileName = resourcePath + "/new1.txt";
 //             String fileName = resourcePath + "/big.txt";
 //            String fileName = resourcePath + "/cell.txt";
             System.out.println("File name is " + fileName);

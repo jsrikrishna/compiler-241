@@ -120,11 +120,11 @@ public class Parser {
         this.endBasicBlocks.add(endBasicBlock);
 
         domTree.generateDomRelationsForProgram();
-        cfg.printParentsForProgram(fileName);
+//        cfg.printParentsForProgram(fileName);
     }
 
-    public void doCopyPropagation() {
-        cp.propagateCopiesForProgram();
+    public void doCopyPropagation(boolean doBranchFolding) {
+        cp.propagateCopiesForProgram(doBranchFolding);
     }
 
     public void printCFG(boolean isCP, boolean isCSE, boolean isPhiRemoved) {
@@ -299,8 +299,11 @@ public class Parser {
             tracker.updateSSAForVariable(identifier, ssaVersion);
             function.getFuncBasicBlock().updateSSAVersion(identifier, ssaVersion);
         }
+        Result paramResult = new Result();
+        paramResult.setKind(PARAMETER);
+        paramResult.setIdentifierName(identifier);
         function.updateSSAVariable(identifier, ssaVersion);
-        function.setFuncParameter(identifier);
+        function.setFuncParameter(paramResult);
     }
 
     private void funcBody(Function function) throws IOException {
@@ -351,7 +354,7 @@ public class Parser {
                               List<Instruction> toBeKilled) throws IOException {
         if (currentToken != LET) generateError(ASSIGNMENT_ERROR);
         moveToNextToken();
-        Result lhs = designator(basicBlock, function);
+        Result lhs = designator(basicBlock, function, false);
         if (currentToken != BECOMES) generateError(BECOMES_NOT_FOUND);
         moveToNextToken();
         Result rhs = expression(basicBlock, function);
@@ -374,9 +377,25 @@ public class Parser {
         TODO: Q - Does array as well have Tracker ?
          */
         if (lhs.getKind() == VARIABLE) {
-            if (lhs.getSsaVersion() == null || lhs.getSsaVersion() == -1) {
-                System.err.println("Variable " + lhs.getIdentifierName() + " must declared before being used");
-                System.exit(103);
+            if (function != null) {
+                Result paramResult = new Result();
+                paramResult.setKind(PARAMETER);
+                paramResult.setIdentifierName(lhs.getIdentifierName());
+                boolean isNotFuncParameter = !containFuncParameter(function, paramResult);
+                System.out.println(lhs.getIdentifierName() + " func parametr " + isNotFuncParameter);
+                boolean isNotFuncLocalVariable = !function.isLocalVariable(lhs.getIdentifierName());
+                System.out.println(lhs.getIdentifierName() + " func varibale " + isNotFuncLocalVariable);
+                System.out.println(lhs);
+                boolean isNotGlobalVariable = lhs.getSsaVersion() == null;
+                if (isNotFuncParameter && isNotFuncLocalVariable && isNotGlobalVariable) {
+                    System.err.println("Variable '" + lhs.getIdentifierName() + "' in function '" + function.getFuncName() + "' must declared before being used");
+                    System.exit(103);
+                }
+            } else {
+                if (lhs.getSsaVersion() == null || lhs.getSsaVersion() == -1) {
+                    System.err.println("Variable " + lhs.getIdentifierName() + " must declared before being used");
+                    System.exit(103);
+                }
             }
             tracker.updateSSAForVariable(lhs.getIdentifierName(), instruction.getInstructionId());
             lhs.setSsaVersion(instruction.getInstructionId());
@@ -398,10 +417,26 @@ public class Parser {
         Update rhs result with SSA Version
          */
         if (rhs.getKind() == VARIABLE) {
-            if (rhs.getSsaVersion() == null || rhs.getSsaVersion() == -1) {
-                System.err.println("Variable " + rhs.getIdentifierName() + " must declared before being used");
-                System.exit(103);
+
+            if (function != null) {
+                String identifierName = rhs.getIdentifierName();
+                Result paramResult = new Result();
+                paramResult.setKind(PARAMETER);
+                paramResult.setIdentifierName(identifierName);
+                boolean funcVariable = containFuncParameter(function, paramResult) && !function.isLocalVariable(identifierName);
+                if (funcVariable) {
+                    System.out.println("RHS");
+                    System.err.println("Variable '" + rhs.getIdentifierName() + "' in function '" + function.getFuncName() + "' must declared before being used");
+                    System.exit(103);
+                }
+
+            } else {
+                if (rhs.getSsaVersion() == null || rhs.getSsaVersion() == -1) {
+                    System.err.println("Variable " + rhs.getIdentifierName() + " must declared before being used");
+                    System.exit(103);
+                }
             }
+
             String identifier = rhs.getIdentifierName();
             // I may get Basic Block correct all the time,
             // so i can take the ssa from Basic Block all the time instead of checking for func == null
@@ -418,7 +453,16 @@ public class Parser {
         return lhs;
     }
 
-    private Result designator(BasicBlock basicBlock, Function function) throws IOException {
+    private boolean containFuncParameter(Function function, Result paramResult) {
+        for (Result result : function.getFuncParameters()) {
+            if (result.equals(paramResult)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private Result designator(BasicBlock basicBlock, Function function, boolean isRHS) throws IOException {
         if (currentToken != IDENTIFIER) generateError(DESIGNATOR_ERROR);
         // Could be array variable or a normal variable
         String identifier = scanner.getCurrentIdentifier();
@@ -445,7 +489,7 @@ public class Parser {
             // Need to generate instructions and return the final Result that contains the instruction id
             if (dimensionExp.size() != dimensions.size()) generateError(ARRAY_DIMENSION_MISMATCH);
             Result arrayDimensionResult = handleArrayDimInstructions(dimensionExp, dimensions, basicBlock);
-            Result indexInArray = handleArrayDesignator(arrayDimensionResult, identifier, basicBlock);
+            Result indexInArray = handleArrayDesignator(arrayDimensionResult, identifier, basicBlock, isRHS);
             return indexInArray;
         }
 
@@ -490,8 +534,8 @@ public class Parser {
         return res.finalResult;
     }
 
-    private Result handleArrayDesignator(Result dimResult, String identifier, BasicBlock basicBlock) {
-        ArrayBase res = ig.computeArrayDesignator(dimResult, identifier);
+    private Result handleArrayDesignator(Result dimResult, String identifier, BasicBlock basicBlock, boolean isRHS) {
+        ArrayBase res = ig.computeArrayDesignator(dimResult, identifier, isRHS);
         for (Integer instrId : res.instructionIds) {
             Instruction arrDesigInstruction = ig.getInstruction(instrId);
             arrDesigInstruction.setBasicBlock(basicBlock);
@@ -526,11 +570,11 @@ public class Parser {
     }
 
     private Result term(BasicBlock basicBlock, Function function) throws IOException {
-        Result lhs = factor(basicBlock, function);
+        Result lhs = factor(basicBlock, function, false);
         while (currentToken == TIMES || currentToken == DIV) {
             Token prevToken = currentToken;
             moveToNextToken();
-            Result rhs = factor(basicBlock, function);
+            Result rhs = factor(basicBlock, function, true);
             if (isVariableNotDeclared(lhs)) {
                 System.err.println("Variable " + lhs.getIdentifierName() + " must declared before being used");
                 System.exit(103);
@@ -550,11 +594,11 @@ public class Parser {
         return lhs;
     }
 
-    private Result factor(BasicBlock basicBlock, Function function) throws IOException {
+    private Result factor(BasicBlock basicBlock, Function function, boolean isRHS) throws IOException {
         if (!isAFactor(currentToken)) generateError(FACTOR_ERROR);
         if (currentToken == IDENTIFIER) {
             //TODO: Need to deal with identifiers
-            return designator(basicBlock, function);
+            return designator(basicBlock, function, true);
         }
         if (currentToken == NUMBER) {
             //TODO: Need to deal with number
@@ -627,7 +671,7 @@ public class Parser {
                     Integer expected = function.getFuncParameters().size();
                     Integer got = parameters.size();
                     String funcName = function.getFuncName();
-                    System.err.println("Function parameters does not match for - " + function.getFuncName());
+                    System.err.println("Function parameters does not match for - '" + function.getFuncName() + "'");
                     System.err.println("Expected " + expected + " parameters for " + funcName + " but got " + got);
                     System.exit(103);
                 }

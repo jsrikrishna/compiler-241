@@ -24,7 +24,7 @@ public class CommonSubExpressionEliminationTest {
             System.out.println("File name is " + fileName);
             Parser cseParser = new Parser(fileName);
             cseParser.computation();
-            cseParser.doCopyPropagation();
+            cseParser.doCopyPropagation(false);
             cseParser.doCommonSubExpressionElimination();
             cseParser.printDomVCG();
             cseParser.printCFG(true, true, false);

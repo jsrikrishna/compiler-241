@@ -44,28 +44,31 @@ public class CommonSubExpElimination {
         for (Instruction instruction : basicBlock.getInstructions()) {
             Operation operation = instruction.getOperation();
             if (canAnchorLinkIgnored(operation)) continue;
-            if (operation == Operation.LOAD) {
+            if (operation == LOAD || operation == ADDA) {
                 Result arrayVariable = instruction.getArrayVariable();
-                if (anchor.containsKey(KILL) && anchor.get(KILL).getArrayVariable().equals(arrayVariable)) {
-                    instruction.setAnchorInstruction(anchor.get(Operation.KILL));
-                } else {
-                    Instruction parentKillInst = findInstructionInParents(domBlock, KILL);
-                    if (parentKillInst != null && arrayVariable.equals(parentKillInst.getArrayVariable())) {
-                        instruction.setAnchorInstruction(parentKillInst);
+                if (anchor.containsKey(KILL)
+                        && !anchor.containsKey(LOAD)
+                        && anchor.get(KILL).getArrayVariable().equals(arrayVariable)) {
 
+                    if(operation == ADDA
+                            && anchor.get(KILL).getForwardAnchorInstruction() == null){
+                        instruction.setAnchorInstruction(anchor.get(KILL));
+                        anchor.get(KILL).setForwardAnchorInstruction(instruction);
+                    }
+
+                    else if(operation == LOAD
+                            && anchor.get(KILL).getForwardAnchorInstruction() != null
+                            && anchor.get(KILL).getForwardAnchorInstruction().getOperation() == ADDA){
+                        instruction.setAnchorInstruction(anchor.get(KILL));
+                    }
+
+                    else {
+                        setAnchorInstruction(domBlock, anchor, instruction, operation);
                     }
                 }
             }
             if (instruction.getAnchorInstruction() == null) {
-                if (anchor.containsKey(operation)) {
-                    instruction.setAnchorInstruction(anchor.get(operation));
-                } else {
-                    Instruction parentAnchorInstruction = findInstructionInParents(domBlock, operation);
-                    if (parentAnchorInstruction != null) {
-                        instruction.setAnchorInstruction(parentAnchorInstruction);
-                    }
-                }
-
+                setAnchorInstruction(domBlock, anchor, instruction, operation);
             }
             anchor.put(operation, instruction);
         }
@@ -73,6 +76,20 @@ public class CommonSubExpElimination {
 //        System.out.println("Basic Block " + basicBlock.getId());
 //        System.out.println(basicBlock.getAnchor());
 //        System.out.println();
+    }
+
+    private void setAnchorInstruction(DominatorBlock domBlock,
+                                      HashMap<Operation, Instruction> anchor,
+                                      Instruction instruction,
+                                      Operation operation) {
+        if (anchor.containsKey(operation)) {
+            instruction.setAnchorInstruction(anchor.get(operation));
+        } else {
+            Instruction parentAnchorInstruction = findInstructionInParents(domBlock, operation);
+            if (parentAnchorInstruction != null) {
+                instruction.setAnchorInstruction(parentAnchorInstruction);
+            }
+        }
     }
 
     private Instruction findInstructionInParents(DominatorBlock domBlock, Operation operation) {
@@ -140,11 +157,6 @@ public class CommonSubExpElimination {
                     canBeReplacedWithResult = toBeRemovedInstruction.get(anchorInstruction);
                 }
 
-//                if (canBeReplacedWithResult == null) {
-//                    System.err.println("this cannot be possible " + toBeCheckedInstruction);
-//                    System.exit(100);
-//                }
-
                 toBeRemovedInstruction.put(toBeCheckedInstruction, canBeReplacedWithResult);
                 return;
             }
@@ -168,16 +180,44 @@ public class CommonSubExpElimination {
             if (isInstructionResult(operand1)) {
                 Instruction checkForRemovabilityInstruction = allInstructions.get(operand1.getInstructionId());
                 if (toBeRemovedInstruction.containsKey(checkForRemovabilityInstruction)) {
-                    instruction.setOperand1(toBeRemovedInstruction.get(checkForRemovabilityInstruction));
+                    Instruction anchorInstruction = checkForRemovabilityInstruction.getAnchorInstruction();
+                    Result canBeReplacedWithResult = null;
+                    while (anchorInstruction != null) {
+                        if (checkForRemovabilityInstruction.equals(anchorInstruction)) {
+                            canBeReplacedWithResult = instructionResults.get(anchorInstruction);
+                            if (toBeRemovedInstruction.containsKey(anchorInstruction)) {
+                                canBeReplacedWithResult = toBeRemovedInstruction.get(anchorInstruction);
+                            }
+                            break;
+                        }
+                        anchorInstruction = anchorInstruction.getAnchorInstruction();
+                    }
+                    instruction.setOperand1(canBeReplacedWithResult);
                 }
             }
             if (isInstructionResult(operand2)) {
                 Instruction checkForRemovabilityInstruction = allInstructions.get(operand2.getInstructionId());
                 if (toBeRemovedInstruction.containsKey(checkForRemovabilityInstruction)) {
-                    instruction.setOperand2(toBeRemovedInstruction.get(checkForRemovabilityInstruction));
+                    Instruction anchorInstruction = checkForRemovabilityInstruction.getAnchorInstruction();
+                    Result canBeReplacedWithResult = null;
+                    while (anchorInstruction != null) {
+                        if (checkForRemovabilityInstruction.equals(anchorInstruction)) {
+                            canBeReplacedWithResult = instructionResults.get(anchorInstruction);
+                            if (toBeRemovedInstruction.containsKey(anchorInstruction)) {
+                                canBeReplacedWithResult = toBeRemovedInstruction.get(anchorInstruction);
+                            }
+                            break;
+                        }
+                        anchorInstruction = anchorInstruction.getAnchorInstruction();
+                    }
+                    instruction.setOperand2(canBeReplacedWithResult);
                 }
             }
             Instruction anchorInstruction = instruction.getAnchorInstruction();
+            if(instruction.equals(anchorInstruction)){
+                toBeRemovedInstruction.put(instruction, instructionResults.get(instruction));
+                iterator.remove();
+            }
         }
 
         for (DominatorBlock childDomBlock : rootDomBlock.getChildren()) {

@@ -17,13 +17,13 @@ public class CopyPropagationTest {
 
         try {
             //To Test one code at a time
-            String fileName = resourcePath + "/test009.txt";
+            String fileName = resourcePath + "/new1.txt";
 //             String fileName = resourcePath + "/big.txt";
 //            String fileName = resourcePath + "/cell.txt";
             System.out.println("File name is " + fileName);
             Parser parser_cp = new Parser(fileName);
             parser_cp.computation();
-            parser_cp.doCopyPropagation();
+            parser_cp.doCopyPropagation(false);
             parser_cp.printCFG(true, false, false);
         } catch (IOException ex) {
             System.out.println("Exception is " + ex.getMessage());

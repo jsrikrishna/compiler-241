@@ -17,6 +17,9 @@ public class Instruction {
     private Instruction anchorInstruction;
     private Integer registerNumber;
     private BasicBlock basicBlock;
+    private Instruction prevInstruction;
+    private Instruction nextInstruction;
+    private Instruction forwardAnchorInstruction;
 
     public Instruction() {
         this.instructionId = numberOfInstructions;
@@ -25,6 +28,9 @@ public class Instruction {
         operand2 = null;
         operand3 = null;
         arrayVariable = null;
+        prevInstruction = null;
+        nextInstruction = null;
+        forwardAnchorInstruction = null;
         ++numberOfInstructions;
     }
 
@@ -100,8 +106,32 @@ public class Instruction {
         return this.registerNumber;
     }
 
+    public void setNextInstruction(Instruction instruction){
+        this.nextInstruction = instruction;
+    }
+
+    public void setForwardAnchorInstruction(Instruction instruction){
+        this.forwardAnchorInstruction = instruction;
+    }
+
+    public Instruction getForwardAnchorInstruction(){
+        return this.forwardAnchorInstruction ;
+    }
+
+    public void setPrevInstruction(Instruction instruction){
+        this.prevInstruction = instruction;
+    }
+
+    public Instruction getPrevInstruction(){
+        return this.prevInstruction;
+    }
+    public Instruction getNextInstruction(){
+        return this.nextInstruction;
+    }
+
     @Override
     public boolean equals(Object object) {
+        if(object == null) return false;
         Instruction instruction = (Instruction) object;
         boolean isSameOperation = this.operation.equals(instruction.getOperation());
         boolean isSameOperand1 = areSameOperands(operand1, instruction.getOperand1());
