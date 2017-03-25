@@ -172,7 +172,6 @@ public class Parser {
         ra.allocateRegister(fileName);
         ra.mapToRegisters();
         removePhiInstructions();
-
     }
 
     private void varDecl(Function function, BasicBlock basicBlock) throws IOException {
@@ -206,19 +205,17 @@ public class Parser {
                 instruction.setBasicBlock(basicBlock);
                 basicBlock.addInstruction(instruction);
             }
-
-        } else {
-            if (arrayDimensions != null) {
-                tracker.addArrayVariable(identifier, arrayDimensions);
-            } else {
-                Instruction instruction = ig.generateInstructionToInitVar(identifier);
-                tracker.updateSSAForVariable(identifier, instruction.getInstructionId());
-                instruction.getOperand2().setSsaVersion(tracker.getSSAVersion(identifier));
-                instruction.setBasicBlock(basicBlock);
-                basicBlock.addInstruction(instruction);
-            }
+            return;
         }
-
+        if (arrayDimensions != null) {
+            tracker.addArrayVariable(identifier, arrayDimensions);
+        } else {
+            Instruction instruction = ig.generateInstructionToInitVar(identifier);
+            tracker.updateSSAForVariable(identifier, instruction.getInstructionId());
+            instruction.getOperand2().setSsaVersion(tracker.getSSAVersion(identifier));
+            instruction.setBasicBlock(basicBlock);
+            basicBlock.addInstruction(instruction);
+        }
     }
 
     private ArrayList<Integer> typeDecl() throws IOException {
@@ -246,41 +243,33 @@ public class Parser {
     }
 
     private void funcDecl() throws IOException {
-        if (currentToken == Token.FUNCTION || currentToken == PROCEDURE) {
-            moveToNextToken();
-            if (currentToken == IDENTIFIER) {
-                String identifier = scanner.getCurrentIdentifier();
-                Function function = new Function(identifier);
-                this.declaredFunctions.add(function);
-                tracker.addFunction(identifier, function);
-                moveToNextToken();
-                formalParam(function); // formalParam, handles of moving to next token
-                if (currentToken == SEMICOLON) {
-                    moveToNextToken();
-                    funcBody(function);
-                    if (currentToken == SEMICOLON) moveToNextToken();
-                    else generateError(SEMICOLON_NOT_FOUND);
-                } else generateError(SEMICOLON_NOT_FOUND);
-            } else generateError(IDENTIFIER_NOT_FOUND);
-        } else generateError(FUNCTION_PROCEDURE_NOT_FOUND);
+        if (currentToken != Token.FUNCTION && currentToken != PROCEDURE) generateError(FUNCTION_PROCEDURE_NOT_FOUND);
+        moveToNextToken();
+        if (currentToken != IDENTIFIER) generateError(IDENTIFIER_NOT_FOUND);
+        String identifier = scanner.getCurrentIdentifier();
+        Function function = new Function(identifier);
+        this.declaredFunctions.add(function);
+        tracker.addFunction(identifier, function);
+        moveToNextToken();
+        formalParam(function); // formalParam, handles of moving to next token
+        if (currentToken != SEMICOLON) generateError(SEMICOLON_NOT_FOUND);
+        moveToNextToken();
+        funcBody(function);
+        if (currentToken != SEMICOLON) generateError(SEMICOLON_NOT_FOUND);
+        moveToNextToken();
     }
 
     private void formalParam(Function function) throws IOException {
         if (currentToken == OPENPAREN) {
             moveToNextToken();
-            int number_of_paramers = 0;
             if (currentToken == IDENTIFIER) {
                 //TODO: need to store the variable at common place - Done i guess, but still keeping for validate check
                 addFunctionParameters(function);
-                number_of_paramers++;
                 moveToNextToken();
                 while (currentToken == COMMA) {
                     moveToNextToken();
                     if (currentToken != IDENTIFIER) generateError(FORMAL_PARAM_DECL_ERROR);
-                    //TODO: need to store the variable at common place -
-                    //TODO: Done i guess, but still keeping for validate check
                     addFunctionParameters(function);
-                    number_of_paramers++;
                     moveToNextToken();
                 }
             }
@@ -392,7 +381,8 @@ public class Parser {
                 System.out.println(lhs);
                 boolean isNotGlobalVariable = lhs.getSsaVersion() == null;
                 if (isNotFuncParameter && isNotFuncLocalVariable && isNotGlobalVariable) {
-                    System.err.println("Variable '" + lhs.getIdentifierName() + "' in function '" + function.getFuncName() + "' must declared before being used");
+                    System.err.println("Variable '" + lhs.getIdentifierName()
+                            + "' in function '" + function.getFuncName() + "' must declared before being used");
                     System.exit(103);
                 }
             } else {
@@ -430,7 +420,8 @@ public class Parser {
                 boolean funcVariable = containFuncParameter(function, paramResult) && !function.isLocalVariable(identifierName);
                 if (funcVariable) {
                     System.out.println("RHS");
-                    System.err.println("Variable '" + rhs.getIdentifierName() + "' in function '" + function.getFuncName() + "' must declared before being used");
+                    System.err.println("Variable '" + rhs.getIdentifierName()
+                            + "' in function '" + function.getFuncName() + "' must declared before being used");
                     System.exit(103);
                 }
 
@@ -601,18 +592,15 @@ public class Parser {
     private Result factor(BasicBlock basicBlock, Function function, boolean isRHS) throws IOException {
         if (!isAFactor(currentToken)) generateError(FACTOR_ERROR);
         if (currentToken == IDENTIFIER) {
-            //TODO: Need to deal with identifiers
             return designator(basicBlock, function, true);
         }
         if (currentToken == NUMBER) {
-            //TODO: Need to deal with number
             Result result = new Result();
             result.setKind(CONSTANT);
             result.setValue(number());
             return result;
         }
         if (currentToken == CALL) {
-            //TODO: Need to deal with function calls
             return funcCall(basicBlock);
         }
         if (currentToken == OPENPAREN) {
@@ -631,10 +619,6 @@ public class Parser {
 
     private Result funcCall(BasicBlock basicBlock) throws IOException {
         Result res = null;
-        /*
-            TODO: this code may be never be reached, as we already checked for let in statement, need to identify a
-            TODO: pattern to handle these kind of duplicate code
-             */
         if (currentToken != CALL) generateError(CALL_NOT_FOUND);
         moveToNextToken();
         if (currentToken == IDENTIFIER) {
