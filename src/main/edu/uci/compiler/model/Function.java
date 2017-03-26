@@ -41,7 +41,6 @@ public class Function {
     }
 
     public boolean isLocalVariable(String identifier){
-        System.out.println("identifier " + identifier + this.localSSATrackerForVariables.containsKey(identifier));
         return this.localSSATrackerForVariables.containsKey(identifier);
     }
     public void addLocalArrayVariable(String arrayIdentifier, ArrayList<Integer> dimensions){

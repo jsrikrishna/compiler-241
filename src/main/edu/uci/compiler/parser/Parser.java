@@ -260,23 +260,21 @@ public class Parser {
     }
 
     private void formalParam(Function function) throws IOException {
-        if (currentToken == OPENPAREN) {
+        if (currentToken != OPENPAREN) return;
+        moveToNextToken();
+        if (currentToken == IDENTIFIER) {
+            addFunctionParameters(function);
             moveToNextToken();
-            if (currentToken == IDENTIFIER) {
-                //TODO: need to store the variable at common place - Done i guess, but still keeping for validate check
+            while (currentToken == COMMA) {
+                moveToNextToken();
+                if (currentToken != IDENTIFIER) generateError(FORMAL_PARAM_DECL_ERROR);
                 addFunctionParameters(function);
                 moveToNextToken();
-                while (currentToken == COMMA) {
-                    moveToNextToken();
-                    if (currentToken != IDENTIFIER) generateError(FORMAL_PARAM_DECL_ERROR);
-                    addFunctionParameters(function);
-                    moveToNextToken();
-                }
             }
-
-            if (currentToken != CLOSEPAREN) generateError(FORMAL_PARAM_DECL_ERROR);
-            moveToNextToken();
         }
+
+        if (currentToken != CLOSEPAREN) generateError(FORMAL_PARAM_DECL_ERROR);
+        moveToNextToken();
     }
 
     private void addFunctionParameters(Function function) {
@@ -366,38 +364,15 @@ public class Parser {
         /*
         Update lhs result with SSA Version
         Update Tracker for local result, both basic block level and global level
-        TODO: Q - do we need to update lhs globally as well ?
-        TODO: Q - Does array as well have Tracker ?
          */
         if (lhs.getKind() == VARIABLE) {
-            if (function != null) {
-                Result paramResult = new Result();
-                paramResult.setKind(PARAMETER);
-                paramResult.setIdentifierName(lhs.getIdentifierName());
-                boolean isNotFuncParameter = !containFuncParameter(function, paramResult);
-                System.out.println(lhs.getIdentifierName() + " func parametr " + isNotFuncParameter);
-                boolean isNotFuncLocalVariable = !function.isLocalVariable(lhs.getIdentifierName());
-                System.out.println(lhs.getIdentifierName() + " func varibale " + isNotFuncLocalVariable);
-                System.out.println(lhs);
-                boolean isNotGlobalVariable = lhs.getSsaVersion() == null;
-                if (isNotFuncParameter && isNotFuncLocalVariable && isNotGlobalVariable) {
-                    System.err.println("Variable '" + lhs.getIdentifierName()
-                            + "' in function '" + function.getFuncName() + "' must declared before being used");
-                    System.exit(103);
-                }
-            } else {
-                if (lhs.getSsaVersion() == null || lhs.getSsaVersion() == -1) {
-                    System.err.println("Variable " + lhs.getIdentifierName() + " must declared before being used");
-                    System.exit(103);
-                }
-            }
+            isVariableDeclared(function, lhs);
             tracker.updateSSAForVariable(lhs.getIdentifierName(), instruction.getInstructionId());
             lhs.setSsaVersion(instruction.getInstructionId());
             // Keep a Copy in Basic Block also, so that it can be used while generating Phi Functions
             basicBlock.updateSSAVersion(lhs.getIdentifierName(), instruction.getInstructionId());
             if (function != null) {
                 function.updateSSAVariable(lhs.getIdentifierName(), instruction.getInstructionId());
-                // Tag:  FUNC_BASIC_BLOCK_VS_NORMAL_BASIC_BLOCK_CHECK
             }
         }
         if (lhs.getKind() == INSTRUCTION) {
@@ -412,25 +387,7 @@ public class Parser {
          */
         if (rhs.getKind() == VARIABLE) {
 
-            if (function != null) {
-                String identifierName = rhs.getIdentifierName();
-                Result paramResult = new Result();
-                paramResult.setKind(PARAMETER);
-                paramResult.setIdentifierName(identifierName);
-                boolean funcVariable = containFuncParameter(function, paramResult) && !function.isLocalVariable(identifierName);
-                if (funcVariable) {
-                    System.out.println("RHS");
-                    System.err.println("Variable '" + rhs.getIdentifierName()
-                            + "' in function '" + function.getFuncName() + "' must declared before being used");
-                    System.exit(103);
-                }
-
-            } else {
-                if (rhs.getSsaVersion() == null || rhs.getSsaVersion() == -1) {
-                    System.err.println("Variable " + rhs.getIdentifierName() + " must declared before being used");
-                    System.exit(103);
-                }
-            }
+            isVariableDeclared(function, rhs);
 
             String identifier = rhs.getIdentifierName();
             // I may get Basic Block correct all the time,
@@ -448,7 +405,34 @@ public class Parser {
         return lhs;
     }
 
-    private boolean containFuncParameter(Function function, Result paramResult) {
+    private void isVariableDeclared(Function function, Result result) {
+        String identifier = result.getIdentifierName();
+        String funcName = function.getFuncName();
+        if (function != null) {
+            // Function Paramters have a defaul ssa version of -1
+            boolean isNotAFuncParameter = !containFuncParameter(function, result.getIdentifierName());
+            boolean isNotAFuncLocalVariable = !function.isLocalVariable(result.getIdentifierName());
+            boolean isNotAGlobalVariable = result.getSsaVersion() == null;
+
+            if (isNotAFuncParameter && isNotAFuncLocalVariable && isNotAGlobalVariable) {
+                System.err.println("Variable '" + identifier + "' in function '" + funcName + "' must declared");
+                System.exit(103);
+            }
+
+        } else {
+            if (result.getSsaVersion() == null || result.getSsaVersion() == -1) {
+                System.err.println("Variable " + identifier + " must declared before being used");
+                System.exit(103);
+            }
+        }
+    }
+
+    private boolean containFuncParameter(Function function, String identifierName) {
+
+        Result paramResult = new Result();
+        paramResult.setKind(PARAMETER);
+        paramResult.setIdentifierName(identifierName);
+
         for (Result result : function.getFuncParameters()) {
             if (result.equals(paramResult)) {
                 return true;
@@ -555,21 +539,25 @@ public class Parser {
             }
             lhs = ig.computeExpression(prevToken, lhs, rhs);
             if (lhs.getKind() == INSTRUCTION) {
-                Instruction lhsInstruction = ig.getInstruction(lhs.getInstructionId());
-                lhsInstruction.setBasicBlock(basicBlock);
-                basicBlock.addInstruction(lhsInstruction);
-                lhs.setBasicBlockId(basicBlock.getId());
+                addInstructionUtil(basicBlock, lhs);
             }
         }
         return lhs;
     }
 
+    private void addInstructionUtil(BasicBlock basicBlock, Result result) {
+        Instruction instruction = ig.getInstruction(result.getInstructionId());
+        instruction.setBasicBlock(basicBlock);
+        basicBlock.addInstruction(instruction);
+        result.setBasicBlockId(basicBlock.getId());
+    }
+
     private Result term(BasicBlock basicBlock, Function function) throws IOException {
-        Result lhs = factor(basicBlock, function, false);
+        Result lhs = factor(basicBlock, function);
         while (currentToken == TIMES || currentToken == DIV) {
             Token prevToken = currentToken;
             moveToNextToken();
-            Result rhs = factor(basicBlock, function, true);
+            Result rhs = factor(basicBlock, function);
             if (isVariableNotDeclared(lhs)) {
                 System.err.println("Variable " + lhs.getIdentifierName() + " must declared before being used");
                 System.exit(103);
@@ -580,16 +568,13 @@ public class Parser {
             }
             lhs = ig.computeExpression(prevToken, lhs, rhs);
             if (lhs.getKind() == INSTRUCTION) {
-                Instruction lhsInstruction = ig.getInstruction(lhs.getInstructionId());
-                lhsInstruction.setBasicBlock(basicBlock);
-                basicBlock.addInstruction(lhsInstruction);
-                lhs.setBasicBlockId(basicBlock.getId());
+                addInstructionUtil(basicBlock, lhs);
             }
         }
         return lhs;
     }
 
-    private Result factor(BasicBlock basicBlock, Function function, boolean isRHS) throws IOException {
+    private Result factor(BasicBlock basicBlock, Function function) throws IOException {
         if (!isAFactor(currentToken)) generateError(FACTOR_ERROR);
         if (currentToken == IDENTIFIER) {
             return designator(basicBlock, function, true);
@@ -810,15 +795,13 @@ public class Parser {
     private void insertKillInstructionsForIfStatement(BasicBlock basicBlock,
                                                       List<Instruction> leftKill,
                                                       List<Instruction> rightKill) {
-        if (leftKill != null) {
-            for (Instruction kill : leftKill) {
-                Instruction newKill = ig.generateKillInstruction(kill.getArrayVariable());
-                basicBlock.addInstruction(newKill);
-                newKill.setBasicBlock(basicBlock);
-            }
-        }
-        if (rightKill != null) {
-            for (Instruction kill : rightKill) {
+        insertKillInstructions(basicBlock, leftKill);
+        insertKillInstructions(basicBlock, rightKill);
+    }
+
+    private void insertKillInstructions(BasicBlock basicBlock, List<Instruction> killInstructions) {
+        if (killInstructions != null) {
+            for (Instruction kill : killInstructions) {
                 Instruction newKill = ig.generateKillInstruction(kill.getArrayVariable());
                 basicBlock.addInstruction(newKill);
                 newKill.setBasicBlock(basicBlock);
@@ -993,8 +976,7 @@ public class Parser {
             phiInstruction.setBasicBlock(whileConditionBlock);
             whileConditionBlock.addInstructionAtStart(phiInstruction);
         }
-
-
+        
         // Update SSA Tracker of whileJoinBlock
         whileJoinBlock.setLocalTracker(whileJoinTracker);
 
@@ -1019,7 +1001,6 @@ public class Parser {
             String identifier = phiInstruction.getOperand3().getIdentifierName();
             updateInstructionsWithPhiVariables(whileConditionBlock, phiInstruction, identifier);
         }
-
     }
 
     private void updatePhiVariablesInWhileBodyBlock(BasicBlock whileBodyBlock,
@@ -1031,8 +1012,6 @@ public class Parser {
                 updateInstructionsWithPhiVariables(basicBlock, phiInstruction, identifier);
             }
         }
-
-
     }
 
     private ArrayList<BasicBlock> getChildrenOfWhileBodyBlock(BasicBlock whileBodyBlock) {
@@ -1131,15 +1110,15 @@ public class Parser {
                                             Integer phiRegisterNumber,
                                             BasicBlock phiBasicBlock,
                                             BasicBlock parent) {
-        if (operand != null) {
-            if (operand.getKind() == CONSTANT) {
-                addMoveInstruction(phiBasicBlock, parent, phiOperand, operand);
-            } else {
-                if (!(phiRegisterNumber.intValue() == operand.getRegisterNumber().intValue())) {
-                    addMoveInstruction(phiBasicBlock, parent, phiOperand, operand);
-                }
-            }
+        if(operand == null) return;
+        if (operand.getKind() == CONSTANT) {
+            addMoveInstruction(phiBasicBlock, parent, phiOperand, operand);
+            return;
         }
+        if (!(phiRegisterNumber.intValue() == operand.getRegisterNumber().intValue())) {
+            addMoveInstruction(phiBasicBlock, parent, phiOperand, operand);
+        }
+        return;
     }
 
     private void addMoveInstruction(BasicBlock phiBasicBlock,
