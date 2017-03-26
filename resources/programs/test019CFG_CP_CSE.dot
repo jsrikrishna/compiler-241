@@ -1,8 +1,0 @@
-digraph{
-BasicBlock0[shape="box", label="BasicBlock0
-
- Type is BB_MAIN
-
-9: END
-"]
-}

@@ -1,5 +1,0 @@
-digraph{
-BasicBlock0 -> BasicBlock1
-BasicBlock1 -> BasicBlock2
-BasicBlock1 -> BasicBlock3
-}
