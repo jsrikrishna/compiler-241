@@ -407,9 +407,9 @@ public class Parser {
 
     private void isVariableDeclared(Function function, Result result) {
         String identifier = result.getIdentifierName();
-        String funcName = function.getFuncName();
         if (function != null) {
-            // Function Paramters have a defaul ssa version of -1
+            // Function Parameters have a defaul ssa version of -1
+            String funcName = function.getFuncName();
             boolean isNotAFuncParameter = !containFuncParameter(function, result.getIdentifierName());
             boolean isNotAFuncLocalVariable = !function.isLocalVariable(result.getIdentifierName());
             boolean isNotAGlobalVariable = result.getSsaVersion() == null;
@@ -488,11 +488,6 @@ public class Parser {
             }
             res.setSsaVersion(ssaVersion);
         } else {
-//                Integer ssaVersion = basicBlock.getSSAVersion(identifier);
-//                if (ssaVersion == null) {
-//                    ssaVersion = tracker.getSSAVersion(identifier);
-//                    if (ssaVersion == null) generateError(VARIABLE_NOT_DECLARED);
-//                }
             res.setSsaVersion(basicBlock.getSSAVersion(identifier));
         }
 
@@ -976,7 +971,7 @@ public class Parser {
             phiInstruction.setBasicBlock(whileConditionBlock);
             whileConditionBlock.addInstructionAtStart(phiInstruction);
         }
-        
+
         // Update SSA Tracker of whileJoinBlock
         whileJoinBlock.setLocalTracker(whileJoinTracker);
 
@@ -1110,7 +1105,7 @@ public class Parser {
                                             Integer phiRegisterNumber,
                                             BasicBlock phiBasicBlock,
                                             BasicBlock parent) {
-        if(operand == null) return;
+        if (operand == null) return;
         if (operand.getKind() == CONSTANT) {
             addMoveInstruction(phiBasicBlock, parent, phiOperand, operand);
             return;
