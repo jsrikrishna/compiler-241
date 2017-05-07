@@ -8,5 +8,5 @@ Compiler for Language 241
 	 - Live Range Analysis to minimize the number of Register Allocated
 	 - Remove DeadCode while performing Live Range Analysis
 	 - Copy Propagation
-	 - Removal of PHI Instructions
+	 - Removal of PHI Instructions introduced during SSA
 
